@@ -371,7 +371,7 @@ void remove_job( HOST_ENTRY *h );
 void send_ping( int s, HOST_ENTRY *h );
 long timeval_diff( struct timeval *a, struct timeval *b );
 void usage( void );
-int wait_for_reply( void );
+int wait_for_reply( u_int );
 void print_per_system_stats( void );
 void print_per_system_splits( void );
 void print_global_stats( void );
@@ -1101,29 +1101,24 @@ int main( int argc, char **argv )
 
 	while( num_jobs )
 	{
-		if( num_pingsent )
-			while( wait_for_reply() );  /* call wfr until we timeout */
-			
-		if( cursor && advance )
-			cursor = cursor->next;
-		
+		if( num_pingsent ) {
+			if(wait_for_reply(interval)) {
+				while(wait_for_reply(0)); /* process other replies in the queue */
+			}
+		}
+
 		gettimeofday( &current_time, &tz );
 		lt = timeval_diff( &current_time, &last_send_time );
 		ht = timeval_diff( &current_time, &cursor->last_send_time );
-
+			
 		if( report_interval && ( loop_flag || count_flag ) &&
 			( timeval_diff ( &current_time, &last_report_time )	> report_interval ) )
 		{
 			print_per_system_splits();
-			gettimeofday( &current_time, &tz );
-			lt = timeval_diff( &current_time, &last_send_time );
-			ht = timeval_diff( &current_time, &cursor->last_send_time );
 			last_report_time = current_time;
 		
-		}/* IF */
+		}
 		
-		advance = 1;
-
 #if defined( DEBUG ) || defined( _DEBUG )
 		if( trace_flag )
 		{
@@ -1132,8 +1127,8 @@ int main( int argc, char **argv )
 				cursor->host, cursor->waiting, cursor->running, cursor->num_sent, 
 				cursor->num_recv, cursor->timeout, num_jobs, lt, ht );
 
-		}/* IF */
-#endif /* DEBUG || _DEBUG */
+		}
+#endif
 
 		/* if it's OK to send while counting or looping or starting */
 		if( ( lt > interval ) && ( ht > perhost_interval ) )
@@ -1142,9 +1137,7 @@ int main( int argc, char **argv )
 			if( ( cursor->num_sent == 0 ) || loop_flag )
 			{
 				send_ping( s, cursor );
-				continue;
-			
-			}/* IF */
+			}
 		
 			/* send if counting and count not exceeded */
 			if( count_flag )
@@ -1152,32 +1145,29 @@ int main( int argc, char **argv )
 				if( cursor->num_sent < count )
 				{
 					send_ping( s, cursor );
-					continue;
-				
-				}/* IF */
-			}/* IF */
-		}/* IF */
+				}
+			}
+		}
 
 		/* is-it-alive mode, and timeout exceeded while waiting for a reply */
 		/*   and we haven't exceeded our retries                            */
-		if( ( lt > interval ) && !count_flag && !loop_flag && !cursor->num_recv &&
-			( ht > cursor->timeout ) && ( cursor->waiting < retry + 1 ) )
-		{
+		if(!count_flag && !loop_flag) {
+			if( ( lt > interval ) && !cursor->num_recv &&
+				( ht > cursor->timeout ) && ( cursor->waiting < retry + 1 ) )
+			{
 #if defined( DEBUG ) || defined( _DEBUG )
-			if( trace_flag ) 
-				printf( "main loop: timeout for %s\n", cursor->host );
-#endif /* DEBUG || _DEBUG */
+				if( trace_flag ) 
+					printf( "main loop: timeout for %s\n", cursor->host );
+#endif
+				num_timeout++;
 
-			num_timeout++;
+				/* try again */
+				if( backoff_flag )
+					cursor->timeout *= backoff;
 
-			/* try again */
-			if( backoff_flag )
-				cursor->timeout *= backoff;
-
-			send_ping( s, cursor );
-			continue;
-		
-		}/* IF */
+				send_ping( s, cursor );
+			}
+		}
 
 		/* didn't send, can we remove? */
 
@@ -1186,52 +1176,45 @@ int main( int argc, char **argv )
 			printf( "main loop: didn't send to %s\n", cursor->host );
 #endif /* DEBUG || _DEBUG */
     
-		/* never remove if looping */
-		if( loop_flag )
-			continue;
-
-		/* remove if counting and count exceeded */
-		/* but allow time for the last one to come in */
-		if( count_flag )
+		/* remove all terminated jobs */
+		if(count_flag)
 		{
-			if( ( cursor->num_sent >= count ) && ( cursor->num_recv >= count || ht > cursor->timeout ) )
+			while( cursor && cursor->num_sent >= count &&
+			       (cursor->num_recv >= count || ht > cursor->timeout) )
 			{
-				remove_job( cursor );
-				continue;
-			
-			}/* IF */
-		}/* IF */
-		else
+				fprintf(stderr, "removed: %s\n", cursor->host);
+				remove_job(cursor);
+				if(cursor) {
+					ht = timeval_diff( &current_time, &cursor->last_send_time );
+				}
+			}
+		}
+		else if(!loop_flag)
 		{
 			/* normal mode, and we got one */
 			if( cursor->num_recv )
 			{
 				remove_job( cursor );
-				continue;
-			
-			}/* IF */
-			
-			/* normal mode, and timeout exceeded while waiting for a reply */
-			/* and we've run out of retries, so node is unreachable */
-			if( ( ht > cursor->timeout ) && ( cursor->waiting >= retry + 1 ) )
+			}
+			else
 			{
-#if defined( DEBUG ) || defined( _DEBUG )
-				if( trace_flag ) 
-					printf( "main loop: timeout for %s\n", cursor->host );
-#endif /* DEBUG || _DEBUG */
-
-				num_timeout++;
-				remove_job( cursor );
-				continue;
-			
-			}/* IF */
-		}/* ELSE */
+				/* normal mode, and timeout exceeded while waiting for a reply */
+				/* and we've run out of retries, so node is unreachable */
+				while( cursor && ( ht > cursor->timeout ) && ( cursor->waiting >= retry + 1 ) )
+				{
+					num_timeout++;
+					remove_job( cursor );
+					if(cursor) {
+						ht = timeval_diff( &current_time, &cursor->last_send_time );
+					}
+				}
+			}
+		}
 		
-		/* could send to this host, so keep considering it */
-		if( ht > interval )
-			advance = 0;
-
-	}/* WHILE */
+		if(cursor) {
+			cursor = cursor->next;
+		}
+	}
 	
 	finish();
 
@@ -1680,7 +1663,7 @@ void send_ping( int s, HOST_ENTRY *h )
 #ifdef _NO_PROTO
 int wait_for_reply()
 #else
-int wait_for_reply( void )
+int wait_for_reply(u_int wait_time)
 #endif
 {
 	int result;
@@ -1695,7 +1678,7 @@ int wait_for_reply( void )
 	int this_count;
 	struct timeval sent_time;
 
-	result = recvfrom_wto( s, buffer, sizeof(buffer), &response_addr, select_time );
+	result = recvfrom_wto( s, buffer, sizeof(buffer), &response_addr, wait_time );
 
 	if( result < 0 )
 		return 0;	/* timeout */
@@ -2764,8 +2747,8 @@ int recvfrom_wto( int s, char *buf, int len, FPING_SOCKADDR *saddr, int timo )
 	struct timeval to;
 	fd_set readset, writeset;
 
-	to.tv_sec = timo / 100000;
-	to.tv_usec = ( timo - ( to.tv_sec * 100000 ) ) * 10;
+	to.tv_sec = 0;
+	to.tv_usec = timo * 10;
 
 	FD_ZERO( &readset );
 	FD_ZERO( &writeset );

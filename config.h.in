@@ -1,0 +1,40 @@
+/* config.h.in.  Generated automatically from configure.in by autoheader.  */
+#ifndef CONFIG_H
+#define CONFIG_H
+
+
+/* VERSION (from configure.in) */
+#undef VERSION
+
+/* Define if you have the <stdlib.h> header file.  */
+#undef HAVE_STDLIB_H
+
+/* Define if you have the <sys/file.h> header file.  */
+#undef HAVE_SYS_FILE_H
+
+/* Define if you have the <sys/select.h> header file.  */
+#undef HAVE_SYS_SELECT_H
+
+/* Define if you have the <unistd.h> header file.  */
+#undef HAVE_UNISTD_H
+
+/* Define if you have the nsl library (-lnsl).  */
+#undef HAVE_LIBNSL
+
+/* Define if you have the socket library (-lsocket).  */
+#undef HAVE_LIBSOCKET
+
+/* Name of package */
+#undef PACKAGE
+
+/* Version number of package */
+#undef VERSION
+
+
+/* some OSes do not define this ... lets take a wild guess */
+
+#ifndef INADDR_NONE
+#  define INADDR_NONE 0xffffffffU
+#endif
+
+#endif /* CONFIG_H */

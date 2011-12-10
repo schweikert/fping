@@ -1,0 +1,312 @@
+Wed Jan 16 2002
+Jeroen Massar
+- Revision v2.4b2-to-IPv6
+   - Added IPv6 support.
+   - Added -I option for selecting source IPv4/IPv6 address.
+   - Makefile.in now generates a Makefile which will build both 
+     fping (IPv4) and fping6 (IPv6). Thus it makes an fping (IPv4 only)
+     and an fping6 (IPv6 only).
+   - num_unreachable was counted twice when a sendto() generated errors.
+   - See http://unfix.org/projects/ipv6/ 
+
+Tue Mar 14 2001
+Jason Ewasiuk <jasone@remote.net>
+- Revision v2.4b1
+	- added -g option for generating IPs from a start to an end value
+		- two available options, generate IPs from start IP to end IP
+		  or from a passed netmask, such as 192.168.1.0/24
+
+Thu Feb 15 2001
+Jason Ewasiuk <jasone@remote.net>
+- Revision v2.3b1
+	- formatting changes to code layout (fping.c)
+	NOTE:  Best viewed with a tab stop of 4
+	- merged in changes from Debian c/o Herbert Xu
+	<herbert@gondor.apana.org.au>
+		- Compilation fix on alphas with glibc
+		- Alignment issues (note from JE:  in wait_for_reply())
+		- A typo with the time specified on the command line
+		(note from JE:  bug was using 10 instead of 100)
+		- Drop privileges after obtaining socket
+		(note from JE:  might be moot, since prog exits if
+		user is not root)
+	- touched all files in package to this date
+	- couple new #ifdefs added for future WIN32 support
+	(Haven't got to adding this yet, will take a lot of rewriting.)
+
+Fri Dec  8 10:33:13 2000  Roland Schemers  <schemers@stanford.edu>
+
+	* stop using sys_errlist and start using strerror
+	fixed bug in output of -C
+
+Wed Jan  8 11:18:37 1997  Roland Schemers  <schemers@stanford.edu>
+
+	* Created ChangeLog file. What follows was from the CHANGES file.
+
+* Revision 2.0  1994/10/31 21:26:23 morgan
+
+  Substantial rewrite, including new features:
+
+    support some traditional ping features:
+      loop mode
+      specify size of data packets
+      specify how many pings to send
+      show per-response data
+      interpret ICMPs other than ICMP Echo response
+
+  also
+
+    rewrote main loop completely
+    make timings in tenths of milliseconds
+    do exponential backoff on retries
+    port to more systems
+    add some debugging stuff
+    do better checking on whether received ICMP is for us
+
+* Revision 1.24  1993/12/10  23:11:39  schemers
+
+  commented out seteuid(getuid()) since it isn't needed
+
+* Revision 1.23  1993/12/10  18:33:41  schemers
+
+  Took out the -f option for non-root users. This can be enabled by
+  defining ENABLE_F_OPTION before compiling. There is a call to
+  access before opening the file, but there is a race condition.
+  Reading from stdin is much safer.
+
+
+* Revision 1.22  1993/11/16  19:49:24  schemers
+
+  Took out setuid(getuid()) and used access() system call to
+  check for access to the file specified with "-f".
+ 
+* Revision 1.21  1993/07/20  18:08:19  schemers
+
+  commented out the test to make sure the ping packet came from the
+  same IP address as the one we sent to. This could cause problems on
+  multi-homed hosts.
+
+* Revision 1.20  1993/02/23  00:16:38  schemers
+
+fixed syntax error (should have compiled before checking in...)
+
+* Revision 1.19  1993/02/23  00:15:15  schemers
+
+turned off printing of "is alive" when -a is specified.
+
+* Revision 1.18  1992/07/28  15:16:44  schemers
+
+added a fflush(stdout) call before the summary is sent to stderr, so
+everything shows up in the right order.
+
+* Revision 1.17  1992/07/23  03:29:42  schemers
+* Revision 1.16  1992/07/22  19:24:37  schemers
+
+Fixed declaration of timeval_diff. Didn't notice the problem because
+I use 'cc' in stead of gcc under Ultrix. Time to switch? :-)
+
+Modified file reaing so it would skip blank lines or lines starting
+with a '#'. Now you can do something like:
+
+fping -ad < /etc/hosts
+
+* Revision 1.15  1992/07/21  17:07:18  schemers
+
+Put in sanity checks so only root can specify "dangerous" options.
+Changed usage to show switchs in alphabetical order.
+* Revision 1.14  1992/07/21  16:40:52  schemers
+* Revision 1.13  1992/07/17  21:02:17  schemers
+
+Changed the default timeout to 2500 msec, and retry to 3. This was
+due to suggestions from people with slow (WAN) networks. The default
+1 sec timeout was too fast.
+
+
+Added '-e' option for showing elapsed (round-trip) times on pakets, and
+modified the -s option to include min, max, and average round-trip times,
+and over all elapsed time.
+
+Modified action taken when a error is returned from sendto. The action
+taken now considers the host unreachable and prints the hostname 
+followed by the errno message. The program will not exit and will continue
+to try other hosts.
+
+* Revision 1.12  1992/07/17  16:38:54  schemers
+* Revision 1.11  1992/07/17  16:28:38  schemers
+
+ move socket create call so I could do a setuid(getuid()) before the
+ fopen call is made. Once the socket is created root privs aren't needed
+ to send stuff out on it.
+
+ moved num_timeout counter. It really was for debug purposes and didn't
+ make sense to the general public :-) Now it is the number of timeouts
+ (pings that didn't get received with the time limit).
+
+
+* Revision 1.10 1992/07/16  16:24:38  schemers
+* Revision 1.9  1992/07/16  16:00:04  schemers
+* Revision 1.8  1992/07/16  05:44:41  schemers
+
+Added _NO_PROTO stuff for older compilers, and _POSIX_SOURCE
+for unistd.h, and _POSIX_SOURCE for stdlib.h. Also added
+check for __cplusplus.
+
+Now compiles ok under Ultrix 3.1, and Sun4 using cc. Also compiled
+ok using g++ 2.2.2.
+
+Changed '-a' and '-u' flags to be mutually exclusive (makes sense, since
+specifiying both '-a' and '-u' is the same as not specifiying anything.
+Since '-a' and '-u' are mutually exclusive, these options now only print
+the hostname, and not the 'is alive' or 'is unreachable'  messages.
+This makes it much easier to do stuff like:
+
+#!/usr/local/bin/perl
+$hosts_to_backup=`cat /etc/hosts.backup|fping -a`;
+
+Since you don't have to strip off the 'is alive' messages.
+
+Changed usage to and stats to print to stderr instead of stdout.
+
+-----------------------------------------------------------------------------
+
+RCS header info from original fping.c package (no longer required)
+
+/* 
+ ***************************************************
+ *
+ * Standard RCS Header information (see co(1))
+ *
+ * $Author: schemers $
+ *
+ * $Date: 1997/01/08 20:29:33 $
+ *
+ * $Revision: 2.2 $
+ *
+ * $Locker:  $
+ *
+ * $Source: /afs/ir/group/networking/src/fping/fping-2.2/src/RCS/fping.c,v $
+ *
+ * $State: Exp $
+ *
+ * $Log: fping.c,v $
+ *
+ * Revision 2.2  1997/01/08 20:29:33  schemers
+ * changes for autoconf/automake
+ *
+ * Revision 2.1  1997/01/08 19:07:18  schemers
+ * checked in RL "Bob"'s changes before configure'ing
+ *
+ * Revision 2.0  1994/10/31  21:26:23  schemers
+ * many changes by RL "Bob" Morgan
+ *   add timing data collection, loop mode, per-packet output, etc
+ *
+ * Revision 1.24  1993/12/10  23:11:39  schemers
+ * commented out seteuid(getuid()) since it isn't needed
+ *
+ * Revision 1.23  1993/12/10  18:33:41  schemers
+ * Took out the -f option for non-root users. This can be enabled by
+ * defining ENABLE_F_OPTION before compiling. There is a call to
+ * access before opening the file, but there is a race condition.
+ * Reading from stdin is much safer.
+ *
+ * Revision 1.22  1993/11/16  19:49:24  schemers
+ * Took out setuid(getuid()) and used access() system call to
+ * check for access to the file specified with "-f".
+ *
+ * Revision 1.21  1993/07/20  18:08:19  schemers
+ * commented out the test to make sure the ping packet came from the
+ * same IP address as the one we sent to. This could cause problems on
+ * multi-homed hosts.
+ *
+ * Revision 1.20  1993/02/23  00:16:38  schemers
+ * fixed syntax error (should have compiled before checking in...)
+ *
+ * Revision 1.19  1993/02/23  00:15:15  schemers
+ * turned off printing of "is alive" when -a is specified.
+ *
+ * Revision 1.18  1992/07/28  15:16:44  schemers
+ * added a fflush(stdout) call before the summary is sent to stderr, so
+ * everything shows up in the right order.
+ *
+ * Revision 1.17  1992/07/23  03:29:42  schemers
+ * fixed declaration of timeval_diff.
+ *
+ * Revision 1.16  1992/07/22  19:24:37  schemers
+ * Modified file reading so it would skip blanks lines or lines starting
+ * with a '#'. Now you can do something like:
+ *
+ * fping -ad < /etc/hosts
+ *
+ * Revision 1.15  1992/07/21  17:07:18  schemers
+ * Put in sanity checks so only root can specify "dangerous" options.
+ * Changed usage to show switchs in alphabetical order.
+ *
+ * Revision 1.14  1992/07/21  16:40:52  schemers
+ * Now when sendto returns an error, the host is considered unreachable and
+ * and the error message (from errno) is displayed.
+ *
+ * Revision 1.13  1992/07/17  21:02:17  schemers
+ * changed default timeout to 2500 msec (for WANs), and default try
+ * to 3. This gives 10 second overall timeout.
+ *
+ * Added -e option for showing elapsed (round-trip) time on packets
+ *
+ * Modified -s option to inlude to round-trip stats
+ *
+ * Added #ifndef DEFAULT_* stuff its easier to change the defaults
+ *
+ * Reorganized main loop.
+ *
+ * cleaned up timeval stuff. removed set_timeval and timeval_expired
+ * since they aren't needed anymore. Just use timeval_diff.
+ *
+ * Revision 1.12  1992/07/17  16:38:54  schemers
+ * move socket create call so I could do a setuid(getuid()) before the
+ * fopen call is made. Once the socket is created root privs aren't needed
+ * to send stuff out on it.
+ *
+ * Revision 1.11  1992/07/17  16:28:38  schemers
+ * moved num_timeout counter. It really was for debug purposes and didn't
+ * make sense to the general public :-) Now it is the number of timeouts
+ * (pings that didn't get received with the time limit).
+ *
+ * Revision 1.10  1992/07/16  16:24:38  schemers
+ * changed usage() to use fprintf(stderr,"...");
+ *
+ * Revision 1.9  1992/07/16  16:00:04  schemers
+ * Added _NO_PROTO stuff for older compilers, and _POSIX_SOURCE
+ * for unistd.h, and _POSIX_SOURCE for stdlib.h. Also added
+ * check for __cplusplus.
+ *
+ * Revision 1.8  1992/07/16  05:44:41  schemers
+ * changed -a and -u to only show hostname in results. This is
+ * for easier parsing. Also added -v flag
+ *
+ * Revision 1.7  1992/07/14  18:45:23  schemers
+ * initialized last_time in add_host function
+ *
+ * Revision 1.6  1992/07/14  18:32:40  schemers
+ * changed select to use FD_ macros
+ *
+ * Revision 1.5  1992/07/14  17:21:22  schemers
+ * standardized exit status codes
+ *
+ * Revision 1.4  1992/06/26  15:25:35  schemers
+ * changed name from rrping to fping
+ *
+ * Revision 1.3  1992/06/24  15:39:32  schemers
+ * added -d option for unreachable systems
+ *
+ * Revision 1.2  1992/06/23  03:01:23  schemers
+ * misc fixes from R.L. "Bob" Morgan
+ *
+ * Revision 1.1  1992/06/19  18:23:52  schemers
+ * Initial revision
+ *
+ *--------------------------------------------------
+ * Copyright (c) 1992, 1994, 1997 Board of Trustees
+ *            Leland Stanford Jr. University
+ ***************************************************
+ */
+
+

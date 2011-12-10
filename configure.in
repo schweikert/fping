@@ -1,0 +1,32 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(fping.c)
+AM_INIT_AUTOMAKE(fping, 2.4b2_to_ipv6)
+
+AM_CONFIG_HEADER(config.h)
+#VERSION=2.4b2
+#PACKAGE=fping
+AC_SUBST(PACKAGE)
+AC_SUBST(VERSION)
+AC_DEFINE_UNQUOTED(VERSION,"$VERSION")
+
+dnl Checks for programs.
+
+AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_INSTALL
+
+dnl Checks for libraries.
+
+AC_CHECK_FUNC(gethostbyname)
+if test $ac_cv_func_gethostbyname = no; then
+    AC_CHECK_LIB(nsl, gethostbyname)
+fi
+AC_CHECK_FUNC(connect)
+if test $ac_cv_func_connect = no; then
+    AC_CHECK_LIB(socket, connect)
+fi
+
+dnl Checks for header files.
+AC_CHECK_HEADERS(unistd.h sys/file.h stdlib.h sys/select.h)
+
+AC_OUTPUT(Makefile)

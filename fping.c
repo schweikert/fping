@@ -1141,8 +1141,8 @@ void main_loop()
                     /* Normal mode: schedule retry */
                     if(h->waiting < retry + 1) {
                         h->ev_type = EV_TYPE_PING;
-                        h->ev_time.tv_sec = current_time.tv_sec;
-                        h->ev_time.tv_usec = current_time.tv_usec;
+                        h->ev_time.tv_sec = last_send_time.tv_sec;
+                        h->ev_time.tv_usec = last_send_time.tv_usec;
                         timeval_add(&h->ev_time, h->timeout);
                         ev_enqueue(h);
 
@@ -1153,8 +1153,8 @@ void main_loop()
                     /* Normal mode: schedule timeout for last retry */
                     else {
                         h->ev_type = EV_TYPE_TIMEOUT;
-                        h->ev_time.tv_sec = current_time.tv_sec;
-                        h->ev_time.tv_usec = current_time.tv_usec;
+                        h->ev_time.tv_sec = last_send_time.tv_sec;
+                        h->ev_time.tv_usec = last_send_time.tv_usec;
                         timeval_add(&h->ev_time, h->timeout);
                         ev_enqueue(h);
                     }
@@ -1163,16 +1163,16 @@ void main_loop()
                 else if(loop_flag || (count_flag && h->num_sent < count))
                 {
                     h->ev_type = EV_TYPE_PING;
-                    h->ev_time.tv_sec = current_time.tv_sec;
-                    h->ev_time.tv_usec = current_time.tv_usec;
+                    h->ev_time.tv_sec = last_send_time.tv_sec;
+                    h->ev_time.tv_usec = last_send_time.tv_usec;
                     timeval_add(&h->ev_time, perhost_interval);
                     ev_enqueue(h);
                 }
                 /* Count mode: schedule timeout after last ping */
                 else if(count_flag && count_flag && h->num_sent >= count) {
                     h->ev_type = EV_TYPE_TIMEOUT;
-                    h->ev_time.tv_sec = current_time.tv_sec;
-                    h->ev_time.tv_usec = current_time.tv_usec;
+                    h->ev_time.tv_sec = last_send_time.tv_sec;
+                    h->ev_time.tv_usec = last_send_time.tv_usec;
                     timeval_add(&h->ev_time, h->timeout);
                     ev_enqueue(h);
                 }

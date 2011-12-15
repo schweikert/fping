@@ -11,20 +11,21 @@
  * It is highly recommended that your editor is set to this
  * tab stop setting for viewing and editing.
  *
- * fping website:  http://www.fping.com
+ * fping website:  http://www.fping.org
  *
  *
  *
  * Current maintainers of fping:
  *
- * David Papp
- * Suggestions and patches, please email david@remote.net
+ * David Schweikert
+ * Please send suggestions and patches to: david@schweikert.ch
  *
  *
  *
  * Original author:  Roland Schemers  <schemers@stanford.edu>
  * IPv6 Support:     Jeroen Massar    <jeroen@unfix.org / jeroen@ipng.nl>
  * Bugfixes, byte order & senseful seq.-numbers: Stephan Fuhrmann (stephan.fuhrmann AT 1und1.de)
+ * Improved main loop: David Schweikert <david@schweikert.ch>
  *
  *
  * RCS header information no longer used.  It has been moved to the
@@ -230,12 +231,17 @@ char *icmp_unreach_str[16] =
 
 /* entry used to keep track of each host we are pinging */
 
+#define EV_TYPE_PING     1
+#define EV_TYPE_TIMEOUT  2
+
 typedef struct host_entry
 {
-     struct host_entry    *prev,*next;        /* double linked list */
-	 struct host_entry    *sq_prev;           /* double linked list for the send-queue */
-	 struct host_entry    *sq_next;           /* double linked list for the send-queue */
-	 struct timeval       sq_send_time;       /* can't send before this time */
+	 /* Each host can have an event attached: either the next time that a ping needs
+	  * to be sent, or the timeout, if the last ping was sent */
+	 struct host_entry    *ev_prev;           /* double linked list for the event-queue */
+	 struct host_entry    *ev_next;           /* double linked list for the event-queue */
+	 struct timeval       ev_time;            /* time, after which this event should happen */
+	 int                  ev_type;            /* event type */
 
      int                  i;                  /* index into array */
      char                 *name;              /* name as given by user */
@@ -266,14 +272,12 @@ typedef struct host_entry
 
 HOST_ENTRY *rrlist = NULL;	/* linked list of hosts be pinged */
 HOST_ENTRY **table = NULL;	/* array of pointers to items in the list */
-HOST_ENTRY *cursor;
 
-/* send queue (sq): hosts in this list are ready for a new ping to be sent */
-/* the inter-ping interval must be respected when going through this list */
-/* and sending the pings. However, the per-host interval (-p), doesn't need */
-/* to be considered (the host is not here, if that interval didn't pass */
-HOST_ENTRY *sq_first;
-HOST_ENTRY *sq_last;
+/* event queue (ev): This, together with the ev_next / ev_prev elements are used
+ * to track the next event happening for each host. This can be either a new ping
+ * that needs to be sent or a timeout */
+HOST_ENTRY *ev_first;
+HOST_ENTRY *ev_last;
 
 char *prog;
 int ident;					/* our pid */
@@ -358,6 +362,7 @@ long timeval_diff();
 void print_per_system_stats();
 void print_per_system_splits();
 void print_global_stats();
+void main_loop();
 void finish();
 int handle_random_icmp();
 char *sprint_tm();
@@ -387,12 +392,13 @@ int wait_for_reply( u_int );
 void print_per_system_stats( void );
 void print_per_system_splits( void );
 void print_global_stats( void );
+void main_loop();
 void finish();
 int handle_random_icmp( FPING_ICMPHDR *p, int psize, FPING_SOCKADDR *addr );
 char *sprint_tm( int t );
-void sq_enqueue(HOST_ENTRY  *h);
-HOST_ENTRY *sq_dequeue();
-void sq_remove(HOST_ENTRY *h);
+void ev_enqueue(HOST_ENTRY  *h);
+HOST_ENTRY *ev_dequeue();
+void ev_remove(HOST_ENTRY *h);
 
 #endif /* _NO_PROTO */
 
@@ -423,7 +429,6 @@ int main( int argc, char **argv )
 #ifdef IPV6
 	int opton = 1;
 #endif
-	u_int lt, ht;
 	struct protoent *proto;
 	char *buf;
 	uid_t uid;
@@ -432,6 +437,8 @@ int main( int argc, char **argv )
 #else
 	struct sockaddr_in6 sa;
 #endif
+	HOST_ENTRY *cursor;
+
 	/* check if we are root */
 
 	if( geteuid() )
@@ -1064,7 +1071,7 @@ int main( int argc, char **argv )
 	if( !table )
 		crash_and_burn( "Can't malloc array of hosts" );
 
-	cursor = rrlist;
+	cursor = ev_first;
 
 	for( num_jobs = 0; num_jobs < num_hosts; num_jobs++ )
 	{
@@ -1087,7 +1094,7 @@ int main( int argc, char **argv )
 
 		}/* IF */
 		
-		cursor=cursor->next;
+		cursor=cursor->ev_next;
 
 	}/* FOR */
 
@@ -1108,125 +1115,128 @@ int main( int argc, char **argv )
 		srandom( start_time.tv_usec );
 #endif /* DEBUG || _DEBUG */
 
-	cursor = rrlist;
-
 	/* main loop */
-
-	while( num_jobs )
-	{
-		/* send any pings that need sending */
-		if(sq_first) {
-#if defined( DEBUG ) || defined( _DEBUG )
-			if( trace_flag ) {
-				long st = timeval_diff(&sq_first->sq_send_time, &current_time);
-				fprintf(stderr, "next ping in %d ms (%s)\n", st / 100, sq_first->host);
-			}
-#endif
-
-			if(sq_first->sq_send_time.tv_sec < current_time.tv_sec ||
-				(sq_first->sq_send_time.tv_sec == current_time.tv_sec &&
-				 sq_first->sq_send_time.tv_usec < current_time.tv_usec))
-			{
-				lt = timeval_diff( &current_time, &last_send_time );
-				if(lt > interval) {
-					HOST_ENTRY *h;
-					h = sq_dequeue();
-
-					if(send_ping(s, h)) {
-					    /* schedule retry */
-					    if(!loop_flag && !count_flag && h->waiting < retry + 1) {
-						    h->sq_send_time.tv_sec = current_time.tv_sec;
-						    h->sq_send_time.tv_usec = current_time.tv_usec;
-						    timeval_add(&h->sq_send_time, h->timeout);
-						    sq_enqueue(h);
-
-						    if(backoff_flag) {
-							    h->timeout *= backoff;
-						    }
-					    }
-					    /* schedule next ping */
-					    else if(loop_flag ||
-					      (count_flag && h->num_sent < count))
-					    {
-						    h->sq_send_time.tv_sec = current_time.tv_sec;
-						    h->sq_send_time.tv_usec = current_time.tv_usec;
-						    timeval_add(&h->sq_send_time, perhost_interval);
-						    sq_enqueue(h);
-					    }
-					}
-				}
-			}
-		}
-
-		/* receive replies */
-		if( num_pingsent ) {
-			if(wait_for_reply(interval)) {
-				while(wait_for_reply(0)); /* process other replies in the queue */
-			}
-		}
-
-		gettimeofday( &current_time, &tz );
-		ht = timeval_diff( &current_time, &cursor->last_send_time );
-
-		/* print report */
-		if( report_interval && ( loop_flag || count_flag ) &&
-			( timeval_diff ( &current_time, &last_report_time )	> report_interval ) )
-		{
-			print_per_system_splits();
-			last_report_time = current_time;
-		
-		}
-		
-#if defined( DEBUG ) || defined( _DEBUG )
-		if( trace_flag )
-		{
-			printf(
-				"main loop:\n  [%s, wait/run/sent/recv/timeout = %u/%u/%u/%u/%u], jobs/ht = %u/%u\n",
-				cursor->host, cursor->waiting, cursor->running, cursor->num_sent, 
-				cursor->num_recv, cursor->timeout, num_jobs, ht );
-
-		}
-#endif
-
-		/* check if timeout reached */
-		if(count_flag)
-		{
-			while(cursor &&
-			   	  ht > cursor->timeout &&
-			      cursor->num_sent >= count)
-			{
-				num_timeout++;
-				remove_job(cursor);
-				if(cursor) {
-					ht = timeval_diff( &current_time, &cursor->last_send_time );
-				}
-			}
-		}
-		else if(!loop_flag)
-		{
-			while(cursor &&
-				  ht > cursor->timeout &&
-				  cursor->waiting >= retry + 1)
-			{
-				num_timeout++;
-				remove_job( cursor );
-				if(cursor) {
-					ht = timeval_diff( &current_time, &cursor->last_send_time );
-				}
-			}
-		}
-
-		/* we use the cursor to go through all running jobs and check for timeouts */
-		if(cursor) {
-			cursor = cursor->next;
-		}
-	}
+	main_loop();
 	
 	finish();
 
 	return 0;
 } /* main() */
 
+void main_loop()
+{
+	u_int lt;
+	long wait_time;
+	HOST_ENTRY *h;
+
+	while(ev_first) {
+		/* Any event that can be processed now ? */
+		if(ev_first->ev_time.tv_sec < current_time.tv_sec ||
+			(ev_first->ev_time.tv_sec == current_time.tv_sec &&
+			 ev_first->ev_time.tv_usec < current_time.tv_usec))
+		{
+			/* Event type: ping */
+			if(ev_first->ev_type == EV_TYPE_PING) {
+				/* Make sure that we don't ping more than once every "interval" */
+				lt = timeval_diff( &current_time, &last_send_time );
+				if(lt < interval) goto wait_for_reply;
+
+				/* Dequeue the event */
+				h = ev_dequeue();
+
+				/* Send the ping */
+				if(!send_ping(s, h)) goto wait_for_reply;
+
+				/* Check what needs to be done next */
+				if(!loop_flag && !count_flag) {
+					/* Normal mode: schedule retry */
+					if(h->waiting < retry + 1) {
+						h->ev_type = EV_TYPE_PING;
+						h->ev_time.tv_sec = current_time.tv_sec;
+						h->ev_time.tv_usec = current_time.tv_usec;
+						timeval_add(&h->ev_time, h->timeout);
+						ev_enqueue(h);
+
+						if(backoff_flag) {
+							h->timeout *= backoff;
+						}
+					}
+					/* Normal mode: schedule timeout for last retry */
+					else {
+						h->ev_type = EV_TYPE_TIMEOUT;
+						h->ev_time.tv_sec = current_time.tv_sec;
+						h->ev_time.tv_usec = current_time.tv_usec;
+						timeval_add(&h->ev_time, h->timeout);
+						ev_enqueue(h);
+					}
+				}
+				/* Loop and count mode: schedule next ping */
+				else if(loop_flag || (count_flag && h->num_sent < count))
+				{
+					h->ev_type = EV_TYPE_PING;
+					h->ev_time.tv_sec = current_time.tv_sec;
+					h->ev_time.tv_usec = current_time.tv_usec;
+					timeval_add(&h->ev_time, perhost_interval);
+					ev_enqueue(h);
+				}
+				/* Count mode: schedule timeout after last ping */
+				else if(count_flag && count_flag && h->num_sent >= count) {
+					h->ev_type = EV_TYPE_TIMEOUT;
+					h->ev_time.tv_sec = current_time.tv_sec;
+					h->ev_time.tv_usec = current_time.tv_usec;
+					timeval_add(&h->ev_time, h->timeout);
+					ev_enqueue(h);
+				}
+			}
+			else if(ev_first->ev_type == EV_TYPE_TIMEOUT) {
+				num_timeout++;
+				remove_job(ev_first);
+			}
+		}
+
+		wait_for_reply:
+
+		/* When can we expect the next event? */
+		if(ev_first) {
+			if(ev_first->ev_time.tv_sec == 0) {
+				wait_time = interval;
+			}
+			else {
+				wait_time = timeval_diff(&ev_first->ev_time, &current_time);
+				if(wait_time < (long) interval) {
+					wait_time = interval;
+				}
+			}
+
+#if defined( DEBUG ) || defined( _DEBUG )
+			if( trace_flag ) {
+				fprintf(stderr, "next event in %d ms (%s)\n", wait_time / 100, ev_first->host);
+			}
+#endif
+		}
+		else {
+			wait_time = interval;
+		}
+
+		/* Receive replies */
+		/* (this is what sleeps during each loop iteration) */
+		if(wait_for_reply(wait_time)) {
+			while(wait_for_reply(0)); /* process other replies in the queue */
+		}
+
+		gettimeofday( &current_time, &tz );
+
+		/* Print report */
+		if( report_interval && ( loop_flag || count_flag ) &&
+			( timeval_diff ( &current_time, &last_report_time )	> report_interval ) )
+		{
+			print_per_system_splits();
+			last_report_time = current_time;
+		}
+	}
+
+	fprintf(stderr, "No further events\n");
+}
 
 /************************************************************
 
@@ -2405,26 +2415,11 @@ void add_addr( char *name, char *host, FPING_SOCKADDR *ipaddr )
 	}/* IF */
 #endif /* DEBUG || _DEBUG */
 
-	if( !rrlist )
-	{
-		rrlist = p;
-		p->next = p;
-		p->prev = p;
-
-	}/* IF */
-	else
-	{
-		p->next = rrlist;
-		p->prev = rrlist->prev;
-		p->prev->next = p;
-		p->next->prev = p;
-	
-	}/* ELSE */
-
-	/* send queue */
-	p->sq_send_time.tv_sec  = 0;
-	p->sq_send_time.tv_usec = 0;
-	sq_enqueue(p);
+	/* schedule first ping */
+	p->ev_type = EV_TYPE_PING;
+	p->ev_time.tv_sec  = 0;
+	p->ev_time.tv_usec = 0;
+	ev_enqueue(p);
 
 	num_hosts++;
 
@@ -2459,23 +2454,7 @@ void remove_job( HOST_ENTRY *h )
 	h->waiting = 0;
 	--num_jobs;
 
-	if( num_jobs )
-	{
-		/* remove us from list of active jobs */
-		h->prev->next = h->next;
-		h->next->prev = h->prev;
-		if( h==cursor )
-			cursor = h->next;
-
-	}
-	else
-	{
-		cursor = NULL;
-		rrlist = NULL;
-	
-	}
-
-	sq_remove(h);
+	ev_remove(h);
 
 } /* remove_job() */
 
@@ -2633,13 +2612,14 @@ struct timeval *a, *b;
 long timeval_diff( struct timeval *a, struct timeval *b )
 #endif /* _NO_PROTO */
 {
-	double temp;
-
-	temp = ( ( ( a->tv_sec * 1000000 ) + a->tv_usec ) -
-		( ( b->tv_sec * 1000000 ) + b->tv_usec ) ) / 10;
-
-	return ( long )temp;
-
+	long sec_diff = a->tv_sec - b->tv_sec;
+	if(sec_diff > 100) {
+		/* For such large differences, we don't really care about the microseconds... */
+		return sec_diff * 100000;
+	}
+	else {
+		return (sec_diff * 1000000 + a->tv_usec - b->tv_usec) / 10;
+	}
 } /* timeval_diff() */
 
 /************************************************************
@@ -2805,102 +2785,112 @@ int recvfrom_wto( int s, char *buf, int len, FPING_SOCKADDR *saddr, int timo )
 
 /************************************************************
 
-  Function: sq_enqueue
+  Function: ev_enqueue
 
   Enqueue a host that needs to be pinged, but not before the time
-  written in h->sq_send_time.
+  written in h->ev_time.
 
-  The queue is sorted, so that sq_first always points to the host
+  The queue is sorted, so that ev_first always points to the host
   that should be pinged first.
 
+  We start scanning the queue from the tail, because we assume
+  that new events mostly get inserted with a event time higher
+  than the others.
+
 *************************************************************/
-void sq_enqueue(HOST_ENTRY  *h)
+void ev_enqueue(HOST_ENTRY  *h)
 {
 	HOST_ENTRY *i;
-	HOST_ENTRY *i_next;
+	HOST_ENTRY *i_prev;
 
-	h->sq_next = NULL;
+#if defined( DEBUG ) || defined( _DEBUG )
+	if( trace_flag ) {
+		long st = timeval_diff(&h->ev_time, &current_time);
+		fprintf(stderr, "Enqueue: host=%s, when=%d ms (%d, %d)\n", h->host, st/100, h->ev_time.tv_sec, h->ev_time.tv_usec);
+	}
+#endif
 
     /* Empty list */
-	if(sq_first == NULL) {
-		h->sq_prev = NULL;
-		sq_first = h;
-	    sq_last = h;
+	if(ev_last == NULL) {
+		h->ev_next = NULL;
+		h->ev_prev = NULL;
+		ev_first = h;
+		ev_last = h;
 		return;
 	}
 
-
-	/* Insert on head? */
-	if(h->sq_send_time.tv_sec < sq_first->sq_send_time.tv_sec ||
-       (h->sq_send_time.tv_sec == sq_first->sq_send_time.tv_sec &&
-	    h->sq_send_time.tv_usec <= sq_first->sq_send_time.tv_usec))
+	/* Insert on tail? */
+	if(h->ev_time.tv_sec > ev_last->ev_time.tv_sec ||
+       (h->ev_time.tv_sec == ev_last->ev_time.tv_sec &&
+	    h->ev_time.tv_usec >= ev_last->ev_time.tv_usec))
 	{
-		h->sq_prev = NULL;
-		h->sq_next = sq_first;
-		sq_first = h;
+		h->ev_next = NULL;
+		h->ev_prev = ev_last;
+		ev_last->ev_next = h;
+		ev_last = h;
 		return;
 	}
 
 	/* Find insertion point */
-	i = sq_first;
+	i = ev_last;
 	while(1) {
-		i_next = i->sq_next;
-	    if(i_next == NULL || 
-		   h->sq_send_time.tv_sec < i_next->sq_send_time.tv_sec ||
-           (h->sq_send_time.tv_sec == i_next->sq_send_time.tv_sec &&
-	        h->sq_send_time.tv_usec < i_next->sq_send_time.tv_usec))
+		i_prev = i->ev_prev;
+	    if(i_prev == NULL || 
+		   h->ev_time.tv_sec > i_prev->ev_time.tv_sec ||
+           (h->ev_time.tv_sec == i_prev->ev_time.tv_sec &&
+	        h->ev_time.tv_usec >= i_prev->ev_time.tv_usec))
 		{
-			h->sq_prev = i;
-			h->sq_next = i_next;
-			i->sq_next = h;
-			if(i_next != NULL) {
-				i_next->sq_prev = h;
+			h->ev_prev = i_prev;
+			h->ev_next = i;
+			i->ev_prev = h;
+			if(i_prev != NULL) {
+				i_prev->ev_next = h;
 			}
 			else {
-				sq_last = h;
+				ev_first = h;
 			}
 			return;
 		}
-		i = i_next;
+		i = i_prev;
 	}
 }
 
 /************************************************************
 
-  Function: sq_dequeue
+  Function: ev_dequeue
 
 *************************************************************/
-HOST_ENTRY *sq_dequeue()
+HOST_ENTRY *ev_dequeue()
 {
 	HOST_ENTRY *dequeued;
 
-	if(sq_first == NULL) {
+	if(ev_first == NULL) {
 		return NULL;
 	}
-	dequeued = sq_first;
-	sq_remove(dequeued);
+	dequeued = ev_first;
+	ev_remove(dequeued);
 
 	return dequeued;
 }
 
 /************************************************************
 
-  Function: sq_remove
+  Function: ev_remove
 
 *************************************************************/
-void sq_remove(HOST_ENTRY *h)
+void ev_remove(HOST_ENTRY *h)
 {
-	if(sq_first == h) {
-		sq_first = h->sq_next;
+	if(ev_first == h) {
+		ev_first = h->ev_next;
 	}
-	if(sq_last == h) {
-		sq_last = h->sq_prev;
+	if(ev_last == h) {
+		ev_last = h->ev_prev;
 	}
-	if(h->sq_prev) {
-		h->sq_prev->sq_next = h->sq_next;
+	if(h->ev_prev) {
+		h->ev_prev->ev_next = h->ev_next;
 	}
-	if(h->sq_next) {
-		h->sq_next->sq_prev = h->sq_prev;
+	if(h->ev_next) {
+		h->ev_next->ev_prev = h->ev_prev;
 	}
 }
 

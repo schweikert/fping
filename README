@@ -12,7 +12,7 @@ fping website:  http://www.fping.com
 Original author:  Roland Schemers (schemers@stanford.edu)
 Previous maintainer:  RL "Bob" Morgan (morgan@stanford.edu)
 IPv6 Support: Jeroen Massar (jeroen@unfix.org / jeroen@ipng.nl)
-
+              to enable IPV6 compile with -DIPV6                          
 
 Suggestions and patches:
 

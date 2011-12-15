@@ -1,3 +1,161 @@
+Mon Dec 21 2009
+Tobi Oetiker <tobi@oetiker.ch>
+- Revision v2.4b2-to3-ipv6
+  * added -On option to set the TOS octet
+  * Removed unused variables from code
+  * updated to current autoconf standards
+  * Merged Debian changes (see below)
+  
+----------------------------------------------------------------------
+
+fping (2.4b2-to-ipv6-16) unstable; urgency=low
+
+  * Fix the following bugs
+    - Network byte order sensitivity was missing completely.
+      Added hopefully all missing calls.
+    - The sequence numbering scheme used led to packet drops.
+      Changed it to a more senseful numbering scheme.
+    - Some minor C programming mistakes ('=' instead of '==').
+    Patch by Stephan Fuhrmann; closes: #502569
+  * Add support for command line select timeout setting
+    Patch by Marton Balint; closes: #502575
+  * Remove symlinks in /usr/sbin; closes: #377732
+  * Standards-Version is 3.8.0
+
+ -- Anibal Monsalve Salazar <anibal@debian.org>  Sat, 18 Oct 2008 12:04:52 +1100
+
+fping (2.4b2-to-ipv6-15) unstable; urgency=low
+
+  * Added interface binding (-I) for fping
+    Patch by Peter Naulls <peter@mushroomnetworks.com>
+    Closes: #439014
+  * Fixed a couple of typos in fping.8. Closes: #423180
+  * Added homepage control header
+  * Bumped Standards-Version to 3.7.3
+  * Fixed the following lintian issue:
+    - debian-rules-sets-DH_COMPAT
+
+ -- Anibal Monsalve Salazar <anibal@debian.org>  Mon, 03 Mar 2008 17:46:17 +1100
+
+fping (2.4b2-to-ipv6-13) unstable; urgency=low
+
+  * Fixed stdout flush problem, closes: #340146.
+    Patch by Bart Martens <bart.martens@advalvas.be>.
+
+ -- Anibal Monsalve Salazar <anibal@debian.org>  Fri, 30 Dec 2005 08:30:09 +1100
+
+fping (2.4b2-to-ipv6-12) unstable; urgency=low
+
+  * Fixed "problem with option -r (retry limit)", closes: #318402.
+    Patch by Qingning Huo <qingningh@lanware.co.uk>.
+
+ -- Anibal Monsalve Salazar <anibal@debian.org>  Sat, 08 Oct 2005 21:26:35 +1000
+
+fping (2.4b2-to-ipv6-11) unstable; urgency=low
+
+  * Fixed "would be useful to specify 'source address' like ping for multi
+    homed machines", closes: #198486.
+    Patch by Marc Haber <mh+debian-bugs@zugschlus.de>.
+
+ -- Anibal Monsalve Salazar <anibal@debian.org>  Thu, 02 Jun 2005 08:14:54 +1000
+
+fping (2.4b2-to-ipv6-10) unstable; urgency=low
+
+  * Fixed "unnecessary delay with the -c option after the last packet"
+    (Closes: #293856). Patch by Niko Tyni <ntyni@iki.fi>
+
+ -- Anibal Monsalve Salazar <anibal@debian.org>  Sun, 06 Feb 2005 23:25:57 +1100
+
+fping (2.4b2-to-ipv6-9) unstable; urgency=low
+
+  * Fixed "fping6 always does reverse lookup" (Closes: #273647).
+    Patch by Jeroen Massar and forwarded by Bernhard Schmidt <berni@birkenwald.de>
+
+ -- Anibal Monsalve Salazar <A.Monsalve.Salazar@IEEE.org>  Mon, 10 Jan 2005 00:01:32 +1100
+
+fping (2.4b2-to-ipv6-7) unstable; urgency=low
+
+  * Build fping in build/ipv[46] instead of build and build-ipv6.
+  * Made DNS errors non-fatal for IPv6 (closes: #198056).
+
+ -- Herbert Xu <herbert@debian.org>  Fri, 20 Jun 2003 21:36:30 +1000
+
+fping (2.4b2-to-ipv6-6) unstable; urgency=low
+
+  * Do not use incorrect linux.h file (closes: #85468).
+
+ -- Herbert Xu <herbert@debian.org>  Sat, 17 May 2003 14:13:11 +1000
+
+fping (2.4b2-to-ipv6-5) unstable; urgency=low
+
+  * Fixed yet another divide by zero bug (closes: #148445).
+
+ -- Herbert Xu <herbert@debian.org>  Tue,  4 Jun 2002 12:18:03 +1000
+
+fping (2.4b2-to-ipv6-4) unstable; urgency=low
+
+  * Made fping6 setuid (closes: #136386).
+  * Moved fping back into bin.
+  * Partially applied IPv6 patch to fix IPv6 checksums (closes: #136479).
+
+ -- Herbert Xu <herbert@debian.org>  Sun,  7 Apr 2002 20:36:56 +1000
+
+fping (2.4b2-to-ipv6-3) unstable; urgency=low
+
+  * Added compatibility symlink for fping (closes: #135203).
+
+ -- Herbert Xu <herbert@debian.org>  Sat, 23 Feb 2002 08:34:11 +1100
+
+fping (2.4b2-to-ipv6-2) unstable; urgency=low
+
+  * Fixed another divide by zero error (closes: #132370).
+
+ -- Herbert Xu <herbert@debian.org>  Thu,  7 Feb 2002 20:10:48 +1100
+
+fping (2.4b2-to-ipv6-1) unstable; urgency=low
+
+  * New upstream release.
+  * Install fping into sbin as done by upstream.
+
+ -- Herbert Xu <herbert@debian.org>  Fri,  1 Feb 2002 22:11:59 +1100
+
+fping (2.2b2-3) unstable; urgency=low
+
+  * Removed INSTALL file from package (closes: #84050).
+  * Fixed alignment bug.
+
+ -- Herbert Xu <herbert@debian.org>  Sat, 10 Feb 2001 19:25:18 +1100
+
+fping (2.2b2-2) unstable; urgency=low
+
+  * Made changes for dpkg-statoverride (closes: #83838).
+
+ -- Herbert Xu <herbert@debian.org>  Sun, 28 Jan 2001 21:53:05 +1100
+
+fping (2.2b2-1) unstable; urgency=low
+
+  * New upstream release.
+  * Fixed typo that prevented -d from working (closes: #83255).
+  * Drop root privileges after opening the socket (closes: #81589).
+  * Fixed the options [tip], they were out by a factor of 10
+    (Richard Kettlewell, closes: #83742).
+
+ -- Herbert Xu <herbert@debian.org>  Sun, 28 Jan 2001 00:09:41 +1100
+
+fping (2.2b1-2) unstable; urgency=low
+
+  * Fixed typo in control file, spotted by William Ono (closes: #49909).
+
+ -- Herbert Xu <herbert@debian.org>  Mon, 15 May 2000 12:27:03 +1000
+
+fping (2.2b1-1) unstable; urgency=low
+
+  * Initial release.
+  * Fixed divide by zero error (closes: #29902).
+
+ -- Herbert Xu <herbert@debian.org>  Sat, 30 Oct 1999 16:36:19 +1000
+---------------------------------------------------------------------------------
+
 Wed Jan 16 2002
 Jeroen Massar
 - Revision v2.4b2-to-IPv6

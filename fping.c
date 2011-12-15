@@ -20,8 +20,9 @@
  *
  * Original author:  Roland Schemers  <schemers@stanford.edu>
  * IPv6 Support:     Jeroen Massar    <jeroen@unfix.org / jeroen@ipng.nl>
- * Bugfixes, byte order & senseful seq.-numbers: Stephan Fuhrmann (stephan.fuhrmann AT 1und1.de)
  * Improved main loop: David Schweikert <david@schweikert.ch>
+ * Debian Merge, TOS settings: Tobi Oetiker <tobi@oetiker.ch>
+ * Bugfixes, byte order & senseful seq.-numbers: Stephan Fuhrmann (stephan.fuhrmann AT 1und1.de)
  *
  *
  * Redistribution and use in source and binary forms are permitted
@@ -121,8 +122,8 @@ extern int h_errno;
 
 /*** Constants ***/
 
-#define REV_DATE	"2002/01/16 00:33:42"
-#define EMAIL		"david@remote.net"
+#define REV_DATE	"2010/12/21 11:07:00"
+#define EMAIL		"dzubint@vcn.bc.ca"
 
 /*** Ping packet defines ***/
 
@@ -184,7 +185,7 @@ char *icmp_type_str[19] =
 	"",
 	"",
 	"ICMP Time Exceeded",		/* 11 */
-	"ICMP Parameter Problem",	/* 12 */
+	"ICMP Paramter Problem",	/* 12 */
 	"ICMP Timestamp Request",	/* 13 */
 	"ICMP Timestamp Reply",		/* 14 */
 	"ICMP Information Request",	/* 15 */
@@ -425,6 +426,8 @@ int main( int argc, char **argv )
 	struct protoent *proto;
 	char *buf;
 	uid_t uid;
+        int tos = 0; 
+
 #ifndef IPV6
 	struct sockaddr_in sa;
 #else
@@ -544,7 +547,7 @@ int main( int argc, char **argv )
 
 	/* get command line options */
 
-	while( ( c = getopt( argc, argv, "gedhlmnqusaAvz:t:i:p:f:r:c:b:C:Q:B:S:I:T:" ) ) != EOF )
+	while( ( c = getopt( argc, argv, "gedhlmnqusaAvz:t:i:p:f:r:c:b:C:Q:B:S:I:T:O:" ) ) != EOF )
 	{
 		switch( c )
 		{
@@ -659,7 +662,7 @@ int main( int argc, char **argv )
 #endif /* DEBUG || _DEBUG */
 
 		case 'v':
-			printf( "%s: Version %s $Date: %s $\n", argv[0], VERSION, REV_DATE );
+			printf( "%s: Version %s $Date: 2009-12-31 16:57:28 +0100 $\n", argv[0], VERSION, REV_DATE );
 			printf( "%s: comments to %s\n", argv[0], EMAIL );
 			exit( 0 );
 
@@ -706,11 +709,10 @@ int main( int argc, char **argv )
 #ifdef SO_BINDTODEVICE
 		        if (setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, optarg,
 		                   strlen(optarg)))
-			        err(1, "setsockopt(AF_INET, SO_BINDTODEVICE)");
+			        perror("binding to specific interface (SO_BINTODEVICE)");
 #else
-			fprintf( stderr,
-				 "Warning: SO_BINDTODEVICE not supported, argument -I %s ignored\n",
-				 optarg );
+                        printf( "%s: cant bind to a particular net interface since SO_BINDTODEVICE is not supported on your os.\n", argv[0] );
+                        exit(3);;
 #endif
 		        break;
 
@@ -718,7 +720,13 @@ int main( int argc, char **argv )
 		        if ( ! ( select_time = ( u_int )atoi( optarg ) * 100 ) )
 				usage();
 		        break;
-
+                case 'O':
+                        if (sscanf(optarg,"%i",&tos)){
+                            if ( setsockopt(s, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
+                                perror("setting type of service octet IP_TOS");
+                            }
+                        }
+                        break;
 		default:
 			usage();
 			break;
@@ -757,7 +765,7 @@ int main( int argc, char **argv )
 	
 	if( ( ping_data_size > MAX_PING_DATA ) || ( ping_data_size < MIN_PING_DATA ) )
 	{
-		fprintf( stderr, "%s: data size %u not valid, must be between %u and %u\n",
+		fprintf( stderr, "%s: data size %u not valid, must be between %lu and %u\n",
 			prog, ping_data_size, MIN_PING_DATA, MAX_PING_DATA );
 		usage();
 	
@@ -800,6 +808,7 @@ int main( int argc, char **argv )
 
 	}/* IF */
 	
+
 	trials = ( count > retry + 1 ) ? count : retry + 1;
 
 #if defined( DEBUG ) || defined( _DEBUG )
@@ -930,7 +939,6 @@ int main( int argc, char **argv )
 		int iBitpos;
 		int iMask = 1;
 		int failed = 0;
-		unsigned long uTemp;
 
 		/* two possible forms are allowed here */
 
@@ -1315,7 +1323,7 @@ void print_per_system_stats()
 void print_per_system_stats( void )
 #endif /* _NO_PROTO */
 {
-	int i, j, k, avg;
+	int i, j, avg;
 	HOST_ENTRY *h;
 	char *buf;
 	int bufsize;
@@ -1424,11 +1432,10 @@ void print_per_system_splits()
 void print_per_system_splits( void )
 #endif /* _NO_PROTO */
 {
-	int i, j, k, avg;
+	int i, avg;
 	HOST_ENTRY *h;
 	char *buf;
 	int bufsize;
-	int resp;
 	struct tm *curr_tm;
 
 	bufsize = max_hostname_len + 1;
@@ -1568,6 +1575,7 @@ int send_ping( int s, HOST_ENTRY *h )
 	FPING_ICMPHDR *icp;
 	PING_DATA *pdp;
 	int n;
+        int myseq;
 
 	buffer = ( char* )malloc( ( size_t )ping_pkt_size );
 	if( !buffer )
@@ -1577,7 +1585,7 @@ int send_ping( int s, HOST_ENTRY *h )
 	icp = ( FPING_ICMPHDR* )buffer;
 
 	gettimeofday( &h->last_send_time, &tz );
-	int myseq = h->num_sent * num_hosts + h->i;
+	myseq = h->num_sent * num_hosts + h->i;
 	max_seq_sent = myseq > max_seq_sent ? myseq : max_seq_sent;
 
 #ifndef IPV6
@@ -1935,7 +1943,6 @@ int handle_random_icmp( FPING_ICMPHDR *p, int psize, FPING_SOCKADDR *addr )
 #endif /* _NO_PROTO */
 {
 	FPING_ICMPHDR *sent_icmp;
-	struct ip *sent_ip;
 	u_char *c;
 	HOST_ENTRY *h;
 #ifdef IPV6
@@ -2701,7 +2708,7 @@ int u_sec;
 void u_sleep( int u_sec )
 #endif /* _NO_PROTO */
 {
-	int nfound, slen, n;
+	int nfound;
 	struct timeval to;
 	fd_set readset, writeset;
 
@@ -2744,7 +2751,8 @@ int s; char *buf; int len; FPING_SOCKADDR *saddr; int timo;
 int recvfrom_wto( int s, char *buf, int len, FPING_SOCKADDR *saddr, int timo )
 #endif /* _NO_PROTO */
 {
-	int nfound, slen, n;
+        unsigned int slen;
+	int nfound, n;
 	struct timeval to;
 	fd_set readset, writeset;
 
@@ -2916,7 +2924,7 @@ void usage( void )
 	fprintf( stderr, "   -f file    read list of targets from a file ( - means stdin) (only if no -g specified)\n" );
 	fprintf( stderr, "   -g         generate target list (only if no -f specified)\n" );
 	fprintf( stderr, "                (specify the start and end IP in the target list, or supply a IP netmask)\n" );
-    fprintf( stderr, "                (ex. %s -g 192.168.1.0 192.168.1.255 or %s -g 192.168.1.0/24)\n", prog, prog );
+        fprintf( stderr, "                (ex. %s -g 192.168.1.0 192.168.1.255 or %s -g 192.168.1.0/24)\n", prog, prog );
 	fprintf( stderr, "   -i n       interval between sending ping packets (in millisec) (default %d)\n", interval / 100 );
 	fprintf( stderr, "   -l         loop sending pings forever\n" );
 	fprintf( stderr, "   -m         ping multiple interfaces on target host\n" );
@@ -2927,11 +2935,16 @@ void usage( void )
 	fprintf( stderr, "   -Q n       same as -q, but show summary every n seconds\n" );
 	fprintf( stderr, "   -r n       number of retries (default %d)\n", DEFAULT_RETRY );
 	fprintf( stderr, "   -s         print final stats\n" );
+#ifdef SO_BINDTODEVICE
+        fprintf( stderr, "   -I if      bind to a particular interface\n");
+#endif
 	fprintf( stderr, "   -S addr    set source address\n" );
 	fprintf( stderr, "   -t n       individual target initial timeout (in millisec) (default %d)\n", timeout / 100 );
 	fprintf( stderr, "   -T n       set select timeout (default %d)\n", select_time / 100 );
 	fprintf( stderr, "   -u         show targets that are unreachable\n" );
+	fprintf( stderr, "   -O n       set the type of service (tos) flag on the ICMP packets\n" );
 	fprintf( stderr, "   -v         show version\n" );
+        
 	fprintf( stderr, "   targets    list of targets to check (if no -f specified)\n" );
 	fprintf( stderr, "\n");
 	exit( 3 );

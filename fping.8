@@ -131,6 +131,8 @@ a target will be made, not including the first try.
 Print cumulative statistics upon exit.
 .IP \fB-S\fIaddr\fR 5
 Set source address.
+.IP \fB-I\fIif\fR 5
+Set the interface (requires SO_BINDTODEVICE support)
 .IP \fB-t\fIn\fR 5
 Initial target timeout in milliseconds (default 500). In the default
 mode, this is the amount of time that 
@@ -141,6 +143,8 @@ multiplied by the backoff factor.
 Select timeout in seconds (default 10).
 .IP \fB-u\fR 5
 Show targets that are unreachable.
+.IP \fB-T\fIn\fR 5
+Set the typ of service flag (TOS). \fIn\fR can be either decimal or hexadecimal (0xh) format.
 .IP \fB-v\fR 5
 Print 
 .B fping

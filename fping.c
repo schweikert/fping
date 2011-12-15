@@ -11,15 +11,11 @@
  * It is highly recommended that your editor is set to this
  * tab stop setting for viewing and editing.
  *
+ *
  * fping website:  http://www.fping.org
  *
- *
- *
- * Current maintainers of fping:
- *
- * David Schweikert
+ * Current maintainer of fping: David Schweikert
  * Please send suggestions and patches to: david@schweikert.ch
- *
  *
  *
  * Original author:  Roland Schemers  <schemers@stanford.edu>
@@ -27,9 +23,6 @@
  * Bugfixes, byte order & senseful seq.-numbers: Stephan Fuhrmann (stephan.fuhrmann AT 1und1.de)
  * Improved main loop: David Schweikert <david@schweikert.ch>
  *
- *
- * RCS header information no longer used.  It has been moved to the
- * ChangeLog file.
  *
  * Redistribution and use in source and binary forms are permitted
  * provided that the above copyright notice and this paragraph are
@@ -1234,8 +1227,6 @@ void main_loop()
 			last_report_time = current_time;
 		}
 	}
-
-	fprintf(stderr, "No further events\n");
 }
 
 /************************************************************

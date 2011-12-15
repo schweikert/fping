@@ -366,13 +366,13 @@ void errno_crash_and_burn( char *message );
 char *get_host_by_address( struct in_addr in );
 int in_cksum( u_short *p, int n );
 void u_sleep( int u_sec );
-int recvfrom_wto ( int s, char *buf, int len, FPING_SOCKADDR *saddr, int timo );
+int recvfrom_wto ( int s, char *buf, int len, FPING_SOCKADDR *saddr, long timo );
 void remove_job( HOST_ENTRY *h );
 int send_ping( int s, HOST_ENTRY *h );
 long timeval_diff( struct timeval *a, struct timeval *b );
 void timeval_add(struct timeval *a, long t_10u);
 void usage( void );
-int wait_for_reply( u_int );
+int wait_for_reply( long );
 void print_per_system_stats( void );
 void print_per_system_splits( void );
 void print_global_stats( void );
@@ -1106,7 +1106,7 @@ int main( int argc, char **argv )
 
     /* main loop */
     main_loop();
-    
+
     finish();
 
     return 0;
@@ -1114,7 +1114,7 @@ int main( int argc, char **argv )
 
 void main_loop()
 {
-    u_int lt;
+    long lt;
     long wait_time;
     HOST_ENTRY *h;
 
@@ -1192,8 +1192,16 @@ void main_loop()
             }
             else {
                 wait_time = timeval_diff(&ev_first->ev_time, &current_time);
-                if(wait_time < (long) interval) {
-                    wait_time = interval;
+		if(wait_time < 0) wait_time = 0;
+                if(wait_time < interval) {
+		    if(ev_first->ev_type == EV_TYPE_PING) {
+			/* make sure that we wait enough, so that the inter-ping delay is
+			 * bigger than 'interval' */
+			lt = timeval_diff(&current_time, &last_send_time);
+			if(lt > wait_time) {
+			    wait_time = lt;
+			}
+		    }
                 }
             }
 
@@ -1664,7 +1672,7 @@ int send_ping( int s, HOST_ENTRY *h )
 #ifdef _NO_PROTO
 int wait_for_reply()
 #else
-int wait_for_reply(u_int wait_time)
+int wait_for_reply(long wait_time)
 #endif
 {
     int result;
@@ -2566,11 +2574,8 @@ char *message;
 void errno_crash_and_burn( char *message )
 #endif /* _NO_PROTO */
 {
-    if( verbose_flag )
-        fprintf( stderr, "%s: %s : %s\n", prog, message, strerror( errno ) );
-
+    fprintf( stderr, "%s: %s : %s\n", prog, message, strerror( errno ) );
     exit( 4 );
-
 } /* errno_crash_and_burn() */
 
 
@@ -2734,9 +2739,9 @@ void u_sleep( int u_sec )
 
 #ifdef _NO_PROTO
 int recvfrom_wto( s, buf, len, saddr, timo )
-int s; char *buf; int len; FPING_SOCKADDR *saddr; int timo;
+int s; char *buf; int len; FPING_SOCKADDR *saddr; long timo;
 #else
-int recvfrom_wto( int s, char *buf, int len, FPING_SOCKADDR *saddr, int timo )
+int recvfrom_wto( int s, char *buf, int len, FPING_SOCKADDR *saddr, long timo )
 #endif /* _NO_PROTO */
 {
         unsigned int slen;

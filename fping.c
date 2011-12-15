@@ -122,8 +122,7 @@ extern int h_errno;
 
 /*** Constants ***/
 
-#define REV_DATE	"2010/12/21 11:07:00"
-#define EMAIL		"dzubint@vcn.bc.ca"
+#define EMAIL		"david@schweikert.ch"
 
 /*** Ping packet defines ***/
 
@@ -662,7 +661,7 @@ int main( int argc, char **argv )
 #endif /* DEBUG || _DEBUG */
 
 		case 'v':
-			printf( "%s: Version %s $Date: 2009-12-31 16:57:28 +0100 $\n", argv[0], VERSION, REV_DATE );
+			printf( "%s: Version %s\n", argv[0], VERSION);
 			printf( "%s: comments to %s\n", argv[0], EMAIL );
 			exit( 0 );
 

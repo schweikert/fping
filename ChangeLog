@@ -1,3 +1,12 @@
+Thu Dec 15 2011
+David Schweikert <david@schweikert.ch>
+- Revision v3.0
+  * rewritten main loop for improved performance
+  * -T parameter (select timeout) now obsolete
+  * Maintenance taken over from unresponsive previous maintainer
+    (anybody please step up, if you disagree)
+  * New homepage: www.fping.org
+
 Mon Dec 21 2009
 Tobi Oetiker <tobi@oetiker.ch>
 - Revision v2.4b2-to3-ipv6

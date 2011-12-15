@@ -232,7 +232,11 @@ char *icmp_unreach_str[16] =
 
 typedef struct host_entry
 {
-     struct host_entry    *prev,*next;        /* doubly linked list */
+     struct host_entry    *prev,*next;        /* double linked list */
+	 struct host_entry    *sq_prev;           /* double linked list for the send-queue */
+	 struct host_entry    *sq_next;           /* double linked list for the send-queue */
+	 struct timeval       sq_send_time;       /* can't send before this time */
+
      int                  i;                  /* index into array */
      char                 *name;              /* name as given by user */
      char                 *host;              /* text description of host */
@@ -263,6 +267,13 @@ typedef struct host_entry
 HOST_ENTRY *rrlist = NULL;	/* linked list of hosts be pinged */
 HOST_ENTRY **table = NULL;	/* array of pointers to items in the list */
 HOST_ENTRY *cursor;
+
+/* send queue (sq): hosts in this list are ready for a new ping to be sent */
+/* the inter-ping interval must be respected when going through this list */
+/* and sending the pings. However, the per-host interval (-p), doesn't need */
+/* to be considered (the host is not here, if that interval didn't pass */
+HOST_ENTRY *sq_first;
+HOST_ENTRY *sq_last;
 
 char *prog;
 int ident;					/* our pid */
@@ -340,7 +351,7 @@ int in_cksum();
 void u_sleep();
 int recvfrom_wto ();
 void remove_job();
-void send_ping();
+int send_ping();
 void usage();
 int wait_for_reply();
 long timeval_diff();
@@ -368,8 +379,9 @@ int in_cksum( u_short *p, int n );
 void u_sleep( int u_sec );
 int recvfrom_wto ( int s, char *buf, int len, FPING_SOCKADDR *saddr, int timo );
 void remove_job( HOST_ENTRY *h );
-void send_ping( int s, HOST_ENTRY *h );
+int send_ping( int s, HOST_ENTRY *h );
 long timeval_diff( struct timeval *a, struct timeval *b );
+void timeval_add(struct timeval *a, long t_10u);
 void usage( void );
 int wait_for_reply( u_int );
 void print_per_system_stats( void );
@@ -378,6 +390,9 @@ void print_global_stats( void );
 void finish();
 int handle_random_icmp( FPING_ICMPHDR *p, int psize, FPING_SOCKADDR *addr );
 char *sprint_tm( int t );
+void sq_enqueue(HOST_ENTRY  *h);
+HOST_ENTRY *sq_dequeue();
+void sq_remove(HOST_ENTRY *h);
 
 #endif /* _NO_PROTO */
 
@@ -409,7 +424,6 @@ int main( int argc, char **argv )
 	int opton = 1;
 #endif
 	u_int lt, ht;
-	int advance;
 	struct protoent *proto;
 	char *buf;
 	uid_t uid;
@@ -1095,12 +1109,56 @@ int main( int argc, char **argv )
 #endif /* DEBUG || _DEBUG */
 
 	cursor = rrlist;
-	advance = 0;
 
 	/* main loop */
 
 	while( num_jobs )
 	{
+		/* send any pings that need sending */
+		if(sq_first) {
+#if defined( DEBUG ) || defined( _DEBUG )
+			if( trace_flag ) {
+				long st = timeval_diff(&sq_first->sq_send_time, &current_time);
+				fprintf(stderr, "next ping in %d ms (%s)\n", st / 100, sq_first->host);
+			}
+#endif
+
+			if(sq_first->sq_send_time.tv_sec < current_time.tv_sec ||
+				(sq_first->sq_send_time.tv_sec == current_time.tv_sec &&
+				 sq_first->sq_send_time.tv_usec < current_time.tv_usec))
+			{
+				lt = timeval_diff( &current_time, &last_send_time );
+				if(lt > interval) {
+					HOST_ENTRY *h;
+					h = sq_dequeue();
+
+					if(send_ping(s, h)) {
+					    /* schedule retry */
+					    if(!loop_flag && !count_flag && h->waiting < retry + 1) {
+						    h->sq_send_time.tv_sec = current_time.tv_sec;
+						    h->sq_send_time.tv_usec = current_time.tv_usec;
+						    timeval_add(&h->sq_send_time, h->timeout);
+						    sq_enqueue(h);
+
+						    if(backoff_flag) {
+							    h->timeout *= backoff;
+						    }
+					    }
+					    /* schedule next ping */
+					    else if(loop_flag ||
+					      (count_flag && h->num_sent < count))
+					    {
+						    h->sq_send_time.tv_sec = current_time.tv_sec;
+						    h->sq_send_time.tv_usec = current_time.tv_usec;
+						    timeval_add(&h->sq_send_time, perhost_interval);
+						    sq_enqueue(h);
+					    }
+					}
+				}
+			}
+		}
+
+		/* receive replies */
 		if( num_pingsent ) {
 			if(wait_for_reply(interval)) {
 				while(wait_for_reply(0)); /* process other replies in the queue */
@@ -1108,9 +1166,9 @@ int main( int argc, char **argv )
 		}
 
 		gettimeofday( &current_time, &tz );
-		lt = timeval_diff( &current_time, &last_send_time );
 		ht = timeval_diff( &current_time, &cursor->last_send_time );
-			
+
+		/* print report */
 		if( report_interval && ( loop_flag || count_flag ) &&
 			( timeval_diff ( &current_time, &last_report_time )	> report_interval ) )
 		{
@@ -1123,66 +1181,21 @@ int main( int argc, char **argv )
 		if( trace_flag )
 		{
 			printf(
-				"main loop:\n  [%s, wait/run/sent/recv/timeout = %u/%u/%u/%u/%u], jobs/lt/ht = %u/%u/%u\n",
+				"main loop:\n  [%s, wait/run/sent/recv/timeout = %u/%u/%u/%u/%u], jobs/ht = %u/%u\n",
 				cursor->host, cursor->waiting, cursor->running, cursor->num_sent, 
-				cursor->num_recv, cursor->timeout, num_jobs, lt, ht );
+				cursor->num_recv, cursor->timeout, num_jobs, ht );
 
 		}
 #endif
 
-		/* if it's OK to send while counting or looping or starting */
-		if( ( lt > interval ) && ( ht > perhost_interval ) )
-		{
-			/* send if starting or looping */
-			if( ( cursor->num_sent == 0 ) || loop_flag )
-			{
-				send_ping( s, cursor );
-			}
-		
-			/* send if counting and count not exceeded */
-			if( count_flag )
-			{
-				if( cursor->num_sent < count )
-				{
-					send_ping( s, cursor );
-				}
-			}
-		}
-
-		/* is-it-alive mode, and timeout exceeded while waiting for a reply */
-		/*   and we haven't exceeded our retries                            */
-		if(!count_flag && !loop_flag) {
-			if( ( lt > interval ) && !cursor->num_recv &&
-				( ht > cursor->timeout ) && ( cursor->waiting < retry + 1 ) )
-			{
-#if defined( DEBUG ) || defined( _DEBUG )
-				if( trace_flag ) 
-					printf( "main loop: timeout for %s\n", cursor->host );
-#endif
-				num_timeout++;
-
-				/* try again */
-				if( backoff_flag )
-					cursor->timeout *= backoff;
-
-				send_ping( s, cursor );
-			}
-		}
-
-		/* didn't send, can we remove? */
-
-#if defined( DEBUG ) || defined( _DEBUG )
-		if( trace_flag )
-			printf( "main loop: didn't send to %s\n", cursor->host );
-#endif /* DEBUG || _DEBUG */
-    
-		/* remove all terminated jobs */
+		/* check if timeout reached */
 		if(count_flag)
 		{
-			while( cursor && cursor->num_sent >= count &&
-			       (cursor->num_recv >= count || ht > cursor->timeout) )
+			while(cursor &&
+			   	  ht > cursor->timeout &&
+			      cursor->num_sent >= count)
 			{
-				fprintf(stderr, "removed: %s\n", cursor->host);
+				num_timeout++;
 				remove_job(cursor);
 				if(cursor) {
 					ht = timeval_diff( &current_time, &cursor->last_send_time );
@@ -1191,26 +1204,19 @@ int main( int argc, char **argv )
 		}
 		else if(!loop_flag)
 		{
-			/* normal mode, and we got one */
-			if( cursor->num_recv )
+			while(cursor &&
+				  ht > cursor->timeout &&
+				  cursor->waiting >= retry + 1)
 			{
+				num_timeout++;
 				remove_job( cursor );
-			}
-			else
-			{
-				/* normal mode, and timeout exceeded while waiting for a reply */
-				/* and we've run out of retries, so node is unreachable */
-				while( cursor && ( ht > cursor->timeout ) && ( cursor->waiting >= retry + 1 ) )
-				{
-					num_timeout++;
-					remove_job( cursor );
-					if(cursor) {
-						ht = timeval_diff( &current_time, &cursor->last_send_time );
-					}
+				if(cursor) {
+					ht = timeval_diff( &current_time, &cursor->last_send_time );
 				}
 			}
 		}
-		
+
+		/* we use the cursor to go through all running jobs and check for timeouts */
 		if(cursor) {
 			cursor = cursor->next;
 		}
@@ -1551,10 +1557,10 @@ void print_global_stats( void )
 ************************************************************/
 
 #ifdef _NO_PROTO
-void send_ping( s, h )
+int send_ping( s, h )
 int s; HOST_ENTRY *h;
 #else
-void send_ping( int s, HOST_ENTRY *h )
+int send_ping( int s, HOST_ENTRY *h )
 #endif /* _NO_PROTO */
 {
 	char *buffer;
@@ -1619,30 +1625,28 @@ void send_ping( int s, HOST_ENTRY *h )
 		
 		num_unreachable++;
 		remove_job( h ); 
+		free( buffer );
+		return(0);
+	}
 
-	}/* IF */
-	else
-	{
-		/* mark this trial as outstanding */
-		if( !loop_flag )
-			h->resp_times[h->num_sent] = RESP_WAITING;
+	/* mark this trial as outstanding */
+	if( !loop_flag )
+		h->resp_times[h->num_sent] = RESP_WAITING;
 
 #if defined( DEBUG ) || defined( _DEBUG )
-		if( sent_times_flag )
-			h->sent_times[h->num_sent] = timeval_diff( &h->last_send_time, &start_time );
+	if( sent_times_flag )
+		h->sent_times[h->num_sent] = timeval_diff( &h->last_send_time, &start_time );
 #endif /* DEBUG || _DEBUG */
 
-		h->num_sent++;
-		h->num_sent_i++;
-		h->waiting++;
-		num_pingsent++;
-		last_send_time = h->last_send_time;
-
-	}/* ELSE */
+	h->num_sent++;
+	h->num_sent_i++;
+	h->waiting++;
+	num_pingsent++;
+	last_send_time = h->last_send_time;
 	
 	free( buffer );
-
-} /* send_ping() */
+	return(1);
+}
 
 
 /************************************************************
@@ -1892,6 +1896,13 @@ int wait_for_reply(u_int wait_time)
 		printf( "\n" );
 	
 	}/* IF */
+
+	/* remove this job, if we are done */
+	if((count_flag && h->num_recv >= count) ||
+	   (!loop_flag && !count_flag && h->num_recv))
+	{
+		remove_job(h);
+	}
 	
 	fflush( stdout );
 	return num_jobs;
@@ -2410,6 +2421,11 @@ void add_addr( char *name, char *host, FPING_SOCKADDR *ipaddr )
 	
 	}/* ELSE */
 
+	/* send queue */
+	p->sq_send_time.tv_sec  = 0;
+	p->sq_send_time.tv_usec = 0;
+	sq_enqueue(p);
+
 	num_hosts++;
 
 } /* add_addr() */
@@ -2451,13 +2467,15 @@ void remove_job( HOST_ENTRY *h )
 		if( h==cursor )
 			cursor = h->next;
 
-	}/* IF */
+	}
 	else
 	{
 		cursor = NULL;
 		rrlist = NULL;
 	
-	}/* ELSE */
+	}
+
+	sq_remove(h);
 
 } /* remove_job() */
 
@@ -2626,6 +2644,18 @@ long timeval_diff( struct timeval *a, struct timeval *b )
 
 /************************************************************
 
+  Function: timeval_add
+
+*************************************************************/
+void timeval_add(struct timeval *a, long t_10u)
+{
+	t_10u *= 10;
+	a->tv_sec += (t_10u + a->tv_usec) / 1000000;
+	a->tv_usec = (t_10u + a->tv_usec) % 1000000;
+}
+
+/************************************************************
+
   Function: sprint_tm
 
 *************************************************************
@@ -2772,6 +2802,107 @@ int recvfrom_wto( int s, char *buf, int len, FPING_SOCKADDR *saddr, int timo )
 	return n;
 
 } /* recvfrom_wto() */
+
+/************************************************************
+
+  Function: sq_enqueue
+
+  Enqueue a host that needs to be pinged, but not before the time
+  written in h->sq_send_time.
+
+  The queue is sorted, so that sq_first always points to the host
+  that should be pinged first.
+
+*************************************************************/
+void sq_enqueue(HOST_ENTRY  *h)
+{
+	HOST_ENTRY *i;
+	HOST_ENTRY *i_next;
+
+	h->sq_next = NULL;
+
+    /* Empty list */
+	if(sq_first == NULL) {
+		h->sq_prev = NULL;
+		sq_first = h;
+	    sq_last = h;
+		return;
+	}
+
+
+	/* Insert on head? */
+	if(h->sq_send_time.tv_sec < sq_first->sq_send_time.tv_sec ||
+       (h->sq_send_time.tv_sec == sq_first->sq_send_time.tv_sec &&
+	    h->sq_send_time.tv_usec <= sq_first->sq_send_time.tv_usec))
+	{
+		h->sq_prev = NULL;
+		h->sq_next = sq_first;
+		sq_first = h;
+		return;
+	}
+
+	/* Find insertion point */
+	i = sq_first;
+	while(1) {
+		i_next = i->sq_next;
+	    if(i_next == NULL || 
+		   h->sq_send_time.tv_sec < i_next->sq_send_time.tv_sec ||
+           (h->sq_send_time.tv_sec == i_next->sq_send_time.tv_sec &&
+	        h->sq_send_time.tv_usec < i_next->sq_send_time.tv_usec))
+		{
+			h->sq_prev = i;
+			h->sq_next = i_next;
+			i->sq_next = h;
+			if(i_next != NULL) {
+				i_next->sq_prev = h;
+			}
+			else {
+				sq_last = h;
+			}
+			return;
+		}
+		i = i_next;
+	}
+}
+
+/************************************************************
+
+  Function: sq_dequeue
+
+*************************************************************/
+HOST_ENTRY *sq_dequeue()
+{
+	HOST_ENTRY *dequeued;
+
+	if(sq_first == NULL) {
+		return NULL;
+	}
+	dequeued = sq_first;
+	sq_remove(dequeued);
+
+	return dequeued;
+}
+
+/************************************************************
+
+  Function: sq_remove
+
+*************************************************************/
+void sq_remove(HOST_ENTRY *h)
+{
+	if(sq_first == h) {
+		sq_first = h->sq_next;
+	}
+	if(sq_last == h) {
+		sq_last = h->sq_prev;
+	}
+	if(h->sq_prev) {
+		h->sq_prev->sq_next = h->sq_next;
+	}
+	if(h->sq_next) {
+		h->sq_next->sq_prev = h->sq_prev;
+	}
+}
 
 
 /************************************************************

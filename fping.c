@@ -275,7 +275,6 @@ u_int timeout = DEFAULT_TIMEOUT * 100;
 u_int interval = DEFAULT_INTERVAL * 100;
 u_int perhost_interval = DEFAULT_PERHOST_INTERVAL * 100;
 float backoff = DEFAULT_BACKOFF_FACTOR;
-u_int select_time = DEFAULT_SELECT_TIME * 100;
 u_int ping_data_size = DEFAULT_PING_DATA_SIZE;
 u_int ping_pkt_size;
 u_int count = 1;
@@ -549,9 +548,7 @@ int main( int argc, char **argv )
             break;
         
         case 'r':
-            if( ( retry = ( u_int )atoi( optarg ) ) < 0 )
-                usage();
-
+            retry = ( u_int )atoi( optarg );
             break;
         
         case 'i':
@@ -698,26 +695,26 @@ int main( int argc, char **argv )
 
         case 'I':
 #ifdef SO_BINDTODEVICE
-                if (setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, optarg,
-                           strlen(optarg)))
-                    perror("binding to specific interface (SO_BINTODEVICE)");
+            if (setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, optarg, strlen(optarg))) {
+                perror("binding to specific interface (SO_BINTODEVICE)");
+            }
 #else
-                        printf( "%s: cant bind to a particular net interface since SO_BINDTODEVICE is not supported on your os.\n", argv[0] );
-                        exit(3);;
+            printf( "%s: cant bind to a particular net interface since SO_BINDTODEVICE is not supported on your os.\n", argv[0] );
+            exit(3);;
 #endif
-                break;
+            break;
 
         case 'T':
-                if ( ! ( select_time = ( u_int )atoi( optarg ) * 100 ) )
-                usage();
-                break;
-                case 'O':
-                        if (sscanf(optarg,"%i",&tos)){
-                            if ( setsockopt(s, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
-                                perror("setting type of service octet IP_TOS");
-                            }
-                        }
-                        break;
+            /* This option is ignored for compatibility reasons ("select timeout" is not meaningful anymore) */
+            break;
+
+        case 'O':
+            if (sscanf(optarg,"%i",&tos)){
+                if ( setsockopt(s, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
+                    perror("setting type of service octet IP_TOS");
+                }
+            }
+            break;
         default:
             usage();
             break;
@@ -2931,7 +2928,6 @@ void usage( void )
 #endif
     fprintf( stderr, "   -S addr    set source address\n" );
     fprintf( stderr, "   -t n       individual target initial timeout (in millisec) (default %d)\n", timeout / 100 );
-    fprintf( stderr, "   -T n       set select timeout (default %d)\n", select_time / 100 );
     fprintf( stderr, "   -u         show targets that are unreachable\n" );
     fprintf( stderr, "   -O n       set the type of service (tos) flag on the ICMP packets\n" );
     fprintf( stderr, "   -v         show version\n" );

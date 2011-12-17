@@ -2933,6 +2933,7 @@ void usage( void )
 #endif
     fprintf( stderr, "   -S addr    set source address\n" );
     fprintf( stderr, "   -t n       individual target initial timeout (in millisec) (default %d)\n", timeout / 100 );
+    fprintf( stderr, "   -T n       ignored (for compatibility with fping 2.4)\n");
     fprintf( stderr, "   -u         show targets that are unreachable\n" );
     fprintf( stderr, "   -O n       set the type of service (tos) flag on the ICMP packets\n" );
     fprintf( stderr, "   -v         show version\n" );

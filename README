@@ -1,12 +1,16 @@
-fping README
-------------
+fping 3 README
+--------------
+fping is a program to send ICMP echo probes to network hosts, similar to ping,
+but much better performing when pinging multiple hosts. fping has a long long
+story: Roland Schemers did publish a first version of it in 1992 and it has
+established itself since then as a standard tool.
+
 
 Current maintainer:
+   David Schweikert <david@schweikert.ch>
 
-David Schweikert <david@schweikert.ch>
-
-
-fping website:  http://www.fping.org
+Website:
+   http://www.fping.org
 
 
 Original author:  Roland Schemers (schemers@stanford.edu)
@@ -14,13 +18,9 @@ Previous maintainer:  RL "Bob" Morgan (morgan@stanford.edu)
 IPv6 Support: Jeroen Massar (jeroen@unfix.org / jeroen@ipng.nl)
               to enable IPV6 compile with -DIPV6                          
 
-Suggestions and patches:
-
-....
-
 ------------------------------------------------------------------------------
 
-Original README from 1992! 5 years ago? Time flies...
+Original README (from 1992!)
 
         fping - A tool to quickly ping N number of hosts to determine
         their reachability.

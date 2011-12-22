@@ -1134,6 +1134,7 @@ void main_loop()
                 h = ev_dequeue();
 
                 /* Send the ping */
+		/*printf("Sending ping after %d ms\n", lt/100); */
                 if(!send_ping(s, h)) goto wait_for_reply;
 
                 /* Check what needs to be done next */
@@ -1188,21 +1189,24 @@ void main_loop()
         /* When can we expect the next event? */
         if(ev_first) {
             if(ev_first->ev_time.tv_sec == 0) {
-                wait_time = interval;
-            }
-            else {
+		wait_time = 0;
+	    }
+	    else {
                 wait_time = timeval_diff(&ev_first->ev_time, &current_time);
 		if(wait_time < 0) wait_time = 0;
+	    }
+	    if(ev_first->ev_type == EV_TYPE_PING) {
+		/* make sure that we wait enough, so that the inter-ping delay is
+		 * bigger than 'interval' */
                 if(wait_time < interval) {
-		    if(ev_first->ev_type == EV_TYPE_PING) {
-			/* make sure that we wait enough, so that the inter-ping delay is
-			 * bigger than 'interval' */
-			lt = timeval_diff(&current_time, &last_send_time);
-			if(lt > wait_time) {
-			    wait_time = lt;
-			}
+		    lt = timeval_diff(&current_time, &last_send_time);
+		    if(lt < interval) {
+			wait_time = interval-lt;
 		    }
-                }
+		    else {
+			wait_time = 0;
+		    }
+		}
             }
 
 #if defined( DEBUG ) || defined( _DEBUG )
@@ -2604,12 +2608,15 @@ long timeval_diff( struct timeval *a, struct timeval *b )
 #endif /* _NO_PROTO */
 {
     long sec_diff = a->tv_sec - b->tv_sec;
-    if(sec_diff > 100) {
-        /* For such large differences, we don't really care about the microseconds... */
-        return sec_diff * 100000;
+    if(sec_diff == 0) {
+        return (a->tv_usec - b->tv_usec) / 10;
+    }
+    else if(sec_diff < 100) {
+        return (sec_diff * 1000000 + a->tv_usec - b->tv_usec) / 10;
     }
     else {
-        return (sec_diff * 1000000 + a->tv_usec - b->tv_usec) / 10;
+        /* For such large differences, we don't really care about the microseconds... */
+        return sec_diff * 100000;
     }
 } /* timeval_diff() */
 
@@ -2710,9 +2717,18 @@ void u_sleep( int u_sec )
 
     FD_ZERO( &readset );
     FD_ZERO( &writeset );
+
+select_again:
     nfound = select( 0, &readset, &writeset, NULL, &to );
-    if( nfound < 0 )
-        errno_crash_and_burn( "select" );
+    if(nfound < 0) {
+	if(errno == EINTR) {
+	    /* interrupted system call: redo the select */
+	    goto select_again;
+	}
+	else {
+	    errno_crash_and_burn( "select" );
+	}
+    }
 
     return;
 
@@ -2755,9 +2771,18 @@ int recvfrom_wto( int s, char *buf, int len, FPING_SOCKADDR *saddr, long timo )
     FD_ZERO( &readset );
     FD_ZERO( &writeset );
     FD_SET( s, &readset );
+
+select_again:
     nfound = select( s + 1, &readset, &writeset, NULL, &to );
-    if( nfound < 0 )
-        errno_crash_and_burn( "select" );
+    if(nfound < 0) {
+	if(errno == EINTR) {
+	    /* interrupted system call: redo the select */
+	    goto select_again;
+	}
+	else {
+	    errno_crash_and_burn( "select" );
+	}
+    }
 
     if( nfound == 0 )
         return -1;      /* timeout */

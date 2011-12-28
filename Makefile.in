@@ -616,6 +616,9 @@ distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
+	-rm -f fping.plist
+	-rm -rf autom4te.cache
+
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-tags
 

@@ -383,6 +383,8 @@ char *sprint_tm( int t );
 void ev_enqueue(HOST_ENTRY  *h);
 HOST_ENTRY *ev_dequeue();
 void ev_remove(HOST_ENTRY *h);
+void add_cidr(char *);
+void add_range(char *, char *);
 
 #endif /* _NO_PROTO */
 
@@ -753,7 +755,7 @@ int main( int argc, char **argv )
     
     if( ( ping_data_size > MAX_PING_DATA ) || ( ping_data_size < MIN_PING_DATA ) )
     {
-        fprintf( stderr, "%s: data size %u not valid, must be between %lu and %u\n",
+        fprintf( stderr, "%s: data size %u not valid, must be between %u and %u\n",
             prog, ping_data_size, MIN_PING_DATA, MAX_PING_DATA );
         usage();
     
@@ -860,6 +862,7 @@ int main( int argc, char **argv )
     /* if the generate_flag is on, then generate the IP list */
 
     argv = &argv[optind];
+    argc -= optind;
 
     /* cover allowable conditions */
 
@@ -912,128 +915,22 @@ int main( int argc, char **argv )
         }/* WHILE */
         
         fclose( ping_file );
-
-    }/* ELSE IF */
-    else if( *argv && generate_flag )
-    {
-        char* pStart;
-        char* pEnd;
-        char* pCopy;
-        char* pTemp;
-
-        struct in_addr sStart;
-        struct in_addr sEnd;
-        int iBits;
-        int iBitpos;
-        int iMask = 1;
-        int failed = 0;
-
-        /* two possible forms are allowed here */
-
-        pStart = *argv;
-        argv++;
-
-        /* IP mask is specified */
-        if( !*argv )
-        {
-            pCopy = ( char* )malloc( sizeof( char ) * strlen( pStart ) + 1 );
-            if( pCopy )
-            {
-                /* make a copy of the arg, so we don't damage the original */
-                strcpy( pCopy, pStart );
-
-                /* look for token '/' */
-                if( strtok( pCopy, "/" ) != NULL )
-                {
-                    /* if no token was found, the string should be unaltered */
-                    if( strcmp( pCopy, pStart ) != 0 )
-                    {
-                        /* convert it to the starting address */
-                        if( inet_addr( pCopy ) != INADDR_NONE )
-                        {
-                            sStart.s_addr = inet_addr( pCopy );
-
-                            /* now find the bitmask */
-                            pTemp = ( char* )pStart + strlen( pCopy ) + 1;
-    
-                            /* get the bits */
-                            iBits = 32 - atoi( pTemp );
-
-                            if( ( iBits < 32 ) && ( iBits >= 0 ) )
-                            {
-                                /* now make the end address */
-                                for( iBitpos = 0; iBitpos < iBits; iBitpos++ )
-                                    iMask = iMask | 1 << iBitpos;
-
-                                sEnd.s_addr = sStart.s_addr | ntohl( iMask );
-
-                            }/* IF */
-                            else
-                                failed = 1;
-
-                        }/* IF */
-                        else
-                            failed = 1;
-
-                    }/* IF */
-                    else
-                        failed = 1;
-
-                }/* IF */
-                else
-                    failed = 1;
-
-                free( pCopy );
-
-                if( failed == 1 )
-                    usage();
-
-            }/* IF */
-            else
-                crash_and_burn( "Cannot malloc copy of input string" );
-
-        }/* IF */
-        else
-        {
-            /* IP start and end points are specified */
-            pEnd = *argv;
-
-            /* parameters should be start and end ranges */
-            if( ( inet_addr( pStart ) != INADDR_NONE ) && ( inet_addr( pEnd ) != INADDR_NONE ) )
-            {
-                sStart.s_addr = inet_addr( pStart );
-                sEnd.s_addr = inet_addr( pEnd );
-
-            }/* IF */
-            else
-                usage();
-
-        }/* ELSE */
-
-        /* ensure that the end point is greater or equal to the start */
-        if( htonl( sEnd.s_addr ) >= htonl( sStart.s_addr ) )
-        {
-            /* start and end points should be determined, so generate list */
-            unsigned int uiDiff;
-            struct in_addr sTemp;
-            int iCount;
-
-            uiDiff = htonl( sEnd.s_addr ) - htonl( sStart.s_addr ) + 1;
-
-            for( iCount = 0; iCount < uiDiff; iCount++ )
-            {
-                sTemp.s_addr = sStart.s_addr + ntohl( iCount );
-                pTemp = cpystr( inet_ntoa( sTemp ) );
-                add_name( pTemp );
-
-            }/* FOR */
-        }/* IF */
-        else
-            usage();
-
-    }/* ELSE IF */
-    else
+    }
+    else if( *argv && generate_flag ) {
+	if(argc == 1) {
+	    /* one target: we expect a cidr range (n.n.n.n/m) */
+	    add_cidr(argv[0]);
+	}
+	else if(argc == 2) {
+	    add_range(argv[0], argv[1]);
+	}
+	else {
+	    usage();
+	}
+    }
+    else {
         usage();
+    }
     
     if( !num_hosts )
         exit( 2 );
@@ -1111,6 +1008,131 @@ int main( int argc, char **argv )
 
     return 0;
 } /* main() */
+
+void add_cidr(char *addr)
+{
+    char *addr_end;
+    char *mask_str; 
+    unsigned long mask;
+    unsigned long bitmask;
+    int ret;
+    struct addrinfo addr_hints;
+    struct addrinfo *addr_res;
+    struct in_addr in_addr_tmp;
+    unsigned long net_addr;
+    unsigned long net_last;
+    char buffer[20];
+
+    /* Split address from mask */
+    addr_end = strchr(addr, '/');
+    if(addr_end == NULL) {
+	usage();
+    }
+    *addr_end = '\0';
+    mask_str = addr_end + 1;
+    mask = atoi(mask_str);
+    if(mask < 1 || mask > 30) {
+	fprintf(stderr, "Error: netmask must be between 1 and 30 (is: %s)\n", mask_str);
+	exit(2);
+    }
+
+    /* parse address (IPv4 only) */
+    memset(&addr_hints, 0, sizeof(struct addrinfo));
+    addr_hints.ai_family = AF_UNSPEC;
+    addr_hints.ai_flags = AI_NUMERICHOST;
+    ret = getaddrinfo(addr, NULL, &addr_hints, &addr_res);
+    if(ret) {
+	fprintf(stderr, "Error: can't parse address %s: %s\n", addr, gai_strerror(ret));
+	exit(2);
+    }
+    if(addr_res->ai_family != AF_INET) {
+        fprintf(stderr, "Error: -g works only with IPv4 addresses\n");
+	exit(2);
+    }
+    net_addr = ntohl(((struct sockaddr_in *) addr_res->ai_addr)->sin_addr.s_addr);
+
+    /* convert mask integer from 1 to 32 to a bitmask */
+    bitmask = ((unsigned long) 0xFFFFFFFF) << (32-mask);
+
+    /* calculate network range */
+    net_addr &= bitmask;
+    net_last = net_addr + ((unsigned long) 0x1 << (32-mask)) - 1;
+
+    /* add all hosts in that network (excluding network and broadcast address) */
+    while(++net_addr < net_last) {
+	in_addr_tmp.s_addr = htonl(net_addr);
+	inet_ntop(AF_INET, &in_addr_tmp, buffer, sizeof(buffer));
+	add_name(cpystr(buffer));
+    }
+
+    freeaddrinfo(addr_res);
+
+//    if(inet_addr(pCopy) != INADDR_NONE)
+//    {
+//	sStart.s_addr = inet_addr( pCopy );
+//
+//	/* now find the bitmask */
+//	pTemp = ( char* )pStart + strlen( pCopy ) + 1;
+//
+//	/* get the bits */
+//	iBits = 32 - atoi( pTemp );
+//
+//	if( ( iBits < 32 ) && ( iBits >= 0 ) )
+//	{
+//	    /* now make the end address */
+//	    for( iBitpos = 0; iBitpos < iBits; iBitpos++ )
+//		iMask = iMask | 1 << iBitpos;
+//
+//	    sEnd.s_addr = sStart.s_addr | ntohl( iMask );
+//
+//	}/* IF */
+//	else
+//	    failed = 1;
+//
+//    }/* IF */
+//    else
+//	failed = 1;
+}
+
+void add_range(char *start, char *end)
+{
+//	/* IP start and end points are specified */
+//	pEnd = *argv;
+//
+//	/* parameters should be start and end ranges */
+//	if( ( inet_addr( pStart ) != INADDR_NONE ) && ( inet_addr( pEnd ) != INADDR_NONE ) )
+//	{
+//	    sStart.s_addr = inet_addr( pStart );
+//	    sEnd.s_addr = inet_addr( pEnd );
+//
+//	}/* IF */
+//	else
+//	    usage();
+//
+//    }/* ELSE */
+//
+//    /* ensure that the end point is greater or equal to the start */
+//    if( htonl( sEnd.s_addr ) >= htonl( sStart.s_addr ) )
+//    {
+//	/* start and end points should be determined, so generate list */
+//	unsigned int uiDiff;
+//	struct in_addr sTemp;
+//	int iCount;
+//
+//	uiDiff = htonl( sEnd.s_addr ) - htonl( sStart.s_addr ) + 1;
+//
+//	for( iCount = 0; iCount < uiDiff; iCount++ )
+//	{
+//	    sTemp.s_addr = sStart.s_addr + ntohl( iCount );
+//	    pTemp = cpystr( inet_ntoa( sTemp ) );
+//	    add_name( pTemp );
+//
+//	}/* FOR */
+//    }/* IF */
+//    else
+//	usage();
+}
+
 
 void main_loop()
 {

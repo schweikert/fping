@@ -58,6 +58,7 @@ extern "C"
 #include <errno.h>
 #include <time.h>
 #include <signal.h>
+#include <getopt.h>
 
 #include <netinet/in.h>
 
@@ -234,8 +235,8 @@ typedef struct host_entry
      char                 *pad;               /* pad to align print names */
      FPING_SOCKADDR       saddr;              /* internet address */
      int                  timeout;            /* time to wait for response */
-     u_char               running;            /* unset when through sending */
-     u_char               waiting;            /* waiting for response */
+     unsigned char        running;            /* unset when through sending */
+     unsigned char        waiting;            /* waiting for response */
      struct timeval       last_send_time;     /* time of last packet sent */
      int                  num_sent;           /* number of ping packets sent */
      int                  num_recv;           /* number of pings received */
@@ -267,19 +268,19 @@ HOST_ENTRY *ev_last;
 char *prog;
 int ident;                  /* our pid */
 int s;                      /* socket */
-u_int debugging = 0;
+unsigned int debugging = 0;
 
 /* times get *100 because all times are calculated in 10 usec units, not ms */
-u_int retry = DEFAULT_RETRY;
-u_int timeout = DEFAULT_TIMEOUT * 100; 
-u_int interval = DEFAULT_INTERVAL * 100;
-u_int perhost_interval = DEFAULT_PERHOST_INTERVAL * 100;
+unsigned int retry = DEFAULT_RETRY;
+unsigned int timeout = DEFAULT_TIMEOUT * 100; 
+unsigned int interval = DEFAULT_INTERVAL * 100;
+unsigned int perhost_interval = DEFAULT_PERHOST_INTERVAL * 100;
 float backoff = DEFAULT_BACKOFF_FACTOR;
-u_int ping_data_size = DEFAULT_PING_DATA_SIZE;
-u_int ping_pkt_size;
-u_int count = 1;
-u_int trials;
-u_int report_interval = 0;
+unsigned int ping_data_size = DEFAULT_PING_DATA_SIZE;
+unsigned int ping_pkt_size;
+unsigned int count = 1;
+unsigned int trials;
+unsigned int report_interval = 0;
 int src_addr_present = 0;
 #ifndef IPV6
 struct in_addr src_addr;
@@ -364,7 +365,7 @@ char *cpystr( char *string );
 void crash_and_burn( char *message );
 void errno_crash_and_burn( char *message );
 char *get_host_by_address( struct in_addr in );
-int in_cksum( u_short *p, int n );
+int in_cksum( unsigned short *p, int n );
 void u_sleep( int u_sec );
 int recvfrom_wto ( int s, char *buf, int len, FPING_SOCKADDR *saddr, long timo );
 void remove_job( HOST_ENTRY *h );
@@ -544,36 +545,36 @@ int main( int argc, char **argv )
         switch( c )
         {
         case 't':
-            if( !( timeout = ( u_int )atoi( optarg ) * 100 ) )
+            if( !( timeout = ( unsigned int )atoi( optarg ) * 100 ) )
                 usage();
 
             break;
         
         case 'r':
-            retry = ( u_int )atoi( optarg );
+            retry = ( unsigned int )atoi( optarg );
             break;
         
         case 'i':
-            if( !( interval = ( u_int )atoi( optarg ) * 100 ) )
+            if( !( interval = ( unsigned int )atoi( optarg ) * 100 ) )
                 usage();
 
             break;
 
         case 'p':
-            if( !( perhost_interval = ( u_int )atoi( optarg ) * 100 ) )
+            if( !( perhost_interval = ( unsigned int )atoi( optarg ) * 100 ) )
                 usage();
 
             break;
 
         case 'c':
-            if( !( count = ( u_int )atoi( optarg ) ) )
+            if( !( count = ( unsigned int )atoi( optarg ) ) )
                 usage();
             
             count_flag = 1;
             break;
         
         case 'C':
-            if( !( count = ( u_int )atoi( optarg ) ) )
+            if( !( count = ( unsigned int )atoi( optarg ) ) )
                 usage();
             
             count_flag = 1;
@@ -581,7 +582,7 @@ int main( int argc, char **argv )
             break;
 
         case 'b':
-            if( !( ping_data_size = ( u_int )atoi( optarg ) ) )
+            if( !( ping_data_size = ( unsigned int )atoi( optarg ) ) )
                 usage();
             
             break;
@@ -598,7 +599,7 @@ int main( int argc, char **argv )
         case 'Q':
             verbose_flag = 0;
             quiet_flag = 1;
-            if( !( report_interval = ( u_int )atoi( optarg ) * 100000 ) )
+            if( !( report_interval = ( unsigned int )atoi( optarg ) * 100000 ) )
                 usage();
             
             break;
@@ -645,7 +646,7 @@ int main( int argc, char **argv )
 
 #if defined( DEBUG ) || defined( _DEBUG )
         case 'z':
-            if( ! ( debugging = ( u_int )atoi( optarg ) ) )
+            if( ! ( debugging = ( unsigned int )atoi( optarg ) ) )
                 usage();
             
             break;
@@ -1026,14 +1027,14 @@ void add_cidr(char *addr)
     /* Split address from mask */
     addr_end = strchr(addr, '/');
     if(addr_end == NULL) {
-	usage();
+        usage();
     }
     *addr_end = '\0';
     mask_str = addr_end + 1;
     mask = atoi(mask_str);
     if(mask < 1 || mask > 30) {
-	fprintf(stderr, "Error: netmask must be between 1 and 30 (is: %s)\n", mask_str);
-	exit(2);
+        fprintf(stderr, "Error: netmask must be between 1 and 30 (is: %s)\n", mask_str);
+        exit(2);
     }
 
     /* parse address (IPv4 only) */
@@ -1042,12 +1043,12 @@ void add_cidr(char *addr)
     addr_hints.ai_flags = AI_NUMERICHOST;
     ret = getaddrinfo(addr, NULL, &addr_hints, &addr_res);
     if(ret) {
-	fprintf(stderr, "Error: can't parse address %s: %s\n", addr, gai_strerror(ret));
-	exit(2);
+        fprintf(stderr, "Error: can't parse address %s: %s\n", addr, gai_strerror(ret));
+        exit(2);
     }
     if(addr_res->ai_family != AF_INET) {
         fprintf(stderr, "Error: -g works only with IPv4 addresses\n");
-	exit(2);
+        exit(2);
     }
     net_addr = ntohl(((struct sockaddr_in *) addr_res->ai_addr)->sin_addr.s_addr);
 
@@ -1060,38 +1061,12 @@ void add_cidr(char *addr)
 
     /* add all hosts in that network (excluding network and broadcast address) */
     while(++net_addr < net_last) {
-	in_addr_tmp.s_addr = htonl(net_addr);
-	inet_ntop(AF_INET, &in_addr_tmp, buffer, sizeof(buffer));
-	add_name(cpystr(buffer));
+        in_addr_tmp.s_addr = htonl(net_addr);
+        inet_ntop(AF_INET, &in_addr_tmp, buffer, sizeof(buffer));
+        add_name(cpystr(buffer));
     }
 
     freeaddrinfo(addr_res);
-
-//    if(inet_addr(pCopy) != INADDR_NONE)
-//    {
-//	sStart.s_addr = inet_addr( pCopy );
-//
-//	/* now find the bitmask */
-//	pTemp = ( char* )pStart + strlen( pCopy ) + 1;
-//
-//	/* get the bits */
-//	iBits = 32 - atoi( pTemp );
-//
-//	if( ( iBits < 32 ) && ( iBits >= 0 ) )
-//	{
-//	    /* now make the end address */
-//	    for( iBitpos = 0; iBitpos < iBits; iBitpos++ )
-//		iMask = iMask | 1 << iBitpos;
-//
-//	    sEnd.s_addr = sStart.s_addr | ntohl( iMask );
-//
-//	}/* IF */
-//	else
-//	    failed = 1;
-//
-//    }/* IF */
-//    else
-//	failed = 1;
 }
 
 void add_range(char *start, char *end)
@@ -1621,7 +1596,7 @@ int send_ping( int s, HOST_ENTRY *h )
     pdp->ping_ts = h->last_send_time;
     pdp->ping_count = h->num_sent;
 
-    icp->icmp_cksum = in_cksum( ( u_short* )icp, ping_pkt_size );
+    icp->icmp_cksum = in_cksum( ( unsigned short* )icp, ping_pkt_size );
 #else
     icp->icmp6_type = ICMP6_ECHO_REQUEST;
     icp->icmp6_code = 0;
@@ -1965,14 +1940,14 @@ int handle_random_icmp( FPING_ICMPHDR *p, int psize, FPING_SOCKADDR *addr )
 #endif /* _NO_PROTO */
 {
     FPING_ICMPHDR *sent_icmp;
-    u_char *c;
+    unsigned char *c;
     HOST_ENTRY *h;
 #ifdef IPV6
     char addr_ascii[INET6_ADDRSTRLEN];
     inet_ntop(addr->sin6_family, &addr->sin6_addr, addr_ascii, INET6_ADDRSTRLEN);
 #endif
 
-    c = ( u_char* )p;
+    c = ( unsigned char* )p;
 #ifndef IPV6
     switch( p->icmp_type )
 #else
@@ -2094,7 +2069,7 @@ int handle_random_icmp( FPING_ICMPHDR *p, int psize, FPING_SOCKADDR *addr )
 
 *************************************************************
 
-  Inputs:  u_short *p, int n
+  Inputs:  unsigned short *p, int n
 
   Returns:  int
 
@@ -2107,14 +2082,14 @@ int handle_random_icmp( FPING_ICMPHDR *p, int psize, FPING_SOCKADDR *addr )
 
 #ifdef _NO_PROTO
 int in_cksum( p, n )
-u_short *p; int n;
+unsigned short *p; int n;
 #else
-int in_cksum( u_short *p, int n )
+int in_cksum( unsigned short *p, int n )
 #endif /* _NO_PROTO */
 {
-    register u_short answer;
+    register unsigned short answer;
     register long sum = 0;
-    u_short odd_byte = 0;
+    unsigned short odd_byte = 0;
 
     while( n > 1 )
     {
@@ -2127,7 +2102,7 @@ int in_cksum( u_short *p, int n )
     /* mop up an odd byte, if necessary */
     if( n == 1 )
     {
-        *( u_char* )( &odd_byte ) = *( u_char* )p;
+        *( unsigned char* )( &odd_byte ) = *( unsigned char* )p;
         sum += odd_byte;
     
     }/* IF */
@@ -2166,7 +2141,7 @@ void add_name( char *name )
 {
 #ifndef IPV6
     struct hostent *host_ent;
-    u_int ipaddress;
+    unsigned int ipaddress;
     struct in_addr *ipa = ( struct in_addr* )&ipaddress;
     struct in_addr *host_add;
     char *nm;

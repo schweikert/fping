@@ -3,6 +3,8 @@ David Schweikert <david@schweikert.ch>
 - Revision v3.1 ALPHA
   * -g option (generate): exclude network and broadcast address for cidr
     ranges (idea by Eric Brander)
+  * ANSI C (C89) compiler now a requirement
+  * portability fixes
 
 Thu Dec 28 2011
 David Schweikert <david@schweikert.ch>

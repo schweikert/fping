@@ -30,13 +30,6 @@
  * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-#ifndef _NO_PROTO
-#if !__STDC__ && !defined( __cplusplus ) && !defined( FUNCPROTO ) \
-                                                 && !defined( _POSIX_SOURCE )
-#define _NO_PROTO
-#endif /* __STDC__ */
-#endif /* _NO_PROTO */
-
 #ifdef __cplusplus
 extern "C"
 {
@@ -327,33 +320,6 @@ char *filename = NULL;              /* file containing hosts to ping */
 
 /*** forward declarations ***/
 
-#ifdef _NO_PROTO
-
-void add_name();
-void add_addr();
-char *na_cat();
-char *cpystr();
-void crash_and_burn();
-void errno_crash_and_burn();
-char *get_host_by_address();
-int in_cksum();
-void u_sleep();
-int recvfrom_wto ();
-void remove_job();
-int send_ping();
-void usage();
-int wait_for_reply();
-long timeval_diff();
-void print_per_system_stats();
-void print_per_system_splits();
-void print_global_stats();
-void main_loop();
-void finish();
-int handle_random_icmp();
-char *sprint_tm();
-
-#else
-
 void add_name( char *name );
 #ifndef IPV6
 void add_addr( char *name, char *host, struct in_addr ipaddr );
@@ -387,8 +353,6 @@ void ev_remove(HOST_ENTRY *h);
 void add_cidr(char *);
 void add_range(char *, char *);
 
-#endif /* _NO_PROTO */
-
 /*** function definitions ***/
 
 /************************************************************
@@ -405,12 +369,7 @@ void add_range(char *, char *);
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-int main( argc, argv )
-int argc; char **argv;
-#else
 int main( int argc, char **argv )
-#endif /* _NO_PROTO */
 {
     int c, i, n;
 #ifdef IPV6
@@ -1258,11 +1217,7 @@ void main_loop()
 
 ************************************************************/
 
-#ifdef _NO_PROTO
 void finish()
-#else
-void finish()
-#endif /* _NO_PROTO */
 {
     int i;
     HOST_ENTRY *h;
@@ -1324,11 +1279,7 @@ void finish()
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-void print_per_system_stats()
-#else
 void print_per_system_stats( void )
-#endif /* _NO_PROTO */
 {
     int i, j, avg;
     HOST_ENTRY *h;
@@ -1433,11 +1384,7 @@ void print_per_system_stats( void )
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-void print_per_system_splits()
-#else
 void print_per_system_splits( void )
-#endif /* _NO_PROTO */
 {
     int i, avg;
     HOST_ENTRY *h;
@@ -1514,11 +1461,7 @@ void print_per_system_splits( void )
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-void print_global_stats()
-#else
 void print_global_stats( void )
-#endif /* _NO_PROTO */
 {
     fflush( stdout );
     fprintf( stderr, "\n" );
@@ -1571,12 +1514,7 @@ void print_global_stats( void )
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-int send_ping( s, h )
-int s; HOST_ENTRY *h;
-#else
 int send_ping( int s, HOST_ENTRY *h )
-#endif /* _NO_PROTO */
 {
     char *buffer;
     FPING_ICMPHDR *icp;
@@ -1680,11 +1618,7 @@ int send_ping( int s, HOST_ENTRY *h )
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-int wait_for_reply()
-#else
 int wait_for_reply(long wait_time)
-#endif
 {
     int result;
     static char buffer[4096];
@@ -1940,14 +1874,7 @@ int wait_for_reply(long wait_time)
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-int handle_random_icmp( p, psize, addr )
-     FPING_ICMPHDR *p;
-     int psize;
-     FPING_SOCKADDR *addr;
-#else
 int handle_random_icmp( FPING_ICMPHDR *p, int psize, FPING_SOCKADDR *addr )
-#endif /* _NO_PROTO */
 {
     FPING_ICMPHDR *sent_icmp;
     unsigned char *c;
@@ -2090,12 +2017,7 @@ int handle_random_icmp( FPING_ICMPHDR *p, int psize, FPING_SOCKADDR *addr )
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-int in_cksum( p, n )
-unsigned short *p; int n;
-#else
 int in_cksum( unsigned short *p, int n )
-#endif /* _NO_PROTO */
 {
     register unsigned short answer;
     register long sum = 0;
@@ -2142,12 +2064,7 @@ int in_cksum( unsigned short *p, int n )
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-void add_name( name )
-char *name;
-#else
 void add_name( char *name )
-#endif /* _NO_PROTO */
 {
 #ifndef IPV6
     struct hostent *host_ent;
@@ -2307,13 +2224,7 @@ void add_name( char *name )
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-char *na_cat( name, ipaddr )
-char *name;
-struct in_addr ipaddr;
-#else
 char *na_cat( char *name, struct in_addr ipaddr )
-#endif /* _NO_PROTO */
 {
     char *nm, *as;
 
@@ -2348,22 +2259,11 @@ char *na_cat( char *name, struct in_addr ipaddr )
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-void add_addr( name, host, ipaddr )
-char *name;
-char *host;
-#ifndef IPV6
-struct in_addr ipaddr;
-#else
-FPING_SOCKADDR *ipaddr;
-#endif
-#else
 #ifndef IPV6
 void add_addr( char *name, char *host, struct in_addr ipaddr )
 #else
 void add_addr( char *name, char *host, FPING_SOCKADDR *ipaddr )
 #endif
-#endif /* _NO_PROTO */
 {
     HOST_ENTRY *p;
     int n, *i;
@@ -2443,12 +2343,7 @@ void add_addr( char *name, char *host, FPING_SOCKADDR *ipaddr )
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-void remove_job( h )
-HOST_ENTRY *h;
-#else
 void remove_job( HOST_ENTRY *h )
-#endif /* _NO_PROTO */
 {
 #if defined( DEBUG ) || defined( _DEBUG )
     if( trace_flag )
@@ -2478,12 +2373,7 @@ void remove_job( HOST_ENTRY *h )
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-char *get_host_by_address( in )
-struct in_addr in;
-#else
 char *get_host_by_address( struct in_addr in )
-#endif /* _NO_PROTO */
 {
     struct hostent *h;
 #ifndef IPV6
@@ -2514,12 +2404,7 @@ char *get_host_by_address( struct in_addr in )
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-char *cpystr( string )
-char *string;
-#else
 char *cpystr( char *string )
-#endif /* _NO_PROTO */
 {
     char *dst;
 
@@ -2551,12 +2436,7 @@ char *cpystr( char *string )
 
 ************************************************************/
   
-#ifdef _NO_PROTO
-void crash_and_burn( message )
-char *message;
-#else
 void crash_and_burn( char *message )
-#endif /* _NO_PROTO */
 {
     if( verbose_flag )
         fprintf( stderr, "%s: %s\n", prog, message );
@@ -2578,12 +2458,7 @@ void crash_and_burn( char *message )
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-void errno_crash_and_burn( message )
-char *message;
-#else
 void errno_crash_and_burn( char *message )
-#endif /* _NO_PROTO */
 {
     fprintf( stderr, "%s: %s : %s\n", prog, message, strerror( errno ) );
     exit( 4 );
@@ -2607,12 +2482,7 @@ void errno_crash_and_burn( char *message )
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-long timeval_diff( a, b )
-struct timeval *a, *b;
-#else
 long timeval_diff( struct timeval *a, struct timeval *b )
-#endif /* _NO_PROTO */
 {
     long sec_diff = a->tv_sec - b->tv_sec;
     if(sec_diff == 0) {
@@ -2656,12 +2526,7 @@ void timeval_add(struct timeval *a, long t_10u)
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-char * sprint_tm( t )
-int t;
-#else
 char * sprint_tm( int t )
-#endif /* _NO_PROTO */
 {
     static char buf[10];
 
@@ -2708,12 +2573,7 @@ char * sprint_tm( int t )
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-void u_sleep( u_sec )
-int u_sec;
-#else
 void u_sleep( int u_sec )
-#endif /* _NO_PROTO */
 {
     int nfound;
     struct timeval to;
@@ -2760,12 +2620,7 @@ select_again:
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-int recvfrom_wto( s, buf, len, saddr, timo )
-int s; char *buf; int len; FPING_SOCKADDR *saddr; long timo;
-#else
 int recvfrom_wto( int s, char *buf, int len, FPING_SOCKADDR *saddr, long timo )
-#endif /* _NO_PROTO */
 {
         unsigned int slen;
     int nfound, n;
@@ -2931,11 +2786,7 @@ void ev_remove(HOST_ENTRY *h)
 
 ************************************************************/
 
-#ifdef _NO_PROTO
-void usage()
-#else
 void usage( void )
-#endif /* _NO_PROTO */
 {
     fprintf( stderr, "\n" );
     fprintf( stderr, "Usage: %s [options] [targets...]\n", prog );

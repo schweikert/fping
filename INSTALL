@@ -3,6 +3,8 @@ Basic Installation
 
    These are generic installation instructions.
 
+   --> See the README file for fping-specific instructions. <--
+
    The `configure' shell script attempts to guess correct values for
 various system-dependent variables used during compilation.  It uses
 those values to create a `Makefile' in each directory of the package.

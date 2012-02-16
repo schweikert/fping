@@ -3,6 +3,9 @@ David Schweikert <david@schweikert.ch>
 - Revision v3.1 ALPHA
   * -g option (generate): exclude network and broadcast address for cidr
     ranges (idea by Eric Brander)
+  * do not explicitely check if running as root, to make it possible to
+    install fping with linux capabilities instead of making it setuid
+    (setcap cap_net_raw+ep fping)
   * ANSI C (C89) compiler now a requirement
   * portability fixes
 

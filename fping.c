@@ -389,15 +389,6 @@ int main( int argc, char **argv )
 
     /* check if we are root */
 
-    if( geteuid() )
-    {
-        fprintf( stderr,
-            "This program can only be run by root, or it must be setuid root.\n" );
-
-        exit( 3 );
-
-    }/* IF */
-
     /* confirm that ICMP is available on this machine */
 #ifndef IPV6
     if( ( proto = getprotobyname( "icmp" ) ) == NULL ) 
@@ -414,7 +405,7 @@ int main( int argc, char **argv )
 #endif
 
     if( s < 0 )
-        errno_crash_and_burn( "can't create raw socket" );
+        errno_crash_and_burn( "can't create raw socket (must run as root?)" );
 
 #ifdef IPV6
     /*

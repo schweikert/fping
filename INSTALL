@@ -173,13 +173,3 @@ operates.
      script, and exit.
 
 `configure' also accepts some other, not widely useful, options.
-
-
-Problems and Notes
-==================
-
-Apr 2001
-- Making fping requires 'm4' and 'autoheader'
-- fping is known not to build on Solaris. (Solaris lacks 'autoheader')
-- fping has been reported to bug out if a file contains more than 3600 addresses to scan.
-- If you are having problems compiling, try an earlier version (2.2b2 for example)

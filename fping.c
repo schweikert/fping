@@ -1019,10 +1019,8 @@ void add_cidr(char *addr)
     int ret;
     struct addrinfo addr_hints;
     struct addrinfo *addr_res;
-    struct in_addr in_addr_tmp;
     unsigned long net_addr;
     unsigned long net_last;
-    char buffer[20];
 
     /* Split address from mask */
     addr_end = strchr(addr, '/');
@@ -1061,6 +1059,8 @@ void add_cidr(char *addr)
 
     /* add all hosts in that network (excluding network and broadcast address) */
     while(++net_addr < net_last) {
+        struct in_addr in_addr_tmp;
+        char buffer[20];
         in_addr_tmp.s_addr = htonl(net_addr);
         inet_ntop(AF_INET, &in_addr_tmp, buffer, sizeof(buffer));
         add_name(cpystr(buffer));
@@ -1071,41 +1071,51 @@ void add_cidr(char *addr)
 
 void add_range(char *start, char *end)
 {
-//	/* IP start and end points are specified */
-//	pEnd = *argv;
-//
-//	/* parameters should be start and end ranges */
-//	if( ( inet_addr( pStart ) != INADDR_NONE ) && ( inet_addr( pEnd ) != INADDR_NONE ) )
-//	{
-//	    sStart.s_addr = inet_addr( pStart );
-//	    sEnd.s_addr = inet_addr( pEnd );
-//
-//	}/* IF */
-//	else
-//	    usage();
-//
-//    }/* ELSE */
-//
-//    /* ensure that the end point is greater or equal to the start */
-//    if( htonl( sEnd.s_addr ) >= htonl( sStart.s_addr ) )
-//    {
-//	/* start and end points should be determined, so generate list */
-//	unsigned int uiDiff;
-//	struct in_addr sTemp;
-//	int iCount;
-//
-//	uiDiff = htonl( sEnd.s_addr ) - htonl( sStart.s_addr ) + 1;
-//
-//	for( iCount = 0; iCount < uiDiff; iCount++ )
-//	{
-//	    sTemp.s_addr = sStart.s_addr + ntohl( iCount );
-//	    pTemp = cpystr( inet_ntoa( sTemp ) );
-//	    add_name( pTemp );
-//
-//	}/* FOR */
-//    }/* IF */
-//    else
-//	usage();
+    struct addrinfo addr_hints;
+    struct addrinfo *addr_res;
+    unsigned long start_long;
+    unsigned long end_long;
+    int ret;
+
+    /* parse start address (IPv4 only) */
+    memset(&addr_hints, 0, sizeof(struct addrinfo));
+    addr_hints.ai_family = AF_UNSPEC;
+    addr_hints.ai_flags = AI_NUMERICHOST;
+    ret = getaddrinfo(start, NULL, &addr_hints, &addr_res);
+    if(ret) {
+        fprintf(stderr, "Error: can't parse address %s: %s\n", start, gai_strerror(ret));
+        exit(2);
+    }
+    if(addr_res->ai_family != AF_INET) {
+        fprintf(stderr, "Error: -g works only with IPv4 addresses\n");
+        exit(2);
+    }
+    start_long = ntohl(((struct sockaddr_in *) addr_res->ai_addr)->sin_addr.s_addr);
+
+    /* parse end address (IPv4 only) */
+    memset(&addr_hints, 0, sizeof(struct addrinfo));
+    addr_hints.ai_family = AF_UNSPEC;
+    addr_hints.ai_flags = AI_NUMERICHOST;
+    ret = getaddrinfo(end, NULL, &addr_hints, &addr_res);
+    if(ret) {
+        fprintf(stderr, "Error: can't parse address %s: %s\n", end, gai_strerror(ret));
+        exit(2);
+    }
+    if(addr_res->ai_family != AF_INET) {
+        fprintf(stderr, "Error: -g works only with IPv4 addresses\n");
+        exit(2);
+    }
+    end_long = ntohl(((struct sockaddr_in *) addr_res->ai_addr)->sin_addr.s_addr);
+
+    /* generate */
+    while(start_long <= end_long) {
+        struct in_addr in_addr_tmp;
+        char buffer[20];
+        in_addr_tmp.s_addr = htonl(start_long);
+        inet_ntop(AF_INET, &in_addr_tmp, buffer, sizeof(buffer));
+        add_name(cpystr(buffer));
+        start_long++;
+    }
 }
 
 

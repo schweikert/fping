@@ -24,6 +24,9 @@ If you want to install fping from source, proceed as follows:
 
    sudo setcap cap_net_raw+ep fping
 
+4. Have a look at the fping(1) manual for usage help
+   (fping -h will also give a minimal help output)
+
 Credits
 -------
 Original author:  Roland Schemers (schemers@stanford.edu)

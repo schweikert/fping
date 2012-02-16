@@ -707,7 +707,7 @@ int main( int argc, char **argv )
     if( ( ping_data_size > MAX_PING_DATA ) || ( ping_data_size < MIN_PING_DATA ) )
     {
         fprintf( stderr, "%s: data size %u not valid, must be between %u and %u\n",
-            prog, ping_data_size, MIN_PING_DATA, MAX_PING_DATA );
+            prog, ping_data_size, (unsigned int) MIN_PING_DATA, (unsigned int) MAX_PING_DATA );
         usage();
     
     }/* IF */

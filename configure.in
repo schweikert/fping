@@ -6,7 +6,7 @@ AC_PREREQ(2.59)
 AC_INIT([fping],[3.0])
 
 AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([foreign])
+AM_INIT_AUTOMAKE([foreign no-dependencies])
 AM_MAINTAINER_MODE
 
 AC_CONFIG_HEADERS([config.h])
@@ -48,6 +48,7 @@ dnl Checks for header files.
 AC_CHECK_HEADERS(unistd.h sys/file.h stdlib.h sys/select.h)
 
 AC_CONFIG_FILES([Makefile
+                 doc/Makefile
                  src/Makefile])
 
 AC_OUTPUT

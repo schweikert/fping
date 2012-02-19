@@ -6,7 +6,7 @@ AC_PREREQ(2.59)
 AC_INIT([fping],[3.0])
 
 AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([foreign no-dependencies])
+AM_INIT_AUTOMAKE([foreign])
 AM_MAINTAINER_MODE
 
 AC_CONFIG_HEADERS([config.h])

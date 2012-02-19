@@ -1,12 +1,4 @@
 /* config.h.in.  Generated from configure.in by autoheader.  */
-#ifndef CONFIG_H
-#define CONFIG_H
-
-
-/* VERSION (from configure.in) */
-#undef VERSION
-
-
 
 
 #ifndef CONFIG_H
@@ -89,11 +81,3 @@
 #endif /* CONFIG_H */
 
 
-
-/* some OSes do not define this ... lets take a wild guess */
-
-#ifndef INADDR_NONE
-#  define INADDR_NONE 0xffffffffU
-#endif
-
-#endif /* CONFIG_H */

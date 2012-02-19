@@ -8,6 +8,7 @@ David Schweikert <david@schweikert.ch>
     (setcap cap_net_raw+ep fping)
   * ANSI C (C89) compiler now a requirement
   * portability fixes
+  * reorganized source directory
 
 Thu Dec 28 2011
 David Schweikert <david@schweikert.ch>

@@ -1,4 +1,12 @@
 /* config.h.in.  Generated from configure.in by autoheader.  */
+#ifndef CONFIG_H
+#define CONFIG_H
+
+
+/* VERSION (from configure.in) */
+#undef VERSION
+
+
 
 
 #ifndef CONFIG_H
@@ -59,6 +67,9 @@
 /* Define to the one symbol short name of this package. */
 #undef PACKAGE_TARNAME
 
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
@@ -78,3 +89,11 @@
 #endif /* CONFIG_H */
 
 
+
+/* some OSes do not define this ... lets take a wild guess */
+
+#ifndef INADDR_NONE
+#  define INADDR_NONE 0xffffffffU
+#endif
+
+#endif /* CONFIG_H */

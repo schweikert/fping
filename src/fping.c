@@ -387,7 +387,7 @@ int main( int argc, char **argv )
 #endif
     HOST_ENTRY *cursor;
 
-    /* check if we are root */
+    prog = argv[0];
 
     /* confirm that ICMP is available on this machine */
 #ifndef IPV6
@@ -481,7 +481,6 @@ int main( int argc, char **argv )
 
     }/* IF */
 
-    prog = argv[0];
     ident = getpid() & 0xFFFF;
 
     verbose_flag = 1;

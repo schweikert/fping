@@ -28,6 +28,14 @@ Tobi Oetiker <tobi@oetiker.ch>
   
 ----------------------------------------------------------------------
 
+fping (2.4b2-to-ipv6-16.1) unstable; urgency=low
+
+  * NMU during Moenchengladbach BSP
+  * Fixes FTBFS on kfreebsd (Closes: #555398)
+  * Fixes typo "Paramter" in binary
+
+ -- Axel Beckert <abe@deuxchevaux.org>  Sat, 23 Jan 2010 16:22:02 +0100 
+
 fping (2.4b2-to-ipv6-16) unstable; urgency=low
 
   * Fix the following bugs

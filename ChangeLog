@@ -1,6 +1,6 @@
 UNRELEASED
 David Schweikert <david@schweikert.ch>
-- Revision v3.1 ALPHA
+- Revision v3.1 RC1
   * -g option (generate): exclude network and broadcast address for cidr
     ranges (idea by Eric Brander)
   * do not explicitely check if running as root, to make it possible to
@@ -9,6 +9,7 @@ David Schweikert <david@schweikert.ch>
   * ANSI C (C89) compiler now a requirement
   * portability fixes
   * reorganized source directory
+  * bugfix: fix timeout issue on Solaris (Sandor Geller)
 
 Thu Dec 28 2011
 David Schweikert <david@schweikert.ch>

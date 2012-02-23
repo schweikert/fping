@@ -2619,6 +2619,10 @@ int recvfrom_wto( int s, char *buf, int len, FPING_SOCKADDR *saddr, long timo )
 
     to.tv_sec = 0;
     to.tv_usec = timo * 10;
+    while (to.tv_usec > 1000000) {
+        to.tv_sec++;
+        to.tv_usec -= 1000000;
+    }
 
     FD_ZERO( &readset );
     FD_ZERO( &writeset );

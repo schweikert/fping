@@ -10,36 +10,36 @@ fping \- send ICMP ECHO_REQUEST packets to network hosts
 .NXR "fping command"
 .NXR "ICMP ECHO_REQUEST"
 
-      
-.B fping 
+
+.B fping
 is a program like
 .B ping(8)
 which uses the Internet Control
 Message Protocol (ICMP) echo request to determine if a target host is
-responding. 
-.B fping 
+responding.
+.B fping
 differs from ping in that you can specify any
 number of targets on the command line, or specify a file containing
 the lists of targets to ping. Instead of sending to one target until it
-times out or replies, 
-.B fping 
+times out or replies,
+.B fping
 will send out a ping packet and move
-on to the next target in a round-robin fashion. 
+on to the next target in a round-robin fashion.
 .PP
 In the default mode, if a target replies,
 it is noted and removed from the list of targets to check; if a target
-does not respond within a certain time limit and/or retry limit it 
-is designated as unreachable.  
-.B fping 
+does not respond within a certain time limit and/or retry limit it
+is designated as unreachable.
+.B fping
 also supports sending a specified number of pings to a target, or
-looping indefinitely (as in 
+looping indefinitely (as in
 .B ping
 ).
 .PP
-Unlike 
+Unlike
 .B ping,
-.B fping 
-is meant to be used in scripts, so its output is designed to be 
+.B fping
+is meant to be used in scripts, so its output is designed to be
 easy to parse.
 .SH OPTIONS
 .IP \fB\-a\fR 5
@@ -48,12 +48,12 @@ Show systems that are alive.
 Display targets by address rather than DNS name.
 .IP \fB\-b\fIn\fR 5
 Number of bytes of ping data to send.  The minimum size (normally 12)
-allows room for the data that 
-.B fping 
+allows room for the data that
+.B fping
 needs to do its work (sequence number, timestamp).  The reported
 received data size includes the IP header (normally 20 bytes) and ICMP
 header (8 bytes), so the minimum total size is 40 bytes.  Default is
-56, as in 
+56, as in
 .B ping.
 Maximum is the theoretical maximum IP datagram size (64K), though most
 systems limit this to a smaller, system-dependent number.
@@ -135,7 +135,7 @@ Set source address.
 Set the interface (requires SO_BINDTODEVICE support)
 .IP \fB\-t\fIn\fR 5
 Initial target timeout in milliseconds (default 500). In the default
-mode, this is the amount of time that 
+mode, this is the amount of time that
 .B fping
 waits for a response to its first request.  Successive timeouts are
 multiplied by the backoff factor.
@@ -146,7 +146,7 @@ Show targets that are unreachable.
 .IP \fB\-T\fIn\fR 5
 Set the typ of service flag (TOS). \fIn\fR can be either decimal or hexadecimal (0xh) format.
 .IP \fB\-v\fR 5
-Print 
+Print
 .B fping
 version information.
 
@@ -154,9 +154,9 @@ version information.
 The following perl script will check a list of hosts and send mail if
 any are unreachable. It uses the open2 function which allows a program
 to be opened for reading and writing. fping does not start pinging the
-list of systems until it reads EOF, which it gets after INPUT is closed. 
+list of systems until it reads EOF, which it gets after INPUT is closed.
 Sure the open2 usage is not needed in this example, but it's a good open2
-example none the less. 
+example none the less.
 .nf
 
 #!/usr/bin/perl
@@ -210,11 +210,11 @@ command line arguments, and 4 for a system call failure.
 .SH BUGS
 Ha! If we knew of any we would have fixed them!
 .SH RESTRICTIONS
-If certain options are used (i.e, a low value for \-i and \-t, and a 
+If certain options are used (i.e, a low value for \-i and \-t, and a
 high value for \-r) it is possible to flood the network. This program
 must be installed as setuid root in order to open up a raw socket,
 or must be run by root. In order to stop mere mortals from hosing the
-network (when fping is installed setuid root) , normal users can't specify 
+network (when fping is installed setuid root) , normal users can't specify
 the following:
 .nf
 

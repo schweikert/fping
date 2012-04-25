@@ -339,7 +339,7 @@ void remove_job( HOST_ENTRY *h );
 int send_ping( int s, HOST_ENTRY *h );
 long timeval_diff( struct timeval *a, struct timeval *b );
 void timeval_add(struct timeval *a, long t_10u);
-void usage( void );
+void usage( int );
 int wait_for_reply( long );
 void print_per_system_stats( void );
 void print_per_system_splits( void );
@@ -496,7 +496,7 @@ int main( int argc, char **argv )
         {
         case 't':
             if( !( timeout = ( unsigned int )atoi( optarg ) * 100 ) )
-                usage();
+                usage(1);
 
             break;
         
@@ -506,26 +506,26 @@ int main( int argc, char **argv )
         
         case 'i':
             if( !( interval = ( unsigned int )atoi( optarg ) * 100 ) )
-                usage();
+                usage(1);
 
             break;
 
         case 'p':
             if( !( perhost_interval = ( unsigned int )atoi( optarg ) * 100 ) )
-                usage();
+                usage(1);
 
             break;
 
         case 'c':
             if( !( count = ( unsigned int )atoi( optarg ) ) )
-                usage();
+                usage(1);
             
             count_flag = 1;
             break;
         
         case 'C':
             if( !( count = ( unsigned int )atoi( optarg ) ) )
-                usage();
+                usage(1);
             
             count_flag = 1;
             report_all_rtts_flag = 1;
@@ -533,12 +533,12 @@ int main( int argc, char **argv )
 
         case 'b':
             if( !( ping_data_size = ( unsigned int )atoi( optarg ) ) )
-                usage();
+                usage(1);
             
             break;
 
         case 'h':
-            usage();
+            usage(0);
             break;
 
         case 'q':
@@ -550,7 +550,7 @@ int main( int argc, char **argv )
             verbose_flag = 0;
             quiet_flag = 1;
             if( !( report_interval = ( unsigned int )atoi( optarg ) * 100000 ) )
-                usage();
+                usage(1);
             
             break;
 
@@ -573,7 +573,7 @@ int main( int argc, char **argv )
 
         case 'B':
             if( !( backoff = atof( optarg ) ) )
-                usage();
+                usage(1);
             
             break;
 
@@ -596,13 +596,13 @@ int main( int argc, char **argv )
 
         case 'H':  
             if( !( ttl = ( u_int )atoi( optarg ) ))
-                usage();
+                usage(1);
             break;  
 
 #if defined( DEBUG ) || defined( _DEBUG )
         case 'z':
             if( ! ( debugging = ( unsigned int )atoi( optarg ) ) )
-                usage();
+                usage(1);
             
             break;
 #endif /* DEBUG || _DEBUG */
@@ -647,7 +647,7 @@ int main( int argc, char **argv )
 #else
             if( ! inet_pton( AF_INET6, optarg, &src_addr ) )
 #endif
-                usage();
+                usage(1);
             src_addr_present = 1;
             break;
 
@@ -674,7 +674,7 @@ int main( int argc, char **argv )
             }
             break;
         default:
-            usage();
+            usage(1);
             break;
 
         }/* SWITCH */
@@ -684,20 +684,20 @@ int main( int argc, char **argv )
 
     if (ttl < 0 || ttl > 255) {  
         fprintf(stderr, "ping: ttl %u out of range\n", ttl);  
-        usage();
+        usage(1);
     }  
 
     if( unreachable_flag && alive_flag )
     {
         fprintf( stderr, "%s: specify only one of a, u\n", argv[0] );
-        usage();
+        usage(1);
 
     }/* IF */
 
     if( count_flag && loop_flag )
     {
         fprintf( stderr, "%s: specify only one of c, l\n", argv[0] );
-        usage();
+        usage(1);
     
     }/* IF */
     
@@ -710,7 +710,7 @@ int main( int argc, char **argv )
         fprintf( stderr, "%s: these options are too risky for mere mortals.\n", prog );
         fprintf( stderr, "%s: You need i >= %u, p >= %u, r < %u, and t >= %u\n",
             prog, MIN_INTERVAL, MIN_PERHOST_INTERVAL, MAX_RETRY, MIN_TIMEOUT );
-        usage();
+        usage(1);
 
     }/* IF */
     
@@ -718,7 +718,7 @@ int main( int argc, char **argv )
     {
         fprintf( stderr, "%s: data size %u not valid, must be between %u and %u\n",
             prog, ping_data_size, (unsigned int) MIN_PING_DATA, (unsigned int) MAX_PING_DATA );
-        usage();
+        usage(1);
     
     }/* IF */
     
@@ -726,7 +726,7 @@ int main( int argc, char **argv )
     {
         fprintf( stderr, "%s: backoff factor %.1f not valid, must be between %.1f and %.1f\n",
             prog, backoff, MIN_BACKOFF_FACTOR, MAX_BACKOFF_FACTOR );
-        usage();
+        usage(1);
     
     }/* IF */
 
@@ -734,7 +734,7 @@ int main( int argc, char **argv )
     {
         fprintf( stderr, "%s: count %u not valid, must be less than %u\n",
             prog, count, MAX_COUNT );
-        usage();
+        usage(1);
     
     }/* IF */
     
@@ -838,7 +838,7 @@ int main( int argc, char **argv )
     /* file and command line are mutually exclusive */
     /* generate requires command line parameters beyond the switches */
     if( ( *argv && filename ) || ( filename && generate_flag ) || ( generate_flag && !*argv ) )
-        usage();
+        usage(1);
 
     /* if no conditions are specified, then assume input from stdin */
     if( !*argv && !filename && !generate_flag )
@@ -893,11 +893,11 @@ int main( int argc, char **argv )
 	    add_range(argv[0], argv[1]);
 	}
 	else {
-	    usage();
+	    usage(1);
 	}
     }
     else {
-        usage();
+        usage(1);
     }
     
     if( !num_hosts )
@@ -992,7 +992,7 @@ void add_cidr(char *addr)
     /* Split address from mask */
     addr_end = strchr(addr, '/');
     if(addr_end == NULL) {
-        usage();
+        usage(1);
     }
     *addr_end = '\0';
     mask_str = addr_end + 1;
@@ -2792,50 +2792,49 @@ void ev_remove(HOST_ENTRY *h)
 
 *************************************************************
 
-  Inputs:  none (void)
+  Inputs:  int: 0 if output on request, 1 if output because of wrong argument
 
   Description:
 
 ************************************************************/
 
-void usage( void )
+void usage(int is_error)
 {
-    fprintf( stderr, "\n" );
-    fprintf( stderr, "Usage: %s [options] [targets...]\n", prog );
-    fprintf( stderr, "   -a         show targets that are alive\n" );
-    fprintf( stderr, "   -A         show targets by address\n" );
-    fprintf( stderr, "   -b n       amount of ping data to send, in bytes (default %d)\n", ping_data_size );
-    fprintf( stderr, "   -B f       set exponential backoff factor to f\n" );
-    fprintf( stderr, "   -c n       count of pings to send to each target (default %d)\n", count );  
-    fprintf( stderr, "   -C n       same as -c, report results in verbose format\n" );
-    fprintf( stderr, "   -e         show elapsed time on return packets\n" );
-    fprintf( stderr, "   -f file    read list of targets from a file ( - means stdin) (only if no -g specified)\n" );
-    fprintf( stderr, "   -g         generate target list (only if no -f specified)\n" );
-    fprintf( stderr, "                (specify the start and end IP in the target list, or supply a IP netmask)\n" );
-        fprintf( stderr, "                (ex. %s -g 192.168.1.0 192.168.1.255 or %s -g 192.168.1.0/24)\n", prog, prog );
-    fprintf( stderr, "   -H n       Set the IP TTL value (Time To Live hops)\n");
-    fprintf( stderr, "   -i n       interval between sending ping packets (in millisec) (default %d)\n", interval / 100 );
-    fprintf( stderr, "   -l         loop sending pings forever\n" );
-    fprintf( stderr, "   -m         ping multiple interfaces on target host\n" );
-    fprintf( stderr, "   -n         show targets by name (-d is equivalent)\n" );
-    fprintf( stderr, "   -p n       interval between ping packets to one target (in millisec)\n" );
-    fprintf( stderr, "                (in looping and counting modes, default %d)\n", perhost_interval / 100 );
-    fprintf( stderr, "   -q         quiet (don't show per-target/per-ping results)\n" );
-    fprintf( stderr, "   -Q n       same as -q, but show summary every n seconds\n" );
-    fprintf( stderr, "   -r n       number of retries (default %d)\n", DEFAULT_RETRY );
-    fprintf( stderr, "   -s         print final stats\n" );
+    FILE *out = is_error ? stderr : stdout;
+    fprintf(out, "\n" );
+    fprintf(out, "Usage: %s [options] [targets...]\n", prog );
+    fprintf(out, "   -a         show targets that are alive\n" );
+    fprintf(out, "   -A         show targets by address\n" );
+    fprintf(out, "   -b n       amount of ping data to send, in bytes (default %d)\n", ping_data_size );
+    fprintf(out, "   -B f       set exponential backoff factor to f\n" );
+    fprintf(out, "   -c n       count of pings to send to each target (default %d)\n", count );  
+    fprintf(out, "   -C n       same as -c, report results in verbose format\n" );
+    fprintf(out, "   -e         show elapsed time on return packets\n" );
+    fprintf(out, "   -f file    read list of targets from a file ( - means stdin) (only if no -g specified)\n" );
+    fprintf(out, "   -g         generate target list (only if no -f specified)\n" );
+    fprintf(out, "                (specify the start and end IP in the target list, or supply a IP netmask)\n" );
+    fprintf(out, "                (ex. %s -g 192.168.1.0 192.168.1.255 or %s -g 192.168.1.0/24)\n", prog, prog );
+    fprintf(out, "   -H n       Set the IP TTL value (Time To Live hops)\n");
+    fprintf(out, "   -i n       interval between sending ping packets (in millisec) (default %d)\n", interval / 100 );
+    fprintf(out, "   -l         loop sending pings forever\n" );
+    fprintf(out, "   -m         ping multiple interfaces on target host\n" );
+    fprintf(out, "   -n         show targets by name (-d is equivalent)\n" );
+    fprintf(out, "   -p n       interval between ping packets to one target (in millisec)\n" );
+    fprintf(out, "                (in looping and counting modes, default %d)\n", perhost_interval / 100 );
+    fprintf(out, "   -q         quiet (don't show per-target/per-ping results)\n" );
+    fprintf(out, "   -Q n       same as -q, but show summary every n seconds\n" );
+    fprintf(out, "   -r n       number of retries (default %d)\n", DEFAULT_RETRY );
+    fprintf(out, "   -s         print final stats\n" );
 #ifdef SO_BINDTODEVICE
-        fprintf( stderr, "   -I if      bind to a particular interface\n");
+        fprintf(out, "   -I if      bind to a particular interface\n");
 #endif
-    fprintf( stderr, "   -S addr    set source address\n" );
-    fprintf( stderr, "   -t n       individual target initial timeout (in millisec) (default %d)\n", timeout / 100 );
-    fprintf( stderr, "   -T n       ignored (for compatibility with fping 2.4)\n");
-    fprintf( stderr, "   -u         show targets that are unreachable\n" );
-    fprintf( stderr, "   -O n       set the type of service (tos) flag on the ICMP packets\n" );
-    fprintf( stderr, "   -v         show version\n" );
-        
-    fprintf( stderr, "   targets    list of targets to check (if no -f specified)\n" );
-    fprintf( stderr, "\n");
-    exit( 3 );
-
+    fprintf(out, "   -S addr    set source address\n" );
+    fprintf(out, "   -t n       individual target initial timeout (in millisec) (default %d)\n", timeout / 100 );
+    fprintf(out, "   -T n       ignored (for compatibility with fping 2.4)\n");
+    fprintf(out, "   -u         show targets that are unreachable\n" );
+    fprintf(out, "   -O n       set the type of service (tos) flag on the ICMP packets\n" );
+    fprintf(out, "   -v         show version\n" );
+    fprintf(out, "   targets    list of targets to check (if no -f specified)\n" );
+    fprintf(out, "\n");
+    exit(is_error);
 } /* usage() */

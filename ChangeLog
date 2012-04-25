@@ -7,9 +7,10 @@ David Schweikert <david@schweikert.ch>
     install fping with linux capabilities instead of making it setuid
     (setcap cap_net_raw+ep fping)
   * ANSI C (C89) compiler now a requirement
-  * portability fixes
-  * reorganized source directory
-  * bugfix: fix timeout issue on Solaris (Sandor Geller)
+  * Portability fixes
+  * Reorganized source directory
+  * Bugfix: fix timeout issue on Solaris (Sandor Geller)
+  * Man-page fixes (Axel Beckert)
 
 Thu Dec 28 2011
 David Schweikert <david@schweikert.ch>

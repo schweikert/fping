@@ -274,6 +274,7 @@ unsigned int ping_pkt_size;
 unsigned int count = 1;
 unsigned int trials;
 unsigned int report_interval = 0;
+unsigned int ttl = 0;
 int src_addr_present = 0;
 #ifndef IPV6
 struct in_addr src_addr;
@@ -489,7 +490,7 @@ int main( int argc, char **argv )
 
     /* get command line options */
 
-    while( ( c = getopt( argc, argv, "gedhlmnqusaAvz:t:i:p:f:r:c:b:C:Q:B:S:I:T:O:" ) ) != EOF )
+    while( ( c = getopt( argc, argv, "gedhlmnqusaAvz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:" ) ) != EOF )
     {
         switch( c )
         {
@@ -593,6 +594,11 @@ int main( int argc, char **argv )
             alive_flag = 1;
             break;
 
+        case 'H':  
+            if( !( ttl = ( u_int )atoi( optarg ) ))
+                usage();
+            break;  
+
 #if defined( DEBUG ) || defined( _DEBUG )
         case 'z':
             if( ! ( debugging = ( unsigned int )atoi( optarg ) ) )
@@ -675,6 +681,11 @@ int main( int argc, char **argv )
     }/* WHILE */
 
     /* validate various option settings */
+
+    if (ttl < 0 || ttl > 255) {  
+        fprintf(stderr, "ping: ttl %u out of range\n", ttl);  
+        usage();
+    }  
 
     if( unreachable_flag && alive_flag )
     {
@@ -807,6 +818,13 @@ int main( int argc, char **argv )
 
     }/* IF */
 #endif /* DEBUG || _DEBUG */
+
+    /* set the TTL, if the -H option was set (otherwise ttl will be = 0) */
+    if(ttl > 0) {
+        if (setsockopt(s, IPPROTO_IP, IP_TTL,  &ttl, sizeof(ttl))) {
+            perror("setting time to live");
+        }
+    }
 
     /* handle host names supplied on command line or in a file */
     /* if the generate_flag is on, then generate the IP list */
@@ -2795,6 +2813,7 @@ void usage( void )
     fprintf( stderr, "   -g         generate target list (only if no -f specified)\n" );
     fprintf( stderr, "                (specify the start and end IP in the target list, or supply a IP netmask)\n" );
         fprintf( stderr, "                (ex. %s -g 192.168.1.0 192.168.1.255 or %s -g 192.168.1.0/24)\n", prog, prog );
+    fprintf( stderr, "   -H n       Set the IP TTL value (Time To Live hops)\n");
     fprintf( stderr, "   -i n       interval between sending ping packets (in millisec) (default %d)\n", interval / 100 );
     fprintf( stderr, "   -l         loop sending pings forever\n" );
     fprintf( stderr, "   -m         ping multiple interfaces on target host\n" );

@@ -11,6 +11,7 @@ David Schweikert <david@schweikert.ch>
   * Reorganized source directory
   * Bugfix: fix timeout issue on Solaris (Sandor Geller)
   * Man-page fixes (Axel Beckert)
+  * Added -H option to specify number of hops (Paul Duda)
 
 Thu Dec 28 2011
 David Schweikert <david@schweikert.ch>

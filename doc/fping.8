@@ -179,7 +179,7 @@ if ($#output != -1) {
  close MAIL;
 }
 
-.ni
+.fi
 Another good example is when you want to perform an action only on hosts
 that are currently reachable.
 .nf
@@ -192,7 +192,7 @@ foreach $host (split(/\\n/,$hosts_to_backup)) {
   # do it
 }
 
-.ni
+.fi
 
 .SH AUTHORS
 .nf
@@ -201,7 +201,7 @@ RL "Bob" Morgan, Stanford University, versions 2.x
 David Papp, versions 2.3x and up,
 David Schweikert, versions 3.0 and up
 fping website:  http://www.fping.org
-.ni
+.fi
 .SH DIAGNOSTICS
 Exit status is 0 if all the hosts are reachable, 1 if some hosts were
 unreachable, 2 if any IP addresses were not found, 3 for invalid
@@ -221,6 +221,6 @@ the following:
  -r n   where n > 20
  -t n   where n < 250 msec
 
-.ni
+.fi
 .SH SEE ALSO
 netstat(1), ping(8), ifconfig(8c)

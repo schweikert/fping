@@ -12,6 +12,7 @@ David Schweikert <david@schweikert.ch>
   * Bugfix: fix timeout issue on Solaris (Sandor Geller)
   * Man-page fixes (Axel Beckert)
   * Added -H option to specify number of hops (Paul Duda)
+  * Output usage information to stdout when called with -h (Paul Duda)
 
 Thu Dec 28 2011
 David Schweikert <david@schweikert.ch>

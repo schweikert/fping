@@ -170,7 +170,7 @@ char *icmp_type_str[19] =
     "",
     "",
     "ICMP Time Exceeded",       /* 11 */
-    "ICMP Paramter Problem",    /* 12 */
+    "ICMP Parameter Problem",   /* 12 */
     "ICMP Timestamp Request",   /* 13 */
     "ICMP Timestamp Reply",     /* 14 */
     "ICMP Information Request", /* 15 */

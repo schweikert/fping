@@ -1,6 +1,6 @@
 UNRELEASED
 David Schweikert <david@schweikert.ch>
-- Revision v3.1 RC1
+- Revision v3.1
   * -g option (generate): exclude network and broadcast address for cidr
     ranges (idea by Eric Brander)
   * do not explicitely check if running as root, to make it possible to

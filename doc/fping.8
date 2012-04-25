@@ -42,11 +42,11 @@ Unlike
 is meant to be used in scripts, so its output is designed to be 
 easy to parse.
 .SH OPTIONS
-.IP \fB-a\fR 5
+.IP \fB\-a\fR 5
 Show systems that are alive.
-.IP \fB-A\fR 5
+.IP \fB\-A\fR 5
 Display targets by address rather than DNS name.
-.IP \fB-b\fIn\fR 5
+.IP \fB\-b\fIn\fR 5
 Number of bytes of ping data to send.  The minimum size (normally 12)
 allows room for the data that 
 .B fping 
@@ -57,95 +57,95 @@ header (8 bytes), so the minimum total size is 40 bytes.  Default is
 .B ping.
 Maximum is the theoretical maximum IP datagram size (64K), though most
 systems limit this to a smaller, system-dependent number.
-.IP \fB-B\fIn\fR 5
+.IP \fB\-B\fIn\fR 5
 In the default mode,
 .B fping
 sends several requests to a target before giving up, waiting longer for
 a reply on each successive request.  This parameter is the value by
 which the wait time is multiplied on each successive request; it must
 be entered as a floating-point number (x.y).  The default is 1.5.
-.IP \fB-c\fR 5
+.IP \fB\-c\fR 5
 Number of request packets to send to each target.  In this mode, a
 line is displayed for each received response (this can suppressed with
--q or -Q).  Also, statistics about responses for each target are displayed
+\-q or \-Q).  Also, statistics about responses for each target are displayed
 when all requests have been sent (or when interrupted).
 .IP \fB-C\fR 5
-Similar to -c, but the per-target statistics are displayed in a format
+Similar to \-c, but the per-target statistics are displayed in a format
 designed for automated response-time statistics gathering.  For
 example:
 
-% fping -C 5 -q somehost
+% fping \-C 5 \-q somehost
 
-somehost : 91.7 37.0 29.2 - 36.8
+somehost : 91.7 37.0 29.2 \- 36.8
 
 shows the response time in milliseconds for each of the five requests,
-with the "-" indicating that no response was received to the fourth
+with the "\-" indicating that no response was received to the fourth
 request.
-.IP \fB-d\fR 5
+.IP \fB\-d\fR 5
 Use DNS to lookup address of return ping packet. This allows you to give
 fping a list of IP addresses as input and print hostnames in the output.
-.IP \fB-e\fR 5
+.IP \fB\-e\fR 5
 Show elapsed (round-trip) time of packets.
-.IP \fB-f\fR 5
+.IP \fB\-f\fR 5
 Read list of targets from a file.  This option can only be used by the
 root user.  Regular users should pipe in the file via stdin:
 
 % fping < targets_file
 
-.IP \fB-g\fR 5
+.IP \fB\-g\fR 5
 Generate a target list from a supplied IP netmask, or a starting and ending IP.
 Specify the netmask or start/end in the targets portion of the command line.
 
 ex. To ping the class C 192.168.1.x, the specified command line could look like either:
 
-fping -g 192.168.1.0/24
+fping \-g 192.168.1.0/24
 
 or
 
 fping -g 192.168.1.0 192.168.1.255
-.IP \fB-h\fR 5
+.IP \fB\-h\fR 5
 Print usage message.
-.IP \fB-i\fIn\fR 5
+.IP \fB\-i\fIn\fR 5
 The minimum amount of time (in milliseconds) between sending a ping packet to any target (default is 25).
-.IP \fB-l\fR 5
+.IP \fB\-l\fR 5
 Loop sending packets to each target indefinitely.  Can be interrupted
 with ctl-C; statistics about responses for each target are then displayed.
-.IP \fB-m\fR 5
+.IP \fB\-m\fR 5
 Send pings to each of a target host's multiple interfaces.
-.IP \fB-n\fR 5
-Same as -d.
-.IP \fB-p\fR 5
-In looping or counting modes (-l, -c, or -C), this parameter sets the
+.IP \fB\-n\fR 5
+Same as \-d.
+.IP \fB\-p\fR 5
+In looping or counting modes (\-l, \-c, or \-C), this parameter sets the
 time in milliseconds that
 .B fping
 waits between successive packets to an individual target.  Default is
 1000.
-.IP \fB-q\fR 5
+.IP \fB\-q\fR 5
 Quiet. Don't show per-target results, just set final exit status.
-.IP \fB-Q\fIn\fR 5
-Like -q, but show summary results every n seconds.
-.IP \fB-r\fIn\fR 5
+.IP \fB\-Q\fIn\fR 5
+Like \-q, but show summary results every n seconds.
+.IP \fB\-r\fIn\fR 5
 Retry limit (default 3). This is the number of times an attempt at pinging
 a target will be made, not including the first try.
-.IP \fB-s\fR 5
+.IP \fB\-s\fR 5
 Print cumulative statistics upon exit.
-.IP \fB-S\fIaddr\fR 5
+.IP \fB\-S\fIaddr\fR 5
 Set source address.
-.IP \fB-I\fIif\fR 5
+.IP \fB\-I\fIif\fR 5
 Set the interface (requires SO_BINDTODEVICE support)
-.IP \fB-t\fIn\fR 5
+.IP \fB\-t\fIn\fR 5
 Initial target timeout in milliseconds (default 500). In the default
 mode, this is the amount of time that 
 .B fping
 waits for a response to its first request.  Successive timeouts are
 multiplied by the backoff factor.
-.IP \fB-T\fIn\fR 5
+.IP \fB\-T\fIn\fR 5
 Ignored (for compatibility with fping 2.4).
-.IP \fB-u\fR 5
+.IP \fB\-u\fR 5
 Show targets that are unreachable.
-.IP \fB-T\fIn\fR 5
+.IP \fB\-T\fIn\fR 5
 Set the typ of service flag (TOS). \fIn\fR can be either decimal or hexadecimal (0xh) format.
-.IP \fB-v\fR 5
+.IP \fB\-v\fR 5
 Print 
 .B fping
 version information.
@@ -210,8 +210,8 @@ command line arguments, and 4 for a system call failure.
 .SH BUGS
 Ha! If we knew of any we would have fixed them!
 .SH RESTRICTIONS
-If certain options are used (i.e, a low value for -i and -t, and a 
-high value for -r) it is possible to flood the network. This program
+If certain options are used (i.e, a low value for \-i and \-t, and a 
+high value for \-r) it is possible to flood the network. This program
 must be installed as setuid root in order to open up a raw socket,
 or must be run by root. In order to stop mere mortals from hosing the
 network (when fping is installed setuid root) , normal users can't specify 

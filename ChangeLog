@@ -1,4 +1,4 @@
-UNRELEASED
+Thu Apr 26 2012
 David Schweikert <david@schweikert.ch>
 - Revision v3.1
   * -g option (generate): exclude network and broadcast address for cidr

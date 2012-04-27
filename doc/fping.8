@@ -90,15 +90,17 @@ root user.  Regular users should pipe in the file via stdin:
 
 .IP \fB\-g\fR 5
 Generate a target list from a supplied IP netmask, or a starting and ending IP.
-Specify the netmask or start/end in the targets portion of the command line.
+Specify the netmask or start/end in the targets portion of the command line. If
+a network with netmask is given, the network and broadcast addresses will be
+excluded.
 
-ex. To ping the class C 192.168.1.x, the specified command line could look like either:
+ex. To ping the network 192.168.1.0/24, the specified command line could look like either:
 
 fping \-g 192.168.1.0/24
 
 or
 
-fping -g 192.168.1.0 192.168.1.255
+fping -g 192.168.1.1 192.168.1.254
 .IP \fB\-h\fR 5
 Print usage message.
 .IP \fB\-i\fIn\fR 5

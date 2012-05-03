@@ -2623,6 +2623,7 @@ select_again:
   Description:
 
   receive with timeout
+  timeout is in hundredths of milliseconds ie, tens of microseconds
   returns length of data read or -1 if timeout
   crash_and_burn on any other errrors
 
@@ -2630,17 +2631,13 @@ select_again:
 
 int recvfrom_wto( int s, char *buf, int len, FPING_SOCKADDR *saddr, long timo )
 {
-        unsigned int slen;
+    unsigned int slen;
     int nfound, n;
     struct timeval to;
     fd_set readset, writeset;
 
-    to.tv_sec = 0;
-    to.tv_usec = timo * 10;
-    while (to.tv_usec > 1000000) {
-        to.tv_sec++;
-        to.tv_usec -= 1000000;
-    }
+    to.tv_sec  = timo / 100000 ;
+    to.tv_usec = (timo % 100000) * 10 ;
 
     FD_ZERO( &readset );
     FD_ZERO( &writeset );

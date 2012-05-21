@@ -2588,8 +2588,14 @@ void u_sleep( int u_sec )
     fd_set readset, writeset;
 
 select_again:
-    to.tv_sec = u_sec / 1000000;
-    to.tv_usec = u_sec - ( to.tv_sec * 1000000 );
+    if(u_sec < 1000000) {
+        to.tv_sec = 0;
+        to.tv_usec = u_sec;
+    }
+    else {
+        to.tv_sec = u_sec / 1000000 ;
+	to.tv_usec = u_sec - ( to.tv_sec * 1000000 );
+    }
 
     FD_ZERO( &readset );
     FD_ZERO( &writeset );
@@ -2642,7 +2648,7 @@ select_again:
     }
     else {
         to.tv_sec = timo / 100000 ;
-        to.tv_usec = (timo % 100000) * 10 ;
+        to.tv_usec = ( timo - ( to.tv_sec * 100000 ) ) * 10 ;
     }
 
     FD_ZERO( &readset );

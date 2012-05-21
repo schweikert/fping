@@ -1104,12 +1104,12 @@ void main_loop()
                 lt = timeval_diff( &current_time, &last_send_time );
                 if(lt < interval) goto wait_for_reply;
 
-                /* Dequeue the event */
-                h = ev_dequeue();
-
                 /* Send the ping */
 		/*printf("Sending ping after %d ms\n", lt/100); */
-                if(!send_ping(s, h)) goto wait_for_reply;
+                if(!send_ping(s, ev_first)) goto wait_for_reply;
+
+                /* Dequeue the event */
+                h = ev_dequeue();
 
                 /* Check what needs to be done next */
                 if(!loop_flag && !count_flag) {
@@ -2768,6 +2768,7 @@ HOST_ENTRY *ev_dequeue()
     }
     dequeued = ev_first;
     ev_remove(dequeued);
+    dequeued->ev_next=dequeued->ev_prev=NULL;
 
     return dequeued;
 }
@@ -2791,6 +2792,7 @@ void ev_remove(HOST_ENTRY *h)
     if(h->ev_next) {
         h->ev_next->ev_prev = h->ev_prev;
     }
+    h->ev_next=h->ev_prev=NULL;
 }
 
 

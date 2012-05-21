@@ -2587,13 +2587,13 @@ void u_sleep( int u_sec )
     struct timeval to;
     fd_set readset, writeset;
 
+select_again:
     to.tv_sec = u_sec / 1000000;
     to.tv_usec = u_sec - ( to.tv_sec * 1000000 );
 
     FD_ZERO( &readset );
     FD_ZERO( &writeset );
 
-select_again:
     nfound = select( 0, &readset, &writeset, NULL, &to );
     if(nfound < 0) {
 	if(errno == EINTR) {
@@ -2635,18 +2635,20 @@ int recvfrom_wto( int s, char *buf, int len, FPING_SOCKADDR *saddr, long timo )
     struct timeval to;
     fd_set readset, writeset;
 
-    to.tv_sec = 0;
-    to.tv_usec = timo * 10;
-    while (to.tv_usec > 1000000) {
-        to.tv_sec++;
-        to.tv_usec -= 1000000;
+select_again:
+    if(timo < 100000) {
+	to.tv_sec = 0;
+	to.tv_usec = timo * 10;
+    }
+    else {
+	to.tv_sec = timo / 100000 ;
+	to.tv_usec = (timo % 100000) * 10 ;
     }
 
     FD_ZERO( &readset );
     FD_ZERO( &writeset );
     FD_SET( s, &readset );
 
-select_again:
     nfound = select( s + 1, &readset, &writeset, NULL, &to );
     if(nfound < 0) {
 	if(errno == EINTR) {

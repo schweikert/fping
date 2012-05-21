@@ -2637,12 +2637,12 @@ int recvfrom_wto( int s, char *buf, int len, FPING_SOCKADDR *saddr, long timo )
 
 select_again:
     if(timo < 100000) {
-	to.tv_sec = 0;
-	to.tv_usec = timo * 10;
+        to.tv_sec = 0;
+        to.tv_usec = timo * 10;
     }
     else {
-	to.tv_sec = timo / 100000 ;
-	to.tv_usec = (timo % 100000) * 10 ;
+        to.tv_sec = timo / 100000 ;
+        to.tv_usec = (timo % 100000) * 10 ;
     }
 
     FD_ZERO( &readset );
@@ -2651,13 +2651,13 @@ select_again:
 
     nfound = select( s + 1, &readset, &writeset, NULL, &to );
     if(nfound < 0) {
-	if(errno == EINTR) {
-	    /* interrupted system call: redo the select */
-	    goto select_again;
-	}
-	else {
-	    errno_crash_and_burn( "select" );
-	}
+        if(errno == EINTR) {
+            /* interrupted system call: redo the select */
+            goto select_again;
+        }
+        else {
+            errno_crash_and_burn( "select" );
+        }
     }
 
     if( nfound == 0 )

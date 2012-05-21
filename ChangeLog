@@ -1,3 +1,7 @@
+Unreleased
+  * Performance optimization for big select timeouts (#10, Andrey Bondarenko)
+  * Fix restart of select call after interrupt signal (#8, Boian Bonev)
+
 Thu Apr 26 2012
 David Schweikert <david@schweikert.ch>
 - Revision v3.1

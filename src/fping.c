@@ -2584,12 +2584,13 @@ char * sprint_tm( int t )
 void u_sleep( int u_sec )
 {
     int nfound;
-    struct timeval to;
+    struct timeval to, tokeep;
     fd_set readset, writeset;
 
 select_again:
     to.tv_sec = u_sec / 1000000;
     to.tv_usec = u_sec - ( to.tv_sec * 1000000 );
+    tokeep = to;
 
     FD_ZERO( &readset );
     FD_ZERO( &writeset );
@@ -2598,6 +2599,10 @@ select_again:
     if(nfound < 0) {
 	if(errno == EINTR) {
 	    /* interrupted system call: redo the select */
+	    to = tokeep;
+
+	    FD_ZERO( &readset );
+	    FD_ZERO( &writeset );
 	    goto select_again;
 	}
 	else {
@@ -2632,7 +2637,7 @@ int recvfrom_wto( int s, char *buf, int len, FPING_SOCKADDR *saddr, long timo )
 {
         unsigned int slen;
     int nfound, n;
-    struct timeval to;
+    struct timeval to, tokeep;
     fd_set readset, writeset;
 
 select_again:
@@ -2644,6 +2649,7 @@ select_again:
 	to.tv_sec = timo / 100000 ;
 	to.tv_usec = (timo % 100000) * 10 ;
     }
+    tokeep = to;
 
     FD_ZERO( &readset );
     FD_ZERO( &writeset );
@@ -2653,6 +2659,11 @@ select_again:
     if(nfound < 0) {
 	if(errno == EINTR) {
 	    /* interrupted system call: redo the select */
+	    to = tokeep;
+
+	    FD_ZERO( &readset );
+	    FD_ZERO( &writeset );
+	    FD_SET( s, &readset );
 	    goto select_again;
 	}
 	else {

@@ -1,10 +1,11 @@
-Unreleased
+2012-05-22  David Schweikert  <david@schweikert.ch>
+  * Version 3.2rc1
   * Performance optimization for big select timeouts (#10, Andrey Bondarenko)
   * Fix restart of select call after interrupt signal (#8, Boian Bonev)
+  * Fix infinite loop caused by linked list corruption (#11, Boian Bonev)
 
-Thu Apr 26 2012
-David Schweikert <david@schweikert.ch>
-- Revision v3.1
+2012-04-26  David Schweikert  <david@schweikert.ch>
+  * Version 3.1
   * -g option (generate): exclude network and broadcast address for cidr
     ranges (idea by Eric Brander)
   * do not explicitely check if running as root, to make it possible to
@@ -18,18 +19,16 @@ David Schweikert <david@schweikert.ch>
   * Added -H option to specify number of hops (Paul Duda)
   * Output usage information to stdout when called with -h (Paul Duda)
 
-Thu Dec 28 2011
-David Schweikert <david@schweikert.ch>
-- Revision v3.0
+2011-12-28  David Schweikert  <david@schweikert.ch>
+  * Version 3.0
   * rewritten main loop for improved performance
   * -T parameter (select timeout) now obsolete
   * Maintenance taken over from unresponsive previous maintainer
     (anybody please step up, if you disagree)
   * New homepage: www.fping.org
 
-Mon Dec 21 2009
-Tobi Oetiker <tobi@oetiker.ch>
-- Revision v2.4b2-to3-ipv6
+2009-12-21  Tobi Oetiker  <tobi@oetiker.ch>
+  * Version v2.4b2-to3-ipv6
   * added -On option to set the TOS octet
   * Removed unused variables from code
   * updated to current autoconf standards

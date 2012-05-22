@@ -1,0 +1,14 @@
+
+*.tar.gz
+*~
+.deps
+Makefile
+autom4te.cache
+config.h
+config.log
+config.status
+doc/Makefile
+src/*.o
+src/Makefile
+src/fping
+stamp-h1

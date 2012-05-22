@@ -1152,6 +1152,7 @@ void main_loop()
                     ev_enqueue(h);
                 }
             }
+            /* Event type: timeout */
             else if(ev_first->ev_type == EV_TYPE_TIMEOUT) {
                 num_timeout++;
                 remove_job(ev_first);
@@ -2785,6 +2786,8 @@ void ev_remove(HOST_ENTRY *h)
     if(h->ev_next) {
         h->ev_next->ev_prev = h->ev_prev;
     }
+    h->ev_prev = NULL;
+    h->ev_next = NULL;
 }
 
 

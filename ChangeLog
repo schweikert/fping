@@ -1,5 +1,5 @@
-2012-05-22  David Schweikert  <david@schweikert.ch>
-  * Version 3.2rc1
+2012-05-29  David Schweikert  <david@schweikert.ch>
+  * Version 3.2
   * Improve documentation for -g option (G.W. Haywood)
   * Performance optimization for big select timeouts (#10, Andrey Bondarenko)
   * Fix restart of select call after interrupt signal (#8, Boian Bonev)

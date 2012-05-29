@@ -1901,57 +1901,59 @@ int handle_random_icmp( FPING_ICMPHDR *p, int psize, FPING_SOCKADDR *addr )
 #endif
     {
     case ICMP_UNREACH:
-        sent_icmp = ( FPING_ICMPHDR* )( c + 28 );
+        if( !quiet_flag ) {
+            sent_icmp = ( FPING_ICMPHDR* )( c + 28 );
         
 #ifndef IPV6
-        sent_icmp = ( struct icmp* )( c + 28 );
+            sent_icmp = ( struct icmp* )( c + 28 );
         
-        if( ( sent_icmp->icmp_type == ICMP_ECHO ) &&
-            ( ntohs(sent_icmp->icmp_id) == ident ) &&
-            ( ntohs(sent_icmp->icmp_seq) <= ( n_short )max_seq_sent ) )
-        {
-            /* this is a response to a ping we sent */
-            h = table[ntohs(sent_icmp->icmp_seq) % num_hosts];
-            
-            if( p->icmp_code > ICMP_UNREACH_MAXTYPE )
+            if( ( sent_icmp->icmp_type == ICMP_ECHO ) &&
+                ( ntohs(sent_icmp->icmp_id) == ident ) &&
+                ( ntohs(sent_icmp->icmp_seq) <= ( n_short )max_seq_sent ) )
             {
-                fprintf( stderr, "ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
-                    inet_ntoa( addr->sin_addr ), h->host );
+                /* this is a response to a ping we sent */
+                h = table[ntohs(sent_icmp->icmp_seq) % num_hosts];
+            
+                if( p->icmp_code > ICMP_UNREACH_MAXTYPE )
+                {
+                    fprintf( stderr, "ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
+                        inet_ntoa( addr->sin_addr ), h->host );
 
 #else
-        if( ( sent_icmp->icmp6_type == ICMP_ECHO ) &&
-            ( ntohs(sent_icmp->icmp6_id) == ident ) &&
-            ( ntohs(sent_icmp->icmp6_seq) <= ( n_short )max_seq_sent ) )
-        {
-            /* this is a response to a ping we sent */
-            h = table[ntohs(sent_icmp->icmp6_seq) % num_hosts];
-            
-            if( p->icmp6_code > ICMP_UNREACH_MAXTYPE )
+            if( ( sent_icmp->icmp6_type == ICMP_ECHO ) &&
+                ( ntohs(sent_icmp->icmp6_id) == ident ) &&
+                ( ntohs(sent_icmp->icmp6_seq) <= ( n_short )max_seq_sent ) )
             {
-                fprintf( stderr, "ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
-                    addr_ascii, h->host );
+                /* this is a response to a ping we sent */
+                h = table[ntohs(sent_icmp->icmp6_seq) % num_hosts];
+            
+                if( p->icmp6_code > ICMP_UNREACH_MAXTYPE )
+                {
+                    fprintf( stderr, "ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
+                        addr_ascii, h->host );
 #endif
+                }/* IF */
+                else
+                {
+                    fprintf( stderr, "%s from %s for ICMP Echo sent to %s",
+#ifndef IPV6
+                        icmp_unreach_str[p->icmp_code], inet_ntoa( addr->sin_addr ), h->host );
+#else
+                        icmp_unreach_str[p->icmp6_code], addr_ascii, h->host );
+#endif
+            
+                }/* ELSE */
+
+                if( inet_addr( h->host ) == -1 )
+#ifndef IPV6
+                    fprintf( stderr, " (%s)", inet_ntoa( h->saddr.sin_addr ) );
+#else
+                    fprintf( stderr, " (%s)", addr_ascii);
+#endif
+            
+                fprintf( stderr, "\n" );
+        
             }/* IF */
-            else
-            {
-                fprintf( stderr, "%s from %s for ICMP Echo sent to %s",
-#ifndef IPV6
-                    icmp_unreach_str[p->icmp_code], inet_ntoa( addr->sin_addr ), h->host );
-#else
-                    icmp_unreach_str[p->icmp6_code], addr_ascii, h->host );
-#endif
-            
-            }/* ELSE */
-
-            if( inet_addr( h->host ) == -1 )
-#ifndef IPV6
-                fprintf( stderr, " (%s)", inet_ntoa( h->saddr.sin_addr ) );
-#else
-                fprintf( stderr, " (%s)", addr_ascii);
-#endif
-            
-            fprintf( stderr, "\n" );
-        
         }/* IF */
 
         return 1;
@@ -1960,35 +1962,37 @@ int handle_random_icmp( FPING_ICMPHDR *p, int psize, FPING_SOCKADDR *addr )
     case ICMP_REDIRECT:
     case ICMP_TIMXCEED:
     case ICMP_PARAMPROB:
-        sent_icmp = ( FPING_ICMPHDR* )( c + 28 );
+        if( !quiet_flag ) {
+            sent_icmp = ( FPING_ICMPHDR* )( c + 28 );
 #ifndef IPV6
-        if( ( sent_icmp->icmp_type == ICMP_ECHO ) &&
-            ( ntohs(sent_icmp->icmp_id) == ident ) &&
-            ( ntohs(sent_icmp->icmp_seq) <= ( n_short )max_seq_sent ) )
-        {
-            /* this is a response to a ping we sent */
-            h = table[ntohs(sent_icmp->icmp_seq) % num_hosts];
-            fprintf( stderr, "%s from %s for ICMP Echo sent to %s",
-                icmp_type_str[p->icmp_type], inet_ntoa( addr->sin_addr ), h->host );
+            if( ( sent_icmp->icmp_type == ICMP_ECHO ) &&
+                ( ntohs(sent_icmp->icmp_id) == ident ) &&
+                ( ntohs(sent_icmp->icmp_seq) <= ( n_short )max_seq_sent ) )
+            {
+                /* this is a response to a ping we sent */
+                h = table[ntohs(sent_icmp->icmp_seq) % num_hosts];
+                fprintf( stderr, "%s from %s for ICMP Echo sent to %s",
+                    icmp_type_str[p->icmp_type], inet_ntoa( addr->sin_addr ), h->host );
       
-            if( inet_addr( h->host ) == -1 )
-                fprintf( stderr, " (%s)", inet_ntoa( h->saddr.sin_addr ) );
+                if( inet_addr( h->host ) == -1 )
+                    fprintf( stderr, " (%s)", inet_ntoa( h->saddr.sin_addr ) );
 #else
-        if( ( sent_icmp->icmp6_type == ICMP_ECHO ) &&
-            ( ntohs(sent_icmp->icmp6_id) == ident ) &&
-            ( ntohs(sent_icmp->icmp6_seq) <= ( n_short )max_seq_sent ) )
-        {
-            /* this is a response to a ping we sent */
-            h = table[ntohs(sent_icmp->icmp6_seq) % num_hosts];
-            fprintf( stderr, "%s from %s for ICMP Echo sent to %s",
-                icmp_type_str[p->icmp6_type], addr_ascii, h->host );
+            if( ( sent_icmp->icmp6_type == ICMP_ECHO ) &&
+                ( ntohs(sent_icmp->icmp6_id) == ident ) &&
+                ( ntohs(sent_icmp->icmp6_seq) <= ( n_short )max_seq_sent ) )
+            {
+                /* this is a response to a ping we sent */
+                h = table[ntohs(sent_icmp->icmp6_seq) % num_hosts];
+                fprintf( stderr, "%s from %s for ICMP Echo sent to %s",
+                    icmp_type_str[p->icmp6_type], addr_ascii, h->host );
       
-            if( inet_addr( h->host ) == -1 )
-                fprintf( stderr, " (%s)", addr_ascii );
+                if( inet_addr( h->host ) == -1 )
+                    fprintf( stderr, " (%s)", addr_ascii );
 #endif
 
-            fprintf( stderr, "\n" );
+                fprintf( stderr, "\n" );
         
+            }/* IF */
         }/* IF */
 
         return 2;

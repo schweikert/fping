@@ -52,6 +52,7 @@ extern "C"
 #include <time.h>
 #include <signal.h>
 #include <getopt.h>
+#include <stdarg.h>
 
 #include <netinet/in.h>
 
@@ -353,6 +354,7 @@ HOST_ENTRY *ev_dequeue();
 void ev_remove(HOST_ENTRY *h);
 void add_cidr(char *);
 void add_range(char *, char *);
+void print_warning(char *fmt, ...);
 
 /*** function definitions ***/
 
@@ -1915,7 +1917,7 @@ int handle_random_icmp( FPING_ICMPHDR *p, int psize, FPING_SOCKADDR *addr )
             
             if( p->icmp_code > ICMP_UNREACH_MAXTYPE )
             {
-                fprintf( stderr, "ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
+                print_warning("ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
                     inet_ntoa( addr->sin_addr ), h->host );
 
 #else
@@ -1928,13 +1930,13 @@ int handle_random_icmp( FPING_ICMPHDR *p, int psize, FPING_SOCKADDR *addr )
             
             if( p->icmp6_code > ICMP_UNREACH_MAXTYPE )
             {
-                fprintf( stderr, "ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
+                print_warning("ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
                     addr_ascii, h->host );
 #endif
             }/* IF */
             else
             {
-                fprintf( stderr, "%s from %s for ICMP Echo sent to %s",
+                print_warning("%s from %s for ICMP Echo sent to %s",
 #ifndef IPV6
                     icmp_unreach_str[p->icmp_code], inet_ntoa( addr->sin_addr ), h->host );
 #else
@@ -1945,12 +1947,12 @@ int handle_random_icmp( FPING_ICMPHDR *p, int psize, FPING_SOCKADDR *addr )
 
             if( inet_addr( h->host ) == -1 )
 #ifndef IPV6
-                fprintf( stderr, " (%s)", inet_ntoa( h->saddr.sin_addr ) );
+                print_warning(" (%s)", inet_ntoa( h->saddr.sin_addr ) );
 #else
-                fprintf( stderr, " (%s)", addr_ascii);
+                print_warning(" (%s)", addr_ascii);
 #endif
             
-            fprintf( stderr, "\n" );
+            print_warning("\n" );
         
         }/* IF */
 
@@ -2125,8 +2127,7 @@ void add_name( char *name )
             if( getnetgrent( &machine, &user_ignored, &domain_ignored ) == 0 )
             {
                 endnetgrent();
-                if( !quiet_flag )
-                    fprintf( stderr, "%s address not found\n", name );
+                print_warning("%s address not found\n", name );
                 
                 num_noaddress++;
                 return;
@@ -2141,8 +2142,7 @@ void add_name( char *name )
             endnetgrent();
             return;
 #else
-            if( !quiet_flag )
-                fprintf( stderr, "%s address not found\n", name );
+            print_warning("%s address not found\n", name );
             
             num_noaddress++;
             return ; 
@@ -2153,8 +2153,7 @@ void add_name( char *name )
     host_add = ( struct in_addr* )*( host_ent->h_addr_list ); 
     if( host_add == NULL )
     { 
-        if( !quiet_flag )
-            fprintf( stderr, "%s has no address data\n", name );
+        print_warning("%s has no address data\n", name );
         
         num_noaddress++;
         return; 
@@ -2472,6 +2471,25 @@ void errno_crash_and_burn( char *message )
     fprintf( stderr, "%s: %s : %s\n", prog, message, strerror( errno ) );
     exit( 4 );
 } /* errno_crash_and_burn() */
+
+
+/************************************************************
+
+  Function: print_warning
+
+  Description: fprintf(stderr, ...), unless running with -q
+
+*************************************************************/
+
+void print_warning(char *format, ...) {
+    va_list args;
+    if(!quiet_flag) {
+        va_start(args, format );
+        vfprintf(stderr, format, args);
+        va_end(args);
+    }
+}
+
 
 
 /************************************************************

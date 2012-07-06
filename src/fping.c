@@ -1586,10 +1586,11 @@ int send_ping( int s, HOST_ENTRY *h )
 
         }/* IF */
         
-        num_unreachable++;
-        remove_job( h ); 
+        h->num_sent++;
+        h->num_sent_i++;
+        num_pingsent++;
         free( buffer );
-        return(0);
+        return(1);
     }
 
     /* mark this trial as outstanding */

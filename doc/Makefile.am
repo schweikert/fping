@@ -1,5 +1,5 @@
 man_MANS = fping.8
-EXTRA_DIST = $(man_MANS)
+EXTRA_DIST = $(man_MANS) fping.pod README.1992
 
 fping.8: fping.pod
 	pod2man $< >$@

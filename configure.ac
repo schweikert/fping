@@ -3,7 +3,7 @@ dnl Process this file with autoconf to produce a configure script.
 dnl Minimum Autoconf version required.
 AC_PREREQ(2.59)
 
-AC_INIT([fping],[3.2])
+AC_INIT([fping],[3.3rc1])
 
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([foreign])

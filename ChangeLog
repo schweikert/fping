@@ -1,7 +1,8 @@
 UNRELEAESD  David Schweikert  <david@schweikert.ch>
-  * version 3.3rc1
-  * do not output icmp errors with -q (#1)
+  * Version 3.3rc1
+  * Do not output icmp errors with -q (#1)
   * Man-page fix: TOS option typo (Thomas Liske)
+  * Convert man-page source to POD for easier maintenance
 
 2012-05-29  David Schweikert  <david@schweikert.ch>
   * Version 3.2

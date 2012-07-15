@@ -18,3 +18,4 @@ missing
 src/*.o
 src/fping
 stamp-h1
+doc/fping.8

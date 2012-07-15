@@ -50,18 +50,17 @@ up, waiting longer for a reply on each successive request.  This parameter is
 the value by which the wait time is multiplied on each successive request; it
 must be entered as a floating-point number (x.y).  The default is 1.5. 
 
-=item B<-c>
+=item B<-c> I<n>
 
 Number of request packets to send to each target.  In this mode, a line is
 displayed for each received response (this can suppressed with B<-q> or B<-Q>).
 Also, statistics about responses for each target are displayed when all
 requests have been sent (or when interrupted). 
 
-=item B<-C>
+=item B<-C> I<n>
 
-Similar to B<-c>, but the per-target statistics are displayed
-in a format designed for automated response-time statistics gathering.  For
-example: 
+Similar to B<-c>, but the per-target statistics are displayed in a format
+designed for automated response-time statistics gathering. For example: 
 
  % fping -C 5 -q somehost 
  somehost : 91.7 37.0 29.2 - 36.8 
@@ -85,13 +84,13 @@ user. Regular users should pipe in the file via stdin:
 
  % fping < targets_file 
 
-=item B<-g>
+=item B<-g> I<addr/mask>
 
-Generate a target list from a supplied
-IP netmask, or a starting and ending IP. Specify the netmask or start/end
-in the targets portion of the command line. If a network with netmask is
-given, the network and broadcast addresses will be excluded. 
-ex. To ping the network 192.168.1.0/24, the specified command line could look like either:
+Generate a target list from a supplied IP netmask, or a starting and ending IP.
+Specify the netmask or start/end in the targets portion of the command line. If
+a network with netmask is given, the network and broadcast addresses will be
+excluded. ex. To ping the network 192.168.1.0/24, the specified command line
+could look like either:
 
  fping -g 192.168.1.0/24 
 
@@ -121,7 +120,7 @@ Send pings to each of a target host's multiple interfaces.
 
 Same as -d. 
 
-=item B<-p>
+=item B<-p> <n>
 
 In looping or counting modes (B<-l>, B<-c>, or B<-C>), this parameter sets
 the time in milliseconds that B<fping> waits between successive packets to
@@ -129,8 +128,7 @@ an individual target.  Default is 1000.
 
 =item B<-q>
 
-Quiet. Don't show per-target results,
-just set final exit status. 
+Quiet. Don't show per-target results, just set final exit status. 
 
 =item B<-Q> I<n>
 

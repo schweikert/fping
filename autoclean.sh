@@ -1,4 +1,5 @@
 #!/bin/sh
+[ -f Makefile ] && make clean
 rm -f Makefile
 rm -f Makefile.in
 rm -f aclocal.m4
@@ -17,3 +18,4 @@ rm -f mkinstalldirs
 rm -f stamp-h1
 rm -f doc/Makefile.in
 rm -f src/Makefile.in
+rm -f doc/fping.8

@@ -1,3 +1,7 @@
+UNRELEAESD  David Schweikert  <david@schweikert.ch>
+  * version 3.3rc1
+  * do not output icmp errors with -q (#1)
+
 2012-05-29  David Schweikert  <david@schweikert.ch>
   * Version 3.2
   * Improve documentation for -g option (G.W. Haywood)

@@ -128,7 +128,8 @@ an individual target.  Default is 1000.
 
 =item B<-q>
 
-Quiet. Don't show per-target results, just set final exit status. 
+Quiet. Don't show per-probe results, but only the final summary. Also don't
+show ICMP error messages.
 
 =item B<-Q> I<n>
 

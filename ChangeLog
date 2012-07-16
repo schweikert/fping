@@ -6,6 +6,7 @@ UNRELEAESD  David Schweikert  <david@schweikert.ch>
   * Man-page fix: inconsistency in regards to numeric arguments (Robert Henney)
   * Man-page fix: better description of option -q (#15)
   * Set default data size to 56 bytes on all architectures (#18)
+  * Added contrib/fping.spec (Stephen Schaefer, #24)
 
 2012-05-29  David Schweikert  <david@schweikert.ch>
   * Version 3.2

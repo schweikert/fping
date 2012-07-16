@@ -4,6 +4,7 @@ UNRELEAESD  David Schweikert  <david@schweikert.ch>
   * Convert man-page source to POD for easier maintenance
   * Man-page fix: TOS option typo (Thomas Liske)
   * Man-page fix: inconsistency in regards to numeric arguments (Robert Henney)
+  * Set default data size to 56 bytes on all architectures (#18)
 
 2012-05-29  David Schweikert  <david@schweikert.ch>
   * Version 3.2

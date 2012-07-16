@@ -133,7 +133,7 @@ typedef struct ping_data
 #define MAX_PING_DATA   ( MAX_IP_PACKET - SIZE_IP_HDR - SIZE_ICMP_HDR )
 
 /* sized so as to be like traditional ping */
-#define DEFAULT_PING_DATA_SIZE  ( MIN_PING_DATA + 44 ) 
+#define DEFAULT_PING_DATA_SIZE  56
 
 /* maxima and minima */
 #define MAX_COUNT               10000
@@ -2828,7 +2828,7 @@ void usage(int is_error)
     fprintf(out, "Usage: %s [options] [targets...]\n", prog );
     fprintf(out, "   -a         show targets that are alive\n" );
     fprintf(out, "   -A         show targets by address\n" );
-    fprintf(out, "   -b n       amount of ping data to send, in bytes (default %d)\n", ping_data_size );
+    fprintf(out, "   -b n       amount of ping data to send, in bytes (default %d)\n", DEFAULT_PING_DATA_SIZE);
     fprintf(out, "   -B f       set exponential backoff factor to f\n" );
     fprintf(out, "   -c n       count of pings to send to each target (default %d)\n", count );  
     fprintf(out, "   -C n       same as -c, report results in verbose format\n" );

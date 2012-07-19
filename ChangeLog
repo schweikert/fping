@@ -3,6 +3,7 @@ UNRELEAESD  David Schweikert  <david@schweikert.ch>
   * Do not output icmp errors with -q (#1)
   * Add --enable-ipv4 and --enable-ipv6 options to configure (Niclas Zeising)
   * Fix removing of unreachable hosts when doing loop (Thomas Liske, #13 #23)
+  * Fix -A for fping6 (reported by Matt LaPlante, #14)
   * Set default data size to 56 bytes on all architectures (#18)
   * Added contrib/fping.spec (Stephen Schaefer, #24)
   * Convert man-page source to POD for easier maintenance

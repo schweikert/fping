@@ -329,7 +329,6 @@ void add_addr( char *name, char *host, struct in_addr ipaddr );
 void add_addr( char *name, char *host, FPING_SOCKADDR *ipaddr );
 #endif
 char *na_cat( char *name, struct in_addr ipaddr );
-char *cpystr( char *string );
 void crash_and_burn( char *message );
 void errno_crash_and_burn( char *message );
 char *get_host_by_address( struct in_addr in );
@@ -879,9 +878,7 @@ int main( int argc, char **argv )
             if( ( !*host ) || ( host[0] == '#' ) )  /* magic to avoid comments */
                 continue;
             
-            p = cpystr( host );
-            add_name( p );
-        
+            add_name(p);
         }/* WHILE */
         
         fclose( ping_file );
@@ -1032,7 +1029,7 @@ void add_cidr(char *addr)
         char buffer[20];
         in_addr_tmp.s_addr = htonl(net_addr);
         inet_ntop(AF_INET, &in_addr_tmp, buffer, sizeof(buffer));
-        add_name(cpystr(buffer));
+        add_name(buffer);
     }
 
     freeaddrinfo(addr_res);
@@ -1082,7 +1079,7 @@ void add_range(char *start, char *end)
         char buffer[20];
         in_addr_tmp.s_addr = htonl(start_long);
         inet_ntop(AF_INET, &in_addr_tmp, buffer, sizeof(buffer));
-        add_name(cpystr(buffer));
+        add_name(buffer);
         start_long++;
     }
 }
@@ -2091,11 +2088,14 @@ void add_name( char *name )
         /* input name is an IP addr, go with it */
         if( name_flag )
         {
-            if( addr_flag )
-                add_addr( name, na_cat( get_host_by_address( *ipa ), *ipa ), *ipa );
+            if( addr_flag ) {
+                char namebuf[256];
+                snprintf(namebuf, 256, "%s (%s)", get_host_by_address(*ipa), name);
+                add_addr(name, namebuf, *ipa);
+            }
             else
             {
-                nm = cpystr( get_host_by_address( *ipa ) );
+                nm = get_host_by_address( *ipa );
                 add_addr( name, nm, *ipa );
 
             }/* ELSE */
@@ -2135,10 +2135,10 @@ void add_name( char *name )
             
             }/* IF */
             else
-                add_name( cpystr( machine ) );
+                add_name(machine);
 
             while( getnetgrent( &machine, &user_ignored, &domain_ignored ) )
-                add_name( cpystr( machine ) );
+                add_name(machine);
       
             endnetgrent();
             return;
@@ -2165,11 +2165,15 @@ void add_name( char *name )
         /* it is indeed a hostname with a real address */
         while( host_add )
         {
-            if( name_flag && addr_flag )
-                add_addr( name, na_cat( name, *host_add ), *host_add );
+            if( name_flag && addr_flag ) {
+                char namebuf[256];
+                nm = inet_ntoa(*host_add);
+                snprintf(namebuf, 256, "%s (%s)", name, nm);
+                add_addr( name, namebuf, *host_add );
+            }
             else if( addr_flag )
             {
-                nm = cpystr( inet_ntoa( *host_add ) );
+                nm = inet_ntoa(*host_add);
                 add_addr( name, nm, *host_add );
             }/* ELSE IF */
             else
@@ -2214,43 +2218,34 @@ void add_name( char *name )
     len = res->ai_addrlen;
     if (len > sizeof(FPING_SOCKADDR)) len = sizeof(FPING_SOCKADDR);
     (void)memcpy(&dst, res->ai_addr, len);
-    add_addr(name, name, &dst);
+
+    /* numerical addresses requested */
+    if(addr_flag) {
+        char addrbuf[64];
+        int ret;
+        ret = getnameinfo(res->ai_addr, res->ai_addrlen, addrbuf,
+                          64, NULL, 0, NI_NUMERICHOST);
+        if (ret) {
+            if(!quiet_flag) {
+                warnx("%s", gai_strerror(ret_ga));
+            }
+            num_noaddress++;
+            return; 
+        }
+        if(name_flag) {
+            char nameaddrbuf[256];
+            snprintf(nameaddrbuf, 256, "%s (%s)", name, addrbuf);
+            add_addr(name, nameaddrbuf, &dst);
+        }
+        else {
+            add_addr(name, addrbuf, &dst);
+        }
+    }
+    else {
+        add_addr(name, name, &dst);
+    }
 #endif
 } /* add_name() */
-
-
-/************************************************************
-
-  Function: na_cat
-
-*************************************************************
-
-  Inputs:  char* name, struct in_addr ipaddr
-
-  Returns:  char*
-
-  Description:
-
-************************************************************/
-
-char *na_cat( char *name, struct in_addr ipaddr )
-{
-    char *nm, *as;
-
-    as = inet_ntoa( ipaddr );
-    nm = ( char* )malloc( strlen( name ) + strlen( as ) + 4 );
-
-    if( !nm )
-        crash_and_burn( "can't allocate some space for a string" );
-    
-    strcpy( nm, name );
-    strcat( nm, " (" );
-    strcat( nm, as );
-    strcat( nm, ")" );
-
-    return( nm );
-
-} /* na_cat() */
 
 
 /************************************************************
@@ -2283,8 +2278,8 @@ void add_addr( char *name, char *host, FPING_SOCKADDR *ipaddr )
 
     memset( ( char* ) p, 0, sizeof( HOST_ENTRY ) );
 
-    p->name = name;
-    p->host = host;
+    p->name = strdup(name);
+    p->host = strdup(host);
 #ifndef IPV6
     p->saddr.sin_family = AF_INET;
     p->saddr.sin_addr = ipaddr; 
@@ -2397,41 +2392,6 @@ char *get_host_by_address( struct in_addr in )
         return ( char* )h->h_name;
 
 } /* get_host_by_address() */
-
-
-/************************************************************
-
-  Function: cpystr
-
-*************************************************************
-
-  Inputs:  char* string
-
-  Returns:  char*
-
-  Description:
-
-************************************************************/
-
-char *cpystr( char *string )
-{
-    char *dst;
-
-    if( string )
-    {
-        dst = ( char* )malloc( 1 + strlen( string ) );
-        if( !dst )
-            crash_and_burn( "can't allocate some space for a string" );
-        
-        strcpy( dst, string );
-        return dst;
-    
-    }/* IF */
-    else 
-        return NULL;
-
-} /* cpystr() */
-
 
 /************************************************************
 

@@ -2150,6 +2150,12 @@ void add_name( char *name )
 #endif /* NIS_GROUPS */
         }/* IF */
     }/* IF */
+
+    if(host_ent->h_addrtype != AF_INET) {
+        print_warning("%s: IPv6 address returned by gethostbyname (options inet6 in resolv.conf?)\n", name );
+        num_noaddress++;
+        return; 
+    }
   
     host_add = ( struct in_addr* )*( host_ent->h_addr_list ); 
     if( host_add == NULL )

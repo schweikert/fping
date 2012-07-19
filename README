@@ -9,7 +9,7 @@ Current maintainer:
    David Schweikert <david@schweikert.ch>
 
 Website:
-   http://www.fping.org
+   http://www.fping.org/
 
 Installation
 ------------
@@ -24,12 +24,23 @@ If you want to install fping from source, proceed as follows:
 
    sudo setcap cap_net_raw+ep fping
 
-4. Have a look at the fping(1) manual for usage help
+4. Have a look at the fping(8) manual for usage help
    (fping -h will also give a minimal help output)
+
+IPv6 support
+------------
+You can can compile fping with support for IPv6 addresses. A separate binary
+is used for that, called fping6. To build it, use ./configure --enable-ipv6
+(possibly combined with --enable-ipv4 to also build fping for IPv4). E.g.:
+
+  # ./configure --prefix=/usr/local --enable-ipv4 --enable-ipv6
+  # make
+  # make install
+  # sudo setcap cap_net_raw+ep /usr/local/bin/fping*
 
 Credits
 -------
 Original author:  Roland Schemers (schemers@stanford.edu)
 Previous maintainer:  RL "Bob" Morgan (morgan@stanford.edu)
-IPv6 Support: Jeroen Massar (jeroen@unfix.org / jeroen@ipng.nl)
-              to enable IPV6 compile with -DIPV6                          
+Initial IPv6 Support: Jeroen Massar (jeroen@unfix.org / jeroen@ipng.nl)
+Other contributors: see ChangeLog

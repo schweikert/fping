@@ -5,6 +5,7 @@ fping - send ICMP ECHO_REQUEST packets to network hosts
 =head1 SYNOPSIS
 
 B<fping> [ I<options> ] [ I<systems...> ] 
+B<fping6> [ I<options> ] [ I<systems...> ] 
 
 =head1 DESCRIPTION
 
@@ -20,6 +21,9 @@ and/or retry limit it is designated as unreachable. B<fping> also supports
 sending a specified number of pings to a target, or looping indefinitely (as in
 B<ping> ). Unlike B<ping>, B<fping> is meant to be used in scripts, so its
 output is designed to be easy to parse.
+
+The binary named B<fping6> is the same as B<fping>, except that it uses IPv6
+addresses instead of IPv4.
 
 =head1 OPTIONS
 

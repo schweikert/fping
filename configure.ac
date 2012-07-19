@@ -5,6 +5,29 @@ AC_PREREQ(2.59)
 
 AC_INIT([fping],[3.3rc1])
 
+dnl make ipv4 and ipv6 options
+AC_ARG_ENABLE([ipv4],
+  [  --enable-ipv4    Build IPv4 capable fping],
+  [case "${enableval}" in
+   yes)	ipv4=true ;;
+   no)	ipv4=false ;;
+   *)	AC_MSG_ERROR([bad value ${enableval} for --enable-ipv4]) ;;
+   esac],[ipv4=true])
+  AM_CONDITIONAL([IPV4], [test x$ipv4 = xtrue])
+
+AC_ARG_ENABLE([ipv6],
+  [  --enable-ipv6    Build IPv6 capable fping6],
+  [case "${enableval}" in
+   yes)	ipv6=true ;;
+   no)	ipv6=false ;;
+   *)	AC_MSG_ERROR([bad value ${enableval} for --enable-ipv6]) ;;
+   esac],[ipv6=false])
+  AM_CONDITIONAL([IPV6], [test x$ipv6 = xtrue])
+
+if test x$ipv4 = xfalse && test x$ipv6 = xfalse; then
+  AC_MSG_ERROR([You must enable at least one of IPv4 and IPv6.])
+fi
+
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([foreign])
 AM_MAINTAINER_MODE

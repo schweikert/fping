@@ -2192,19 +2192,20 @@ void add_name( char *name )
         }/* WHILE */
     }/* ELSE */
 #else
-    FPING_SOCKADDR  dst;
-    struct addrinfo     *res, hints;
-    int                     ret_ga;
-    char                        *hostname;
-    size_t len;
+    FPING_SOCKADDR    dst;
+    struct addrinfo   *res, hints;
+    int               ret_ga;
+    size_t            len;
+    char              *printname;
+    char              namebuf[256];
+    char              addrbuf[256];
 
     /* getaddrinfo */
     bzero(&hints, sizeof(struct addrinfo));
-    hints.ai_flags = name_flag ? AI_CANONNAME : 0;
+    hints.ai_flags = 0;
     hints.ai_family = AF_INET6;
     hints.ai_socktype = SOCK_RAW;
     hints.ai_protocol = IPPROTO_ICMPV6;
-
     ret_ga = getaddrinfo(name, NULL, &hints, &res);
     if (ret_ga) {
         if(!quiet_flag)
@@ -2212,24 +2213,18 @@ void add_name( char *name )
         num_noaddress++;
         return; 
     }
-    if (res->ai_canonname) hostname = res->ai_canonname;
-    else hostname = name;
-    if (!res->ai_addr) {
-        if(!quiet_flag)
-            print_warning("%s: getaddrinfo failed\n", name);
-        num_noaddress++;
-        return; 
-    }
     len = res->ai_addrlen;
     if (len > sizeof(FPING_SOCKADDR)) len = sizeof(FPING_SOCKADDR);
     (void)memcpy(&dst, res->ai_addr, len);
 
-    /* numerical addresses requested */
-    if(addr_flag) {
-        char addrbuf[64];
+    /* name_flag: addr -> name lookup requested) */
+    if(!name_flag) {
+        printname = name;
+    }
+    else {
         int ret;
-        ret = getnameinfo(res->ai_addr, res->ai_addrlen, addrbuf,
-                          64, NULL, 0, NI_NUMERICHOST);
+        ret = getnameinfo(res->ai_addr, res->ai_addrlen, namebuf,
+                          sizeof(namebuf)/sizeof(char), NULL, 0, 0);
         if (ret) {
             if(!quiet_flag) {
                 print_warning("%s: %s\n", name, gai_strerror(ret_ga));
@@ -2237,9 +2232,25 @@ void add_name( char *name )
             num_noaddress++;
             return; 
         }
+        printname = namebuf;
+    }
+
+    /* addr_flag: name -> addr lookup requested */
+    if(addr_flag) {
+        int ret;
+        ret = getnameinfo(res->ai_addr, res->ai_addrlen, addrbuf,
+                          sizeof(addrbuf)/sizeof(char), NULL, 0, NI_NUMERICHOST);
+        if (ret) {
+            if(!quiet_flag) {
+                print_warning("%s: %s\n", name, gai_strerror(ret_ga));
+            }
+            num_noaddress++;
+            return; 
+        }
+
         if(name_flag) {
-            char nameaddrbuf[256];
-            snprintf(nameaddrbuf, 256, "%s (%s)", name, addrbuf);
+            char nameaddrbuf[512];
+            snprintf(nameaddrbuf, sizeof(nameaddrbuf)/sizeof(char), "%s (%s)", printname, addrbuf);
             add_addr(name, nameaddrbuf, &dst);
         }
         else {
@@ -2247,7 +2258,7 @@ void add_name( char *name )
         }
     }
     else {
-        add_addr(name, name, &dst);
+        add_addr(name, printname, &dst);
     }
 #endif
 } /* add_name() */

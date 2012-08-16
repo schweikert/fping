@@ -859,7 +859,6 @@ int main( int argc, char **argv )
         FILE *ping_file;
         char line[132];
         char host[132];
-        char *p;
         
         if( strcmp( filename, "-" ) == 0 )
             ping_file = fdopen( 0, "r" );
@@ -878,7 +877,7 @@ int main( int argc, char **argv )
             if( ( !*host ) || ( host[0] == '#' ) )  /* magic to avoid comments */
                 continue;
             
-            add_name(p);
+            add_name(host);
         }/* WHILE */
         
         fclose( ping_file );

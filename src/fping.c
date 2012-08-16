@@ -2208,7 +2208,7 @@ void add_name( char *name )
     ret_ga = getaddrinfo(name, NULL, &hints, &res);
     if (ret_ga) {
         if(!quiet_flag)
-            warnx("%s", gai_strerror(ret_ga));
+            print_warning("%s: %s\n", name, gai_strerror(ret_ga));
         num_noaddress++;
         return; 
     }
@@ -2216,7 +2216,7 @@ void add_name( char *name )
     else hostname = name;
     if (!res->ai_addr) {
         if(!quiet_flag)
-            warnx("getaddrinfo failed");
+            print_warning("%s: getaddrinfo failed\n", name);
         num_noaddress++;
         return; 
     }
@@ -2232,7 +2232,7 @@ void add_name( char *name )
                           64, NULL, 0, NI_NUMERICHOST);
         if (ret) {
             if(!quiet_flag) {
-                warnx("%s", gai_strerror(ret_ga));
+                print_warning("%s: %s\n", name, gai_strerror(ret_ga));
             }
             num_noaddress++;
             return; 

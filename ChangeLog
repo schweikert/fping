@@ -9,6 +9,7 @@ UNRELEAESD  David Schweikert  <david@schweikert.ch>
   * Set default data size to 56 bytes on all architectures (#18)
   * Added contrib/fping.spec (Stephen Schaefer, #24)
   * Convert man-page source to POD for easier maintenance
+  * Fix error message on DNS error for IPv6 hosts (#27)
   * Man-page fix: TOS option typo (Thomas Liske, #23)
   * Man-page fix: inconsistency in regards to numeric arguments (Robert Henney)
   * Man-page fix: better description of option -q (#15)

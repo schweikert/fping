@@ -1,5 +1,5 @@
-UNRELEAESD  David Schweikert  <david@schweikert.ch>
-  * Version 3.3-rc1
+2012-08-19  David Schweikert  <david@schweikert.ch>
+  * Version 3.3
   * Do not output icmp errors with -q (#1)
   * Add --enable-ipv4 and --enable-ipv6 options to configure (Niclas Zeising)
   * Fix removing of unreachable hosts when doing loop (Thomas Liske, #13 #23)

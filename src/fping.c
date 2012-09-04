@@ -1305,39 +1305,39 @@ void print_per_system_stats( void )
     fflush( stdout );
 
     if( verbose_flag || per_recv_flag )
-        fprintf( stdout, "\n" );
+        fprintf( stderr, "\n" );
 
     for( i = 0; i < num_hosts; i++ )
     {
         h = table[i];
-        fprintf( stdout, "%s%s :", h->host, h->pad );
+        fprintf( stderr, "%s%s :", h->host, h->pad );
 
         if( report_all_rtts_flag )
         {
             for( j = 0; j < h->num_sent; j++ )
             {
                 if( ( resp = h->resp_times[j] ) >= 0 )
-                    fprintf( stdout, " %d.%02d", resp / 100, resp % 100 );
+                    fprintf( stderr, " %d.%02d", resp / 100, resp % 100 );
                 else
-                    fprintf( stdout, " -" );
+                    fprintf( stderr, " -" );
 
             }/* FOR */
           
-            fprintf( stdout, "\n" );
+            fprintf( stderr, "\n" );
       
         }/* IF */
         else
         {
             if( h->num_recv <= h->num_sent )
             {
-                fprintf( stdout, " xmt/rcv/%%loss = %d/%d/%d%%",
+                fprintf( stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
                     h->num_sent, h->num_recv, h->num_sent > 0 ?
                     ( ( h->num_sent - h->num_recv ) * 100 ) / h->num_sent : 0 );
 
             }/* IF */
             else
             {
-                fprintf( stdout, " xmt/rcv/%%return = %d/%d/%d%%",
+                fprintf( stderr, " xmt/rcv/%%return = %d/%d/%d%%",
                     h->num_sent, h->num_recv,
                     ( ( h->num_recv * 100 ) / h->num_sent ) );
           
@@ -1346,13 +1346,13 @@ void print_per_system_stats( void )
             if( h->num_recv )
             {
                 avg = h->total_time / h->num_recv;
-                fprintf( stdout, ", min/avg/max = %s", sprint_tm( h->min_reply ) );
-                fprintf( stdout, "/%s", sprint_tm( avg ) );
-                fprintf( stdout, "/%s", sprint_tm( h->max_reply ) );
+                fprintf( stderr, ", min/avg/max = %s", sprint_tm( h->min_reply ) );
+                fprintf( stderr, "/%s", sprint_tm( avg ) );
+                fprintf( stderr, "/%s", sprint_tm( h->max_reply ) );
           
             }/* IF */
           
-            fprintf(stdout, "\n");
+            fprintf(stderr, "\n");
 
         }/* ELSE */
 
@@ -1362,11 +1362,11 @@ void print_per_system_stats( void )
             for( j = 0; j < h->num_sent; j++ )
             {
                 if( ( resp = h->sent_times[j] ) >= 0 )
-                    fprintf( stdout, " %s", sprint_tm( resp ) );
+                    fprintf( stderr, " %s", sprint_tm( resp ) );
                 else
-                    fprintf( stdout, " -" );
+                    fprintf( stderr, " -" );
               
-                fprintf( stdout, "\n" );
+                fprintf( stderr, "\n" );
 
             }/* FOR */
         }/* IF */
@@ -1409,27 +1409,27 @@ void print_per_system_splits( void )
     fflush( stdout );
 
     if( verbose_flag || per_recv_flag )
-        fprintf( stdout, "\n" );
+        fprintf( stderr, "\n" );
 
     curr_tm = localtime( ( time_t* )&current_time.tv_sec );
-    fprintf( stdout, "[%2.2d:%2.2d:%2.2d]\n", curr_tm->tm_hour,
+    fprintf( stderr, "[%2.2d:%2.2d:%2.2d]\n", curr_tm->tm_hour,
         curr_tm->tm_min, curr_tm->tm_sec );
 
     for( i = 0; i < num_hosts; i++ )
     {
         h = table[i];
-        fprintf( stdout, "%s%s :", h->host, h->pad );
+        fprintf( stderr, "%s%s :", h->host, h->pad );
 
         if( h->num_recv_i <= h->num_sent_i )
         {
-            fprintf( stdout, " xmt/rcv/%%loss = %d/%d/%d%%",
+            fprintf( stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
                 h->num_sent_i, h->num_recv_i, h->num_sent_i > 0 ?
                 ( ( h->num_sent_i - h->num_recv_i ) * 100 ) / h->num_sent_i : 0 );
 
         }/* IF */
         else
         {
-            fprintf( stdout, " xmt/rcv/%%return = %d/%d/%d%%",
+            fprintf( stderr, " xmt/rcv/%%return = %d/%d/%d%%",
                 h->num_sent_i, h->num_recv_i, h->num_sent_i > 0 ?
                 ( ( h->num_recv_i * 100 ) / h->num_sent_i ) : 0 );
 
@@ -1438,13 +1438,13 @@ void print_per_system_splits( void )
         if( h->num_recv_i )
         {
             avg = h->total_time_i / h->num_recv_i;
-            fprintf( stdout, ", min/avg/max = %s", sprint_tm( h->min_reply_i ) );
-            fprintf( stdout, "/%s", sprint_tm( avg ) );
-            fprintf( stdout, "/%s", sprint_tm( h->max_reply_i ) );
+            fprintf( stderr, ", min/avg/max = %s", sprint_tm( h->min_reply_i ) );
+            fprintf( stderr, "/%s", sprint_tm( avg ) );
+            fprintf( stderr, "/%s", sprint_tm( h->max_reply_i ) );
         
         }/* IF */
         
-        fprintf( stdout, "\n" );
+        fprintf( stderr, "\n" );
         h->num_sent_i = h->num_recv_i = h->max_reply_i =
             h->min_reply_i = h->total_time_i = 0;
     
@@ -1471,17 +1471,17 @@ void print_per_system_splits( void )
 void print_global_stats( void )
 {
     fflush( stdout );
-    fprintf( stdout, "\n" );
-    fprintf( stdout, " %7d targets\n", num_hosts );
-    fprintf( stdout, " %7d alive\n", num_alive );
-    fprintf( stdout, " %7d unreachable\n" ,num_unreachable );
-    fprintf( stdout, " %7d unknown addresses\n", num_noaddress );
-    fprintf( stdout, "\n" );
-    fprintf( stdout, " %7d timeouts (waiting for response)\n", num_timeout );
-    fprintf( stdout, " %7d ICMP Echos sent\n", num_pingsent );
-    fprintf( stdout, " %7d ICMP Echo Replies received\n", num_pingreceived );
-    fprintf( stdout, " %7d other ICMP received\n", num_othericmprcvd );
-    fprintf( stdout, "\n" );
+    fprintf( stderr, "\n" );
+    fprintf( stderr, " %7d targets\n", num_hosts );
+    fprintf( stderr, " %7d alive\n", num_alive );
+    fprintf( stderr, " %7d unreachable\n" ,num_unreachable );
+    fprintf( stderr, " %7d unknown addresses\n", num_noaddress );
+    fprintf( stderr, "\n" );
+    fprintf( stderr, " %7d timeouts (waiting for response)\n", num_timeout );
+    fprintf( stderr, " %7d ICMP Echos sent\n", num_pingsent );
+    fprintf( stderr, " %7d ICMP Echo Replies received\n", num_pingreceived );
+    fprintf( stderr, " %7d other ICMP received\n", num_othericmprcvd );
+    fprintf( stderr, "\n" );
 
     if( total_replies == 0 )
     {
@@ -1492,13 +1492,13 @@ void print_global_stats( void )
     
     }/* IF */
 
-    fprintf( stdout, " %s ms (min round trip time)\n", sprint_tm( min_reply ) );
-    fprintf( stdout, " %s ms (avg round trip time)\n",
+    fprintf( stderr, " %s ms (min round trip time)\n", sprint_tm( min_reply ) );
+    fprintf( stderr, " %s ms (avg round trip time)\n",
         sprint_tm( ( int )( sum_replies / total_replies ) ) );
-    fprintf( stdout, " %s ms (max round trip time)\n", sprint_tm( max_reply ) );
-    fprintf( stdout, " %.3f sec (elapsed real time)\n",
+    fprintf( stderr, " %s ms (max round trip time)\n", sprint_tm( max_reply ) );
+    fprintf( stderr, " %12.3f sec (elapsed real time)\n",
         timeval_diff( &end_time, &start_time ) / 100000.0 );
-    fprintf( stdout, "\n" );
+    fprintf( stderr, "\n" );
 
 } /* print_global_stats() */
 

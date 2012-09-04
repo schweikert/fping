@@ -1,3 +1,8 @@
+2012-09-04  David Schweikert  <david@schweikert.ch>
+  * Version 3.4
+  * Revert "Output statistics to stdout instead of stderr", because it breaks
+    tools assuming the output goes to stderr
+
 2012-08-19  David Schweikert  <david@schweikert.ch>
   * Version 3.3
   * Do not output icmp errors with -q (#1)
@@ -5,6 +10,7 @@
   * Fix removing of unreachable hosts when doing loop (Thomas Liske, #13 #23)
   * Fix -A for fping6 (reported by Matt LaPlante, #14)
   * Fix "options inet6" breaking IPv4 name resolution (reported by Matt LaPlante, #17)
+  * Output statistics to stdout instead of stderr (suggested by Simon Leinen, #9)
   * Set default data size to 56 bytes on all architectures (#18)
   * Added contrib/fping.spec (Stephen Schaefer, #24)
   * Convert man-page source to POD for easier maintenance

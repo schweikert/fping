@@ -54,6 +54,7 @@ extern "C"
 #include <getopt.h>
 #include <stdarg.h>
 
+#define __APPLE_USE_RFC_3542 1
 #include <netinet/in.h>
 
 #include "config.h"

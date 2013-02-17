@@ -1,5 +1,6 @@
 UNRELEASED
   * fping.spec: fix setuid permissions and provides fping6 (Marcus Vinicius Ferreira)
+  * fix fping6 build on OS X 10.8 (unknown contributor)
 
 2012-09-04  David Schweikert  <david@schweikert.ch>
   * Version 3.4

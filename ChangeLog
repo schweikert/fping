@@ -1,3 +1,6 @@
+UNRELEASED
+  * fping.spec: fix setuid permissions and provides fping6 (Marcus Vinicius Ferreira)
+
 2012-09-04  David Schweikert  <david@schweikert.ch>
   * Version 3.4
   * Revert "Output statistics to stdout instead of stderr", because it breaks

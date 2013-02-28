@@ -35,6 +35,9 @@ extern "C"
 {
 #endif /* __cplusplus */
 
+#include "fping.h"
+#include "options.h"
+
 /* if compiling for Windows, use this separate set
   (too difficult to ifdef all the autoconf defines) */
 #ifdef WIN32
@@ -53,9 +56,6 @@ extern "C"
 #include <signal.h>
 #include <getopt.h>
 #include <stdarg.h>
-
-#define __APPLE_USE_RFC_3542 1
-#include <netinet/in.h>
 
 #include "config.h"
 #include "seqmap.h"
@@ -96,8 +96,6 @@ extern "C"
 #endif /* HAVE_SYS_SELECT_H */
 
 #endif /* WIN32 */
-
-#include "options.h"
 
 /*** externals ***/
 
@@ -194,13 +192,6 @@ char *icmp_unreach_str[16] =
 };
 
 #define ICMP_UNREACH_MAXTYPE    15
-#ifndef IPV6
-#define FPING_SOCKADDR struct sockaddr_in
-#define FPING_ICMPHDR   struct icmp
-#else
-#define FPING_SOCKADDR struct sockaddr_in6
-#define FPING_ICMPHDR   struct icmp6_hdr
-#endif
 
 /* entry used to keep track of each host we are pinging */
 
@@ -367,108 +358,19 @@ void print_warning(char *fmt, ...);
 int main( int argc, char **argv )
 {
     int c, i, n;
-#ifdef IPV6
-    int opton = 1;
-#endif
-    struct protoent *proto;
     char *buf;
     uid_t uid;
-        int tos = 0; 
-
-#ifndef IPV6
-    struct sockaddr_in sa;
-#else
-    struct sockaddr_in6 sa;
-#endif
+    int tos = 0; 
     HOST_ENTRY *cursor;
 
-    prog = argv[0];
+    s = open_ping_socket();
 
-    /* confirm that ICMP is available on this machine */
-#ifndef IPV6
-    if( ( proto = getprotobyname( "icmp" ) ) == NULL ) 
-#else
-    if( ( proto = getprotobyname( "ipv6-icmp" ) ) == NULL ) 
-#endif
-        crash_and_burn( "icmp: unknown protocol" );
-
-    /* create raw socket for ICMP calls (ping) */
-#ifndef IPV6
-    s = socket( AF_INET, SOCK_RAW, proto->p_proto );
-#else
-    s = socket( AF_INET6, SOCK_RAW, proto->p_proto );
-#endif
-
-    if( s < 0 )
-        errno_crash_and_burn( "can't create raw socket (must run as root?)" );
-
-#ifdef IPV6
-    /*
-     * let the kernel pass extension headers of incoming packets,
-     * for privileged socket options
-     */
-#ifdef IPV6_RECVHOPOPTS
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVHOPOPTS, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_RECVHOPOPTS)");
-#else  /* old adv. API */
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_HOPOPTS, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_HOPOPTS)");
-#endif
-#ifdef IPV6_RECVDSTOPTS
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVDSTOPTS, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_RECVDSTOPTS)");
-#else  /* old adv. API */
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_DSTOPTS, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_DSTOPTS)");
-#endif
-#ifdef IPV6_RECVRTHDRDSTOPTS
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVRTHDRDSTOPTS, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_RECVRTHDRDSTOPTS)");
-#endif
-#ifdef IPV6_RECVRTHDR
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVRTHDR, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_RECVRTHDR)");
-#else  /* old adv. API */
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_RTHDR, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_RTHDR)");
-#endif
-#ifndef USE_SIN6_SCOPE_ID
-#ifdef IPV6_RECVPKTINFO
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVPKTINFO, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_RECVPKTINFO)");
-#else  /* old adv. API */
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_PKTINFO, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_PKTINFO)");
-#endif
-#endif /* USE_SIN6_SCOPE_ID */
-#ifdef IPV6_RECVHOPLIMIT
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVHOPLIMIT, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_RECVHOPLIMIT)");
-#else  /* old adv. API */
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_HOPLIMIT, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_HOPLIMIT)");
-#endif
-#endif
-
-    if( ( uid = getuid() ) )
-    {
+    if(uid = getuid()) {
         seteuid( getuid() );
+    }
 
-    }/* IF */
-
+    prog = argv[0];
     ident = getpid() & 0xFFFF;
-
     verbose_flag = 1;
     backoff_flag = 1;
     opterr = 1;
@@ -891,20 +793,8 @@ int main( int argc, char **argv )
     if( !num_hosts )
         exit( 2 );
 
-    /* set the source address */
-
-    if( src_addr_present )
-    {
-        memset( &sa, 0, sizeof( sa ) );
-#ifndef IPV6
-        sa.sin_family = AF_INET;
-        sa.sin_addr = src_addr;
-#else
-        sa.sin6_family = AF_INET6;
-        sa.sin6_addr = src_addr;
-#endif
-        if ( bind( s, (struct sockaddr *)&sa, sizeof( sa ) ) < 0 )
-            errno_crash_and_burn( "cannot bind source address" );
+    if(src_addr_present) {
+        socket_set_src_addr(s, src_addr);
     }
 
     /* allocate array to hold outstanding ping requests */

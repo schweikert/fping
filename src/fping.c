@@ -37,6 +37,146 @@ extern "C"
 
 /* if compiling for Windows, use this separate set
   (too difficult to ifdef all the autoconf defines) */
+#ifdef _WIN32
+#define WIN32
+#undef UNICODE
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <stdio.h>
+#include <errno.h>
+#include <signal.h>
+#include <stddef.h>
+
+#define VERSION "3.4"
+#pragma comment(lib, "ws2_32.lib")
+
+#define snprintf _snprintf
+#define getpid GetCurrentThreadId
+#define h_errno WSAGetLastError()
+#define srandom srand
+#define random rand
+
+struct timezone {
+	int tz_minuteswest;
+	int tz_dsttime;
+};
+static int gettimeofday(struct timeval* tv, struct timezone *tz);
+
+/* copy from mac os x */
+#define	LITTLE_ENDIAN	1234
+#define	BIG_ENDIAN	3421
+#define	BYTE_ORDER	LITTLE_ENDIAN
+
+typedef unsigned short n_short;
+typedef unsigned short u_int16_t;
+typedef unsigned int n_time;
+typedef unsigned int u_int32_t;
+typedef unsigned int uid_t;
+
+struct ip {
+#ifdef _IP_VHL
+	u_char	ip_vhl;			/* version << 4 | header length >> 2 */
+#else
+#if BYTE_ORDER == LITTLE_ENDIAN
+	u_int	ip_hl:4,		/* header length */
+		ip_v:4;			/* version */
+#endif
+#if BYTE_ORDER == BIG_ENDIAN
+	u_int	ip_v:4,			/* version */
+		ip_hl:4;		/* header length */
+#endif
+#endif /* not _IP_VHL */
+	u_char	ip_tos;			/* type of service */
+	u_short	ip_len;			/* total length */
+	u_short	ip_id;			/* identification */
+	u_short	ip_off;			/* fragment offset field */
+#define	IP_RF 0x8000			/* reserved fragment flag */
+#define	IP_DF 0x4000			/* dont fragment flag */
+#define	IP_MF 0x2000			/* more fragments flag */
+#define	IP_OFFMASK 0x1fff		/* mask for fragmenting bits */
+	u_char	ip_ttl;			/* time to live */
+	u_char	ip_p;			/* protocol */
+	u_short	ip_sum;			/* checksum */
+	struct	in_addr ip_src,ip_dst;	/* source and dest address */
+};
+
+struct icmp {
+	u_char	icmp_type;		/* type of message, see below */
+	u_char	icmp_code;		/* type sub code */
+	u_short	icmp_cksum;		/* ones complement cksum of struct */
+	union {
+		u_char ih_pptr;			/* ICMP_PARAMPROB */
+		struct in_addr ih_gwaddr;	/* ICMP_REDIRECT */
+		struct ih_idseq {
+			n_short	icd_id;
+			n_short	icd_seq;
+		} ih_idseq;
+		int ih_void;
+
+		/* ICMP_UNREACH_NEEDFRAG -- Path MTU Discovery (RFC1191) */
+		struct ih_pmtu {
+			n_short ipm_void;
+			n_short ipm_nextmtu;
+		} ih_pmtu;
+
+		struct ih_rtradv {
+			u_char irt_num_addrs;
+			u_char irt_wpa;
+			u_int16_t irt_lifetime;
+		} ih_rtradv;
+	} icmp_hun;
+#define	icmp_pptr	icmp_hun.ih_pptr
+#define	icmp_gwaddr	icmp_hun.ih_gwaddr
+#define	icmp_id		icmp_hun.ih_idseq.icd_id
+#define	icmp_seq	icmp_hun.ih_idseq.icd_seq
+#define	icmp_void	icmp_hun.ih_void
+#define	icmp_pmvoid	icmp_hun.ih_pmtu.ipm_void
+#define	icmp_nextmtu	icmp_hun.ih_pmtu.ipm_nextmtu
+#define	icmp_num_addrs	icmp_hun.ih_rtradv.irt_num_addrs
+#define	icmp_wpa	icmp_hun.ih_rtradv.irt_wpa
+#define	icmp_lifetime	icmp_hun.ih_rtradv.irt_lifetime
+	union {
+		struct id_ts {
+			n_time its_otime;
+			n_time its_rtime;
+			n_time its_ttime;
+		} id_ts;
+		struct id_ip  {
+			struct ip idi_ip;
+			/* options and then 64 bits of data */
+		} id_ip;
+		// struct icmp_ra_addr id_radv;
+		u_int32_t id_mask;
+		char	id_data[1];
+	} icmp_dun;
+#define	icmp_otime	icmp_dun.id_ts.its_otime
+#define	icmp_rtime	icmp_dun.id_ts.its_rtime
+#define	icmp_ttime	icmp_dun.id_ts.its_ttime
+#define	icmp_ip		icmp_dun.id_ip.idi_ip
+#define	icmp_radv	icmp_dun.id_radv
+#define	icmp_mask	icmp_dun.id_mask
+#define	icmp_data	icmp_dun.id_data
+};
+
+#define	ICMP_MINLEN		8
+#define	ICMP_ECHOREPLY		0		/* echo reply */
+#define	ICMP_UNREACH		3		/* dest unreachable, codes: */
+#define	ICMP_SOURCEQUENCH	4		/* packet lost, slow down */
+#define	ICMP_REDIRECT		5		/* shorter route, codes: */
+#define	ICMP_ALTHOSTADDR	6		/* alternate host address */
+#define	ICMP_ECHO		8		/* echo service */
+#define	ICMP_ROUTERADVERT	9		/* router advertisement */
+#define	ICMP_ROUTERSOLICIT	10		/* router solicitation */
+#define	ICMP_TIMXCEED		11		/* time exceeded, code: */
+#define	ICMP_PARAMPROB		12		/* ip header bad */
+#define	ICMP_TSTAMP		13		/* timestamp request */
+#define	ICMP_TSTAMPREPLY	14		/* timestamp reply */
+#define	ICMP_IREQ		15		/* information request */
+#define	ICMP_IREQREPLY		16		/* information reply */
+#define	ICMP_MASKREQ		17		/* address mask request */
+#define	ICMP_MASKREPLY		18		/* address mask reply */
+#endif
+
 #ifdef WIN32
 
 /*** Windows includes ***/
@@ -102,7 +242,9 @@ extern "C"
 
 extern char *optarg;
 extern int optind,opterr;
+#ifndef _WIN32
 extern int h_errno;
+#endif
 
 #ifdef __cplusplus
 }
@@ -390,6 +532,12 @@ int main( int argc, char **argv )
 #endif
     HOST_ENTRY *cursor;
 
+#ifdef _WIN32
+    WSADATA wsaData;
+    if (0 != WSAStartup(MAKEWORD(2, 2), &wsaData)) {
+        errno_crash_and_burn( "can't wsastartup" );
+    }
+#endif
     prog = argv[0];
 
     /* confirm that ICMP is available on this machine */
@@ -645,7 +793,12 @@ int main( int argc, char **argv )
 
         case 'S':
 #ifndef IPV6
+#ifndef _WIN32
             if( ! inet_pton( AF_INET, optarg, &src_addr ) )
+#else
+            src_addr.s_addr = inet_addr( optarg );
+            if ( src_addr.s_addr == INADDR_NONE || src_addr.s_addr == INADDR_ANY )
+#endif
 #else
             if( ! inet_pton( AF_INET6, optarg, &src_addr ) )
 #endif
@@ -1028,8 +1181,12 @@ void add_cidr(char *addr)
         struct in_addr in_addr_tmp;
         char buffer[20];
         in_addr_tmp.s_addr = htonl(net_addr);
+#ifndef _WIN32
         inet_ntop(AF_INET, &in_addr_tmp, buffer, sizeof(buffer));
         add_name(buffer);
+#else
+        add_name(inet_ntoa(in_addr_tmp));
+#endif
     }
 
     freeaddrinfo(addr_res);
@@ -1078,8 +1235,12 @@ void add_range(char *start, char *end)
         struct in_addr in_addr_tmp;
         char buffer[20];
         in_addr_tmp.s_addr = htonl(start_long);
+#ifndef _WIN32
         inet_ntop(AF_INET, &in_addr_tmp, buffer, sizeof(buffer));
         add_name(buffer);
+#else
+        add_name(inet_ntoa(in_addr_tmp));
+#endif
         start_long++;
     }
 }
@@ -1412,9 +1573,11 @@ void print_per_system_splits( void )
     if( verbose_flag || per_recv_flag )
         fprintf( stderr, "\n" );
 
+#ifndef _WIN32
     curr_tm = localtime( ( time_t* )&current_time.tv_sec );
     fprintf( stderr, "[%2.2d:%2.2d:%2.2d]\n", curr_tm->tm_hour,
         curr_tm->tm_min, curr_tm->tm_sec );
+#endif
 
     for( i = 0; i < num_hosts; i++ )
     {
@@ -2839,3 +3002,36 @@ void usage(int is_error)
     fprintf(out, "\n");
     exit(is_error);
 } /* usage() */
+
+#ifdef _WIN32
+static int gettimeofday(struct timeval* tv, struct timezone *tz)
+{
+	FILETIME ft;
+	ULARGE_INTEGER epoch, ts;
+
+	// 100-nanosecond since January 1, 1601 (UTC).
+	GetSystemTimeAsFileTime(&ft);
+
+	// Jan 1, 1970 (UTC).
+	epoch.LowPart = 0xD53E8000;
+	epoch.HighPart = 0x19DB1DE;
+
+	ts.LowPart = ft.dwLowDateTime;
+	ts.HighPart = ft.dwHighDateTime;
+	ts.QuadPart -= epoch.QuadPart;
+
+	tv->tv_usec = (ts.QuadPart / 10) % 1000000;
+	tv->tv_sec = (long)(ts.QuadPart / 10000000);
+	return 0;
+}
+
+static int getuid()
+{
+	return 0;
+}
+
+static int seteuid(uid_t euid)
+{
+	return 0;
+}
+#endif

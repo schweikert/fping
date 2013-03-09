@@ -793,7 +793,12 @@ int main( int argc, char **argv )
 
         case 'S':
 #ifndef IPV6
+#ifndef _WIN32
             if( ! inet_pton( AF_INET, optarg, &src_addr ) )
+#else
+            src_addr.s_addr = inet_addr( optarg );
+            if ( src_addr.s_addr == INADDR_NONE || src_addr.s_addr == INADDR_ANY )
+#endif
 #else
             if( ! inet_pton( AF_INET6, optarg, &src_addr ) )
 #endif
@@ -1176,8 +1181,12 @@ void add_cidr(char *addr)
         struct in_addr in_addr_tmp;
         char buffer[20];
         in_addr_tmp.s_addr = htonl(net_addr);
+#ifndef _WIN32
         inet_ntop(AF_INET, &in_addr_tmp, buffer, sizeof(buffer));
         add_name(buffer);
+#else
+        add_name(inet_ntoa(in_addr_tmp));
+#endif
     }
 
     freeaddrinfo(addr_res);
@@ -1226,8 +1235,12 @@ void add_range(char *start, char *end)
         struct in_addr in_addr_tmp;
         char buffer[20];
         in_addr_tmp.s_addr = htonl(start_long);
+#ifndef _WIN32
         inet_ntop(AF_INET, &in_addr_tmp, buffer, sizeof(buffer));
         add_name(buffer);
+#else
+        add_name(inet_ntoa(in_addr_tmp));
+#endif
         start_long++;
     }
 }

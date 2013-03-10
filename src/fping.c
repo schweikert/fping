@@ -46,6 +46,7 @@ extern "C"
 #include <errno.h>
 #include <signal.h>
 #include <stddef.h>
+#include <time.h>
 
 #define VERSION "3.4"
 #pragma comment(lib, "ws2_32.lib")
@@ -1573,11 +1574,9 @@ void print_per_system_splits( void )
     if( verbose_flag || per_recv_flag )
         fprintf( stderr, "\n" );
 
-#ifndef _WIN32
     curr_tm = localtime( ( time_t* )&current_time.tv_sec );
     fprintf( stderr, "[%2.2d:%2.2d:%2.2d]\n", curr_tm->tm_hour,
         curr_tm->tm_min, curr_tm->tm_sec );
-#endif
 
     for( i = 0; i < num_hosts; i++ )
     {

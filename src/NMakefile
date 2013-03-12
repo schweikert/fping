@@ -3,7 +3,7 @@ default: fping.exe
 LINK = link
 
 .c.obj:
-	$(CC) /c $(CFLAGS) /W4 /nologo $*.c
+	$(CC) /c $(CFLAGS) /DSUPPORTXP /W4 /nologo $*.c
 
 fping.exe: fping.obj getopt.obj
 	$(LINK) /nologo /OUT:$@ $**

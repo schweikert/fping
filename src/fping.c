@@ -3003,6 +3003,11 @@ void usage(int is_error)
 } /* usage() */
 
 #ifdef _WIN32
+
+#ifndef SUPPORTXP
+/*
+ * GetSystemTimeAsFileTime under windows xp has a accuracy of 10-16ms.
+ */
 static int gettimeofday(struct timeval* tv, struct timezone *tz)
 {
 	FILETIME ft;
@@ -3023,6 +3028,44 @@ static int gettimeofday(struct timeval* tv, struct timezone *tz)
 	tv->tv_sec = (long)(ts.QuadPart / 10000000);
 	return 0;
 }
+#else
+/*
+ * As GetSystemTimeAsFileTime under windows xp has a accuracy of 10-16ms,
+ * so I decides to use QueryPerformanceCounter/QueryPerformanceFrequency.
+ * */
+static int gettimeofday(struct timeval* tv, struct timezone *tz)
+{
+	ULONGLONG usec;
+	LARGE_INTEGER now;
+	static LARGE_INTEGER start, time = {0}, freq = {0};
+
+	while (freq.QuadPart == 0) {
+		QueryPerformanceFrequency(&freq);
+		QueryPerformanceCounter(&start);
+		{
+			FILETIME ft;
+			ULARGE_INTEGER epoch, ts;
+
+			// 100-nanosecond since January 1, 1601 (UTC).
+			GetSystemTimeAsFileTime(&ft);
+
+			// Jan 1, 1970 (UTC).
+			epoch.LowPart = 0xD53E8000;
+			epoch.HighPart = 0x19DB1DE;
+
+			ts.LowPart = ft.dwLowDateTime;
+			ts.HighPart = ft.dwHighDateTime;
+			time.QuadPart = ts.QuadPart - epoch.QuadPart;
+		}
+	}
+
+	QueryPerformanceCounter(&now);
+	usec = time.QuadPart + 10000000 * (now.QuadPart - start.QuadPart) / freq.QuadPart;
+	tv->tv_usec = (usec / 10) % 1000000;
+	tv->tv_sec = (long)(usec / 10000000);
+	return 0;
+}
+#endif
 
 static int getuid()
 {

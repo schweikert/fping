@@ -1829,7 +1829,7 @@ int wait_for_reply(long wait_time)
     if( per_recv_flag )
     {
         if(timestamp_flag) {
-            printf("[%lu.%04lu] ",
+            printf("[%lu.%06lu] ",
                  (unsigned long)current_time.tv_sec,
                  (unsigned long)current_time.tv_usec);
         }

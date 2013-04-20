@@ -684,7 +684,7 @@ int main( int argc, char **argv )
 
     /* validate various option settings */
 
-    if (ttl < 0 || ttl > 255) {  
+    if (ttl > 255) {
         fprintf(stderr, "ping: ttl %u out of range\n", ttl);  
         usage(1);
     }  

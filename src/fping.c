@@ -1143,7 +1143,7 @@ void main_loop()
                     ev_enqueue(h);
                 }
                 /* Count mode: schedule timeout after last ping */
-                else if(count_flag && count_flag && h->num_sent >= count) {
+                else if(count_flag && h->num_sent >= count) {
                     h->ev_type = EV_TYPE_TIMEOUT;
                     h->ev_time.tv_sec = last_send_time.tv_sec;
                     h->ev_time.tv_usec = last_send_time.tv_usec;

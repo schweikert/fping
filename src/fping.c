@@ -1579,7 +1579,12 @@ int send_ping( int s, HOST_ENTRY *h )
         ( struct sockaddr* )&h->saddr, sizeof( FPING_SOCKADDR ) );
 
     if( n < 0 || n != ping_pkt_size )
-    {
+    if(
+        (n < 0 || n != ping_pkt_size)
+#if defined( EHOSTDOWN )
+        && errno != EHOSTDOWN
+#endif
+    ) {
         if( verbose_flag || unreachable_flag )
         {
             printf( "%s", h->host );

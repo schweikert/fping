@@ -314,6 +314,7 @@ int verbose_flag, quiet_flag, stats_flag, unreachable_flag, alive_flag;
 int elapsed_flag, version_flag, count_flag, loop_flag;
 int per_recv_flag, report_all_rtts_flag, name_flag, addr_flag, backoff_flag;
 int multif_flag;
+int timestamp_flag = 0;
 #if defined( DEBUG ) || defined( _DEBUG )
 int randomly_lose_flag, sent_times_flag, trace_flag, print_per_system_flag;
 int lose_factor;
@@ -492,7 +493,7 @@ int main( int argc, char **argv )
 
     /* get command line options */
 
-    while( ( c = getopt( argc, argv, "gedhlmnqusaAvz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:" ) ) != EOF )
+    while( ( c = getopt( argc, argv, "gedhlmnqusaAvDz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:" ) ) != EOF )
     {
         switch( c )
         {
@@ -581,6 +582,10 @@ int main( int argc, char **argv )
 
         case 's':
             stats_flag = 1;
+            break;
+
+        case 'D':
+            timestamp_flag = 1;
             break;
 
         case 'l':
@@ -1823,6 +1828,11 @@ int wait_for_reply(long wait_time)
 
     if( per_recv_flag )
     {
+        if(timestamp_flag) {
+            printf("[%lu.%06lu] ",
+                 (unsigned long)current_time.tv_sec,
+                 (unsigned long)current_time.tv_usec);
+        }
         avg = h->total_time / h->num_recv;
         printf( "%s%s : [%d], %d bytes, %s ms",
             h->host, h->pad, this_count, result, sprint_tm( this_reply ) );
@@ -2806,6 +2816,7 @@ void usage(int is_error)
     fprintf(out, "   -B f       set exponential backoff factor to f\n" );
     fprintf(out, "   -c n       count of pings to send to each target (default %d)\n", count );  
     fprintf(out, "   -C n       same as -c, report results in verbose format\n" );
+    fprintf(out, "   -D         print timestamp before each output line\n" );
     fprintf(out, "   -e         show elapsed time on return packets\n" );
     fprintf(out, "   -f file    read list of targets from a file ( - means stdin) (only if no -g specified)\n" );
     fprintf(out, "   -g         generate target list (only if no -f specified)\n" );

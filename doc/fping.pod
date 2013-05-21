@@ -77,6 +77,11 @@ C<-> indicating that no response was received to the fourth request.
 Use DNS to lookup address of return ping packet. This allows you to give fping
 a list of IP addresses as input and print hostnames in the output. 
 
+=item B<-D>
+
+Add Unix timestamps in front of output lines generated with in looping or counting
+modes (B<-l>, B<-c>, or B<-C>).
+
 =item B<-e>
 
 Show elapsed (round-trip) time of packets. 

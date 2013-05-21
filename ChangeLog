@@ -1,7 +1,8 @@
 UNRELEASED
-  * fix sprint_tm buffer size crash (reported by Japheth Cleaver)
-  * fping.spec: fix setuid permissions and provides fping6 (Marcus Vinicius Ferreira)
-  * fix fping6 build on OS X 10.8 (unknown contributor)
+  * Fix sprint_tm buffer size crash (reported by Japheth Cleaver)
+  * Addded -D flag to print timestamps (Toke Høiland-Jørgensen)
+  * Fix fping6 build on OS X 10.8 (unknown contributor)
+  * Fping.spec: fix setuid permissions and provides fping6 (Marcus Vinicius Ferreira)
 
 2012-09-04  David Schweikert  <david@schweikert.ch>
   * Version 3.4

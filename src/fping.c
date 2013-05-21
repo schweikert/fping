@@ -2535,36 +2535,32 @@ char * sprint_tm( int t )
 {
     static char buf[10];
 
-    /* <= 0.99 ms */
-    if( t < 100 )
-    {
+    if( t < 0 ) {
+        /* negative (unexpected) */
+        sprintf( buf, "%.2g", (double) t / 100 );
+    }
+    else if( t < 100 ) {
+        /* <= 0.99 ms */
         sprintf( buf, "0.%02d", t );
-        return( buf );
-
-    }/* IF */
-
-    /* 1.00 - 9.99 ms */
-    if( t < 1000 )
-    {
+    }
+    else if( t < 1000 ) {
+        /* 1.00 - 9.99 ms */
         sprintf( buf, "%d.%02d", t / 100, t % 100 );
-        return( buf );
-
-    }/* IF */
-
-    /* 10.0 - 99.9 ms */
-    if( t < 10000 )
-    {
+    }
+    else if( t < 10000 ) {
+        /* 10.0 - 99.9 ms */
         sprintf( buf, "%d.%d", t / 100, ( t % 100 ) / 10 );
-        return( buf );
-    
-    }/* IF */
-  
-    /* >= 100 ms */
-    sprintf( buf, "%d", t / 100 );
+    }
+    else if( t < 100000000 ) {
+        /* 100 - 1'000'000 ms */
+        sprintf( buf, "%d", t / 100 );
+    }
+    else {
+        sprintf( buf, "%.2e", (double) (t / 100) );
+    }
+
     return( buf );
-
-} /* sprint_tm() */
-
+}
 
 /************************************************************
 

@@ -1,4 +1,5 @@
-UNRELEASED
+2013-05-22  David Schweikert  <david@schweikert.ch>
+  * Version 3.5
   * Fix sprint_tm buffer size crash (reported by Japheth Cleaver)
   * Addded -D flag to print timestamps (Toke Høiland-Jørgensen)
   * Fix fping6 build on OS X 10.8 (unknown contributor)

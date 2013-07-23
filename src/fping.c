@@ -526,7 +526,9 @@ int main( int argc, char **argv )
             break;
 
         case 'b':
-            if( !( ping_data_size = ( unsigned int )atoi( optarg ) ) )
+            errno = 0;
+            ping_data_size = (unsigned int) strtol(optarg, (char **)NULL, 10);
+            if( errno )
                 usage(1);
             
             break;

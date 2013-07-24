@@ -58,6 +58,7 @@ extern "C"
 #include <netinet/in.h>
 
 #include "config.h"
+#include "seqmap.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -114,16 +115,7 @@ extern int h_errno;
 
 /*** Ping packet defines ***/
 
-/* data added after ICMP header for our nefarious purposes */
-
-typedef struct ping_data
-{
-     int                  ping_count;         /* counts up to -c count or 1 */
-     struct timeval       ping_ts;            /* time sent */
-
-} PING_DATA;
-
-#define MIN_PING_DATA   sizeof( PING_DATA )
+#define MIN_PING_DATA   0
 #define MAX_IP_PACKET   65536   /* (theoretical) max IP packet size */
 #define SIZE_IP_HDR     20
 #ifndef IPV6
@@ -292,7 +284,6 @@ double sum_replies = 0;
 int max_hostname_len = 0;
 int num_jobs = 0;                   /* number of hosts still to do */
 int num_hosts;                      /* total number of hosts */
-int max_seq_sent = 0;               /* maximum sequence number sent so far */
 int num_alive = 0,                  /* total number alive */
     num_unreachable = 0,            /* total number unreachable */
     num_noaddress = 0;              /* total number of addresses not found */
@@ -525,7 +516,9 @@ int main( int argc, char **argv )
             break;
 
         case 'b':
-            if( !( ping_data_size = ( unsigned int )atoi( optarg ) ) )
+            errno = 0;
+            ping_data_size = (unsigned int) strtol(optarg, (char **)NULL, 10);
+            if( errno )
                 usage(1);
             
             break;
@@ -962,6 +955,8 @@ int main( int argc, char **argv )
     if( randomly_lose_flag ) 
         srandom( start_time.tv_usec );
 #endif /* DEBUG || _DEBUG */
+
+    seqmap_init();
 
     /* main loop */
     main_loop();
@@ -1521,7 +1516,6 @@ int send_ping( int s, HOST_ENTRY *h )
 {
     char *buffer;
     FPING_ICMPHDR *icp;
-    PING_DATA *pdp;
     int n;
         int myseq;
 
@@ -1533,8 +1527,7 @@ int send_ping( int s, HOST_ENTRY *h )
     icp = ( FPING_ICMPHDR* )buffer;
 
     gettimeofday( &h->last_send_time, &tz );
-    myseq = h->num_sent * num_hosts + h->i;
-    max_seq_sent = myseq > max_seq_sent ? myseq : max_seq_sent;
+    myseq = seqmap_add(h->i, h->num_sent, &h->last_send_time);
 
 #ifndef IPV6
     icp->icmp_type = ICMP_ECHO;
@@ -1543,20 +1536,12 @@ int send_ping( int s, HOST_ENTRY *h )
     icp->icmp_seq = htons(myseq);
     icp->icmp_id = htons(ident);
 
-    pdp = ( PING_DATA* )( buffer + SIZE_ICMP_HDR );
-    pdp->ping_ts = h->last_send_time;
-    pdp->ping_count = h->num_sent;
-
     icp->icmp_cksum = in_cksum( ( unsigned short* )icp, ping_pkt_size );
 #else
     icp->icmp6_type = ICMP6_ECHO_REQUEST;
     icp->icmp6_code = 0;
     icp->icmp6_seq = htons(myseq);
     icp->icmp6_id = htons(ident);
-
-    pdp = ( PING_DATA* )( buffer + SIZE_ICMP_HDR );
-    pdp->ping_ts = h->last_send_time;
-    pdp->ping_count = h->num_sent;
 
     icp->icmp6_cksum = 0;   // The IPv6 stack calculates the checksum for us...
 #endif
@@ -1639,7 +1624,8 @@ int wait_for_reply(long wait_time)
     HOST_ENTRY *h;
     long this_reply;
     int this_count;
-    struct timeval sent_time;
+    struct timeval *sent_time;
+    SEQMAP_VALUE *seqmap_value;
 
     result = recvfrom_wto( s, buffer, sizeof(buffer), &response_addr, wait_time );
 
@@ -1685,6 +1671,8 @@ int wait_for_reply(long wait_time)
         return( 1 ); /* too short */ 
     }/* IF */
 
+    gettimeofday( &current_time, &tz );
+
     icp = ( FPING_ICMPHDR* )( buffer + hlen );
 #ifndef IPV6
     if( icp->icmp_type != ICMP_ECHOREPLY )
@@ -1705,43 +1693,35 @@ int wait_for_reply(long wait_time)
 #endif
         return 1; /* packet received, but not the one we are looking for! */
 
+#ifndef IPV6
+    seqmap_value = seqmap_fetch(ntohs(icp->icmp_seq), &current_time);
+#else
+    seqmap_value = seqmap_fetch(ntohs(icp->icmp6_seq), &current_time);
+#endif
+    if(seqmap_value == NULL) {
+        return 1;
+    }
+
     num_pingreceived++;
 
-#ifndef IPV6
-    if( ntohs(icp->icmp_seq)  > max_seq_sent )
-#else
-    if( ntohs(icp->icmp6_seq) > max_seq_sent )
-#endif
-        return( 1 ); /* packet received, don't worry about it anymore */
-
-#ifndef IPV6
-    n = ntohs(icp->icmp_seq) % num_hosts;
-#else
-    n = ntohs(icp->icmp6_seq) % num_hosts;
-#endif
+    n = seqmap_value->host_nr;
     h = table[n];
 
     /* received ping is cool, so process it */
-    gettimeofday( &current_time, &tz );
     h->waiting = 0;
     h->timeout = timeout;
     h->num_recv++;
     h->num_recv_i++;
 
-#ifndef IPV6
-    memcpy( &sent_time, icp->icmp_data + offsetof( PING_DATA, ping_ts ), sizeof( sent_time ) );
-    memcpy( &this_count, icp->icmp_data, sizeof( this_count ) );
-#else
-    memcpy( &sent_time, ((char *)icp->icmp6_data32)+4+offsetof(PING_DATA, ping_ts), sizeof( sent_time ) );
-    memcpy( &this_count, ((char *)icp->icmp6_data32)+4, sizeof( this_count ) );
-#endif
+    sent_time  = &seqmap_value->ping_ts;
+    this_count = seqmap_value->ping_count;
 
 #if defined( DEBUG ) || defined( _DEBUG )
     if( trace_flag ) 
         printf( "received [%d] from %s\n", this_count, h->host );
 #endif /* DEBUG || _DEBUG */
 
-    this_reply = timeval_diff( &current_time, &sent_time );
+    this_reply = timeval_diff( &current_time, sent_time );
     if( this_reply > max_reply ) max_reply = this_reply;
     if( this_reply < min_reply ) min_reply = this_reply;
     if( this_reply > h->max_reply ) h->max_reply = this_reply;
@@ -1893,6 +1873,7 @@ int handle_random_icmp( FPING_ICMPHDR *p, int psize, FPING_SOCKADDR *addr )
     FPING_ICMPHDR *sent_icmp;
     unsigned char *c;
     HOST_ENTRY *h;
+    SEQMAP_VALUE *seqmap_value;
 #ifdef IPV6
     char addr_ascii[INET6_ADDRSTRLEN];
     inet_ntop(addr->sin6_family, &addr->sin6_addr, addr_ascii, INET6_ADDRSTRLEN);
@@ -1909,14 +1890,14 @@ int handle_random_icmp( FPING_ICMPHDR *p, int psize, FPING_SOCKADDR *addr )
         sent_icmp = ( FPING_ICMPHDR* )( c + 28 );
         
 #ifndef IPV6
-        sent_icmp = ( struct icmp* )( c + 28 );
+        seqmap_value = seqmap_fetch(ntohs(sent_icmp->icmp_seq), &current_time);
         
         if( ( sent_icmp->icmp_type == ICMP_ECHO ) &&
             ( ntohs(sent_icmp->icmp_id) == ident ) &&
-            ( ntohs(sent_icmp->icmp_seq) <= ( n_short )max_seq_sent ) )
+            ( seqmap_value != NULL ) )
         {
             /* this is a response to a ping we sent */
-            h = table[ntohs(sent_icmp->icmp_seq) % num_hosts];
+            h = table[seqmap_value->host_nr];
             
             if( p->icmp_code > ICMP_UNREACH_MAXTYPE )
             {
@@ -1924,9 +1905,11 @@ int handle_random_icmp( FPING_ICMPHDR *p, int psize, FPING_SOCKADDR *addr )
                     inet_ntoa( addr->sin_addr ), h->host );
 
 #else
+        seqmap_value = seqmap_fetch(ntohs(sent_icmp->icmp6_seq), &current_time);
+
         if( ( sent_icmp->icmp6_type == ICMP_ECHO ) &&
             ( ntohs(sent_icmp->icmp6_id) == ident ) &&
-            ( ntohs(sent_icmp->icmp6_seq) <= ( n_short )max_seq_sent ) )
+            ( seqmap_value != NULL ) )
         {
             /* this is a response to a ping we sent */
             h = table[ntohs(sent_icmp->icmp6_seq) % num_hosts];
@@ -1967,21 +1950,25 @@ int handle_random_icmp( FPING_ICMPHDR *p, int psize, FPING_SOCKADDR *addr )
     case ICMP_PARAMPROB:
         sent_icmp = ( FPING_ICMPHDR* )( c + 28 );
 #ifndef IPV6
+        seqmap_value = seqmap_fetch(ntohs(sent_icmp->icmp_seq), &current_time);
+
         if( ( sent_icmp->icmp_type == ICMP_ECHO ) &&
             ( ntohs(sent_icmp->icmp_id) == ident ) &&
-            ( ntohs(sent_icmp->icmp_seq) <= ( n_short )max_seq_sent ) )
+            ( seqmap_value != NULL ) )
         {
             /* this is a response to a ping we sent */
-            h = table[ntohs(sent_icmp->icmp_seq) % num_hosts];
+            h = table[seqmap_value->host_nr];
             fprintf( stderr, "%s from %s for ICMP Echo sent to %s",
                 icmp_type_str[p->icmp_type], inet_ntoa( addr->sin_addr ), h->host );
       
             if( inet_addr( h->host ) == -1 )
                 fprintf( stderr, " (%s)", inet_ntoa( h->saddr.sin_addr ) );
 #else
+        seqmap_value = seqmap_fetch(ntohs(sent_icmp->icmp6_seq), &current_time);
+
         if( ( sent_icmp->icmp6_type == ICMP_ECHO ) &&
             ( ntohs(sent_icmp->icmp6_id) == ident ) &&
-            ( ntohs(sent_icmp->icmp6_seq) <= ( n_short )max_seq_sent ) )
+            ( seqmap_value != NULL ) )
         {
             /* this is a response to a ping we sent */
             h = table[ntohs(sent_icmp->icmp6_seq) % num_hosts];

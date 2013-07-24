@@ -468,16 +468,6 @@ int main( int argc, char **argv )
             sizeof(opton)))
             err(1, "setsockopt(IPV6_HOPLIMIT)");
 #endif
-#ifdef IPV6_CHECKSUM
-#ifndef SOL_RAW
-#define SOL_RAW IPPROTO_IPV6
-#endif
-        opton = 2;
-        if (setsockopt(s, SOL_RAW, IPV6_CHECKSUM, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(SOL_RAW,IPV6_CHECKSUM)");
-#endif
-#endif
 
     if( ( uid = getuid() ) )
     {

@@ -1,3 +1,8 @@
+UNRELEASED
+  * Removed setsockopt IPV6_CHECKSUM, which shouldn't be set and breaks
+    compiling on Solaris (reported by Juergen Arndt)
+
+
 2013-05-22  David Schweikert  <david@schweikert.ch>
   * Version 3.5
   * Fix sprint_tm buffer size crash (reported by Japheth Cleaver)

@@ -459,6 +459,7 @@ int main( int argc, char **argv )
             sizeof(opton)))
             err(1, "setsockopt(IPV6_HOPLIMIT)");
 #endif
+#endif
 
     if( ( uid = getuid() ) )
     {

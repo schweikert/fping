@@ -9,7 +9,11 @@ Current maintainer:
    David Schweikert <david@schweikert.ch>
 
 Website:
-   http://www.fping.org/
+   http://fping.org/
+
+Mailing-list:
+   https://groups.google.com/group/fping-users
+
 
 Installation
 ------------
@@ -27,6 +31,7 @@ If you want to install fping from source, proceed as follows:
 4. Have a look at the fping(8) manual for usage help
    (fping -h will also give a minimal help output)
 
+
 IPv6 support
 ------------
 You can can compile fping with support for IPv6 addresses. A separate binary
@@ -37,6 +42,7 @@ is used for that, called fping6. To build it, use ./configure --enable-ipv6
   # make
   # make install
   # sudo setcap cap_net_raw+ep /usr/local/bin/fping*
+
 
 Credits
 -------

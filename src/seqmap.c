@@ -44,7 +44,7 @@
 
 /* description of the data structure used:
  *
- * - we assume that no more than SEQMAP_MAXSEQ (65000) pings are sent in
+ * - we assume that no more than SEQMAP_MAXSEQ (65535) pings are sent in
  *   the timeout interval (SEQMAP_TIMEOUT_IN_S)
  * - we store the values in an array with SEQMAP_MAXSEQ elements
  * - current sequence number % SEQMAP_MAXSEQ gives the current index

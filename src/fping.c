@@ -278,7 +278,7 @@ struct in6_addr src_addr;
 
 /* global stats */
 long max_reply = 0;
-long min_reply = 1000000;
+long min_reply = 0;
 int total_replies = 0;
 double sum_replies = 0;
 int max_hostname_len = 0;
@@ -1723,12 +1723,12 @@ int wait_for_reply(long wait_time)
 #endif /* DEBUG || _DEBUG */
 
     this_reply = timeval_diff( &current_time, sent_time );
-    if( this_reply > max_reply ) max_reply = this_reply;
-    if( this_reply < min_reply ) min_reply = this_reply;
-    if( this_reply > h->max_reply ) h->max_reply = this_reply;
-    if( this_reply < h->min_reply ) h->min_reply = this_reply;
-    if( this_reply > h->max_reply_i ) h->max_reply_i = this_reply;
-    if( this_reply < h->min_reply_i ) h->min_reply_i = this_reply;
+    if( !max_reply      || this_reply > max_reply ) max_reply = this_reply;
+    if( !min_reply      || this_reply < min_reply ) min_reply = this_reply;
+    if( !h->max_reply   || this_reply > h->max_reply ) h->max_reply = this_reply;
+    if( !h->min_reply   || this_reply < h->min_reply ) h->min_reply = this_reply;
+    if( !h->max_reply_i || this_reply > h->max_reply_i ) h->max_reply_i = this_reply;
+    if( !h->min_reply_i || this_reply < h->min_reply_i ) h->min_reply_i = this_reply;
     sum_replies += this_reply;
     h->total_time += this_reply;
     h->total_time_i += this_reply;
@@ -2299,7 +2299,7 @@ void add_addr( char *name, char *host, FPING_SOCKADDR *ipaddr )
 #endif
     p->timeout = timeout;
     p->running = 1;
-    p->min_reply = 10000000;
+    p->min_reply = 0;
 
     if( strlen( p->host ) > max_hostname_len )
         max_hostname_len = strlen( p->host );

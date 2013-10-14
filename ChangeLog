@@ -1,6 +1,8 @@
 UNRELEASED
   * Allow running as non-root on Mac OS X by using non-privileged ICMP (#7)
 
+2013-10-10  David Schweikert  <david@schweikert.ch>
+  * Version 3.6
   * Fix loop issue after 65536 pings (reported by Peter Folk and GBert, #12)
   * Minimum ping data size is now 0
   * Removed setsockopt IPV6_CHECKSUM, which shouldn't be set and breaks

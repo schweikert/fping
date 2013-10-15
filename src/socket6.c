@@ -61,63 +61,6 @@ int open_ping_socket_ipv6()
         }
     }
 
-    /*
-     * let the kernel pass extension headers of incoming packets,
-     * for privileged socket options
-     */
-#ifdef IPV6_RECVHOPOPTS
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVHOPOPTS, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_RECVHOPOPTS)");
-#else  /* old adv. API */
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_HOPOPTS, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_HOPOPTS)");
-#endif
-#ifdef IPV6_RECVDSTOPTS
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVDSTOPTS, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_RECVDSTOPTS)");
-#else  /* old adv. API */
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_DSTOPTS, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_DSTOPTS)");
-#endif
-#ifdef IPV6_RECVRTHDRDSTOPTS
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVRTHDRDSTOPTS, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_RECVRTHDRDSTOPTS)");
-#endif
-#ifdef IPV6_RECVRTHDR
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVRTHDR, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_RECVRTHDR)");
-#else  /* old adv. API */
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_RTHDR, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_RTHDR)");
-#endif
-#ifndef USE_SIN6_SCOPE_ID
-#ifdef IPV6_RECVPKTINFO
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVPKTINFO, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_RECVPKTINFO)");
-#else  /* old adv. API */
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_PKTINFO, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_PKTINFO)");
-#endif
-#endif /* USE_SIN6_SCOPE_ID */
-#ifdef IPV6_RECVHOPLIMIT
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVHOPLIMIT, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_RECVHOPLIMIT)");
-#else  /* old adv. API */
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_HOPLIMIT, &opton,
-            sizeof(opton)))
-            err(1, "setsockopt(IPV6_HOPLIMIT)");
-#endif
-
     return s;
 }
 

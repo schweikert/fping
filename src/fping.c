@@ -217,10 +217,12 @@ typedef struct host_entry
      unsigned char        waiting;            /* waiting for response */
      struct timeval       last_send_time;     /* time of last packet sent */
      int                  num_sent;           /* number of ping packets sent */
-     int                  num_recv;           /* number of pings received */
+     int                  num_recv;           /* number of pings received (duplicates ignored) */
+     int                  num_recv_total;     /* number of pings received, including duplicates */
      int                  max_reply;          /* longest response time */
      int                  min_reply;          /* shortest response time */
      int                  total_time;         /* sum of response times */
+     /* _i -> splits (reset on every report interval) */
      int                  num_sent_i;         /* number of ping packets sent */
      int                  num_recv_i;         /* number of pings received */
      int                  max_reply_i;        /* longest response time */
@@ -1597,33 +1599,38 @@ int wait_for_reply(long wait_time)
 
     n = seqmap_value->host_nr;
     h = table[n];
-
-    /* received ping is cool, so process it */
-    h->waiting = 0;
-    h->timeout = timeout;
-    h->num_recv++;
-    h->num_recv_i++;
-
     sent_time  = &seqmap_value->ping_ts;
     this_count = seqmap_value->ping_count;
+    this_reply = timeval_diff( &current_time, sent_time );
+
+    if( h->resp_times[this_count] == RESP_WAITING )
+    {
+        /* only for non-duplicates: */
+        h->waiting = 0;
+        h->timeout = timeout;
+        h->num_recv++;
+        h->num_recv_i++;
+
+        if( !max_reply      || this_reply > max_reply ) max_reply = this_reply;
+        if( !min_reply      || this_reply < min_reply ) min_reply = this_reply;
+        if( !h->max_reply   || this_reply > h->max_reply ) h->max_reply = this_reply;
+        if( !h->min_reply   || this_reply < h->min_reply ) h->min_reply = this_reply;
+        if( !h->max_reply_i || this_reply > h->max_reply_i ) h->max_reply_i = this_reply;
+        if( !h->min_reply_i || this_reply < h->min_reply_i ) h->min_reply_i = this_reply;
+        sum_replies += this_reply;
+        h->total_time += this_reply;
+        h->total_time_i += this_reply;
+        total_replies++;
+    }
+
+    /* received ping is cool, so process it */
+    h->num_recv_total++;
 
 #if defined( DEBUG ) || defined( _DEBUG )
     if( trace_flag ) 
         printf( "received [%d] from %s\n", this_count, h->host );
 #endif /* DEBUG || _DEBUG */
 
-    this_reply = timeval_diff( &current_time, sent_time );
-    if( !max_reply      || this_reply > max_reply ) max_reply = this_reply;
-    if( !min_reply      || this_reply < min_reply ) min_reply = this_reply;
-    if( !h->max_reply   || this_reply > h->max_reply ) h->max_reply = this_reply;
-    if( !h->min_reply   || this_reply < h->min_reply ) h->min_reply = this_reply;
-    if( !h->max_reply_i || this_reply > h->max_reply_i ) h->max_reply_i = this_reply;
-    if( !h->min_reply_i || this_reply < h->min_reply_i ) h->min_reply_i = this_reply;
-    sum_replies += this_reply;
-    h->total_time += this_reply;
-    h->total_time_i += this_reply;
-    total_replies++;
-    
     /* note reply time in array, probably */
     if( !loop_flag )
     {
@@ -1713,7 +1720,7 @@ int wait_for_reply(long wait_time)
         else
         {
             printf( "%d%% return)",
-                ( h->num_recv * 100 ) / h->num_sent );
+                ( h->num_recv_total * 100 ) / h->num_sent );
         
         }/* ELSE */
 #ifndef IPV6

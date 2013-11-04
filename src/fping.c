@@ -1464,7 +1464,9 @@ int send_ping( int s, HOST_ENTRY *h )
         
         h->num_sent++;
         h->num_sent_i++;
+        h->waiting++;
         num_pingsent++;
+        last_send_time = h->last_send_time;
         free( buffer );
         return(1);
     }

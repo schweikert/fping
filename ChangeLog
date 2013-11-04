@@ -1,8 +1,11 @@
-UNRELEASED
+2013-11-04  David Schweikert  <david@schweikert.ch>
+  * Version 3.7
   * Allow running as non-root on Mac OS X by using non-privileged ICMP (#7)
   * Remove unnecessary IPv6 socket options
   * Fix again compatibility issue with FreeBSD (Shawn Chu)
   * Fix fping hanging forever on permanent sendto failure (Shawn Chu)
+  * Fix duplicate echo reply packets causing early stop in count mode
+    (reported by Ramon Schwammberger, #53)
 
 2013-10-10  David Schweikert  <david@schweikert.ch>
   * Version 3.6

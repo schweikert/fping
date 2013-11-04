@@ -1,6 +1,7 @@
 UNRELEASED
   * Allow running as non-root on Mac OS X by using non-privileged ICMP (#7)
   * Remove unnecessary IPv6 socket options
+  * Fix again compatibility issue with FreeBSD (Shawn Chu)
 
 2013-10-10  David Schweikert  <david@schweikert.ch>
   * Version 3.6

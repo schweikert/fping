@@ -1446,7 +1446,6 @@ int send_ping( int s, HOST_ENTRY *h )
     n = sendto( s, buffer, ping_pkt_size, 0,
         ( struct sockaddr* )&h->saddr, sizeof( FPING_SOCKADDR ) );
 
-    if( n < 0 || n != ping_pkt_size )
     if(
         (n < 0 || n != ping_pkt_size)
 #if defined( EHOSTDOWN )

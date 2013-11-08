@@ -1604,7 +1604,7 @@ int wait_for_reply(long wait_time)
     this_count = seqmap_value->ping_count;
     this_reply = timeval_diff( &current_time, sent_time );
 
-    if( h->resp_times[this_count] == RESP_WAITING )
+    if( loop_flag || h->resp_times[this_count] == RESP_WAITING )
     {
         /* only for non-duplicates: */
         h->waiting = 0;

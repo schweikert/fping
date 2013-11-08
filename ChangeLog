@@ -1,6 +1,7 @@
 2013-11-08  David Schweikert  <david@schweikert.ch>
   * Version 3.8
-  * Fix segmentation fault introduced in version 3.7 with loop mode (#55)
+  * Fix segmentation fault introduced in version 3.7 with loop mode (reported
+    by Vlad Glagolev, #55)
 
 2013-11-04  David Schweikert  <david@schweikert.ch>
   * Version 3.7

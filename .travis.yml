@@ -10,4 +10,4 @@ script:
     - ./configure --enable-ipv4 --enable-ipv6 --prefix=/opt/fping
     - make
     - sudo make install
-    - sudo /opt/fping/bin/fping 127.0.0.1
+    - sudo /opt/fping/sbin/fping 127.0.0.1

@@ -136,6 +136,7 @@ extern int h_errno;
 /* response time array flags */
 #define RESP_WAITING    -1
 #define RESP_UNUSED     -2
+#define RESP_ERROR      -3
 
 /* debugging flags */
 #if defined( DEBUG ) || defined( _DEBUG )
@@ -991,7 +992,7 @@ void main_loop()
 
                 /* Send the ping */
 		/*printf("Sending ping after %d ms\n", lt/100); */
-                if(!send_ping(s, h)) goto wait_for_reply;
+                send_ping(s, h);
 
                 /* Check what needs to be done next */
                 if(!loop_flag && !count_flag) {
@@ -1410,7 +1411,8 @@ int send_ping( int s, HOST_ENTRY *h )
     char *buffer;
     FPING_ICMPHDR *icp;
     int n;
-        int myseq;
+    int myseq;
+    int ret = 1;
 
     buffer = ( char* )malloc( ( size_t )ping_pkt_size );
     if( !buffer )
@@ -1452,42 +1454,38 @@ int send_ping( int s, HOST_ENTRY *h )
         && errno != EHOSTDOWN
 #endif
     ) {
-        if( verbose_flag || unreachable_flag )
-        {
+        if( verbose_flag || unreachable_flag ) {
             printf( "%s", h->host );
             if( verbose_flag )
                 printf( " error while sending ping: %s\n", strerror( errno ) );
             
             printf( "\n" );
-
-        }/* IF */
+        }
         
-        h->num_sent++;
-        h->num_sent_i++;
-        h->waiting++;
-        num_pingsent++;
-        last_send_time = h->last_send_time;
-        free( buffer );
-        return(1);
-    }
+        if( !loop_flag )
+            h->resp_times[h->num_sent] = RESP_ERROR;
 
-    /* mark this trial as outstanding */
-    if( !loop_flag )
-        h->resp_times[h->num_sent] = RESP_WAITING;
+        ret = 0;
+    }
+    else {
+        /* mark this trial as outstanding */
+        if( !loop_flag )
+            h->resp_times[h->num_sent] = RESP_WAITING;
 
 #if defined( DEBUG ) || defined( _DEBUG )
-    if( sent_times_flag )
-        h->sent_times[h->num_sent] = timeval_diff( &h->last_send_time, &start_time );
-#endif /* DEBUG || _DEBUG */
+        if( sent_times_flag )
+            h->sent_times[h->num_sent] = timeval_diff( &h->last_send_time, &start_time );
+#endif
+    }
 
     h->num_sent++;
     h->num_sent_i++;
     h->waiting++;
     num_pingsent++;
     last_send_time = h->last_send_time;
-    
     free( buffer );
-    return(1);
+
+    return(ret);
 }
 
 
@@ -1637,7 +1635,7 @@ int wait_for_reply(long wait_time)
     {
         if( ( this_count >= 0 ) && ( this_count < trials ) )
         {
-            if( h->resp_times[this_count] != RESP_WAITING )
+            if( h->resp_times[this_count] >= 0 )
             {
                 if( !per_recv_flag )
                 {

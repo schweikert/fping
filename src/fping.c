@@ -368,7 +368,7 @@ int main( int argc, char **argv )
 
     s = open_ping_socket();
 
-    if(uid = getuid()) {
+    if((uid = getuid())) {
         seteuid( getuid() );
     }
 

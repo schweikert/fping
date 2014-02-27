@@ -2,4 +2,12 @@ language: c
 compiler:
   - gcc
   - clang
-script: ./autogen.sh && ./configure && make
+branches:
+  only:
+      - master
+script:
+    - ./autogen.sh
+    - ./configure --enable-ipv4 --enable-ipv6 --prefix=/opt/fping
+    - make
+    - make install
+    - sudo /opt/fping/bin/fping 127.0.0.1

@@ -10,7 +10,7 @@ install:
     - sudo apt-get remove -qq autoconf automake autotools-dev libtool
     - ci/build-1-autotools.sh
     - curl -L http://cpanmin.us | perl - --sudo App::cpanminus
-    - cpanm Test::Command
+    - cpanm --sudo Test::Command
 script:
     - ci/build-2-install.sh
     - prove ci/test-*.pl

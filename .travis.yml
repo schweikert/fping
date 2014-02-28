@@ -9,6 +9,7 @@ branches:
 install:
     - sudo apt-get remove -qq autoconf automake autotools-dev libtool
     - ci/build-1-autotools.sh
+    - curl -L http://cpanmin.us | perl - --sudo App::cpanminus
     - cpanm Test::Command
 script:
     - ci/build-2-install.sh

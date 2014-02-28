@@ -1,11 +1,10 @@
-#!/bin/bash
+#!/bin/bash -e
 
 AUTOCONF=http://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz
 AUTOMAKE=http://ftp.gnu.org/gnu/automake/automake-1.14.1.tar.gz
 LIBTOOL=http://alpha.gnu.org/gnu/libtool/libtool-2.4.2.418.tar.gz
-PREFIX=$(pwd)/build
-
-set -e
+PREFIX=$(pwd)/ci/build
+PATH=$(pwd)/ci/build/bin:$PATH
 
 if [ ! -d ci ]; then
     echo "you must run this in the root fping directory" >&2

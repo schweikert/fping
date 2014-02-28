@@ -5,4 +5,5 @@ if [ ! -d ci ]; then
     exit 1
 fi
 
+
 sudo /opt/fping/sbin/fping 127.0.0.1

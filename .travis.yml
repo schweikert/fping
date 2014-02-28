@@ -6,9 +6,10 @@ compiler:
 branches:
   only:
       - master
-before_install:
+install:
     - sudo apt-get remove -qq autoconf automake autotools-dev libtool
     - ci/build-1-autotools.sh
+    - cpanm Test::Command
 script:
     - ci/build-2-install.sh
-    - ci/test-1.sh
+    - prove ci/test-*.pl

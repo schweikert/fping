@@ -2,7 +2,7 @@
 language: c
 env:
     global:
-        - secure: "YP5bVNoYlLuwtLKDWhW7D4bexRWdYFPqz6J2DOuQAId4ids63JdGD7GOAZDfzizl1PtcoI3Kb97WWnFkPE2W6x/N4ad3K8lzIWZWx4kEpFRlbH7PJOF0Jt+rLXJzjkCW93XVC+vUY4bKAujT/iO8/B4lrxkX3/sCzILi7U5holE="
+        - secure: "CoI8hwHH1yfQoQxIfWGRS0WfTyScox+5aJn0fDDgz2uKrrIxmBvIw/WKX8wcSiV6fLmLuwgNkKqSM3hdO4qaG+JxfWcuEiZZHm+kxSGMkWbGb/fvAI+gHg8ldKyYttcIX71O5rlZiC2QpNKQi2v18S6pI5p8eqnx7DYx4YrmguQ="
 compiler:
     - gcc
     - clang

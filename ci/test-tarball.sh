@@ -6,8 +6,9 @@
 set -e
 set -x
 
-TARFILE=fping-*.tar.gz
-if [ ! -f "$TARFILE" ]; then
+make dist
+VERSION=$(ls fping-*.tar.gz | sed -e 's/^fping-//' | sed -e 's/\.tar\.gz$//')
+if [ -z "$VERSION" ]; then
     echo "tar.gz file not found." >&2
     exit 1
 fi
@@ -15,7 +16,7 @@ fi
 # unarchive
 TMPDIR=$(mktemp -d --tmpdir=.)
 cd $TMPDIR
-tar xf ../$TARFILE
+tar xf ../fping-$VERSION.tar.gz
 DIRNAME=$(ls)
 
 # build

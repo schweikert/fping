@@ -4,7 +4,6 @@
 
 set -e
 
-make dist
 VERSION=$(ls fping-*.tar.gz | sed -e 's/^fping-//' | sed -e 's/\.tar\.gz$//')
 if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+$ ]]; then
     REPO=release

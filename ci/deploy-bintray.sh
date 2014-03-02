@@ -17,4 +17,5 @@ else
     REPO=beta
 fi
 curl -T fping-$VERSION.tar.gz -uschweikert:$BINTRAY_API_KEY https://api.bintray.com/content/schweikert/$REPO/fping/$VERSION/fping-$VERSION.tar.gz
+echo
 echo "bintray deployment successful."

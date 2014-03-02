@@ -1,6 +1,9 @@
-#!/bin/bash -x -e
+#!/bin/bash
 
 # upload to bintray.com/schweikert
+
+set -e
+set -x
 
 make dist
 VERSION=$(ls fping-*.tar.gz | sed -e 's/^fping-//' | sed -e 's/\.tar\.gz$//')

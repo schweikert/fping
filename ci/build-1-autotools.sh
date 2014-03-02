@@ -11,13 +11,16 @@ if [ ! -d ci ]; then
     exit 1
 fi
 
+# remove standard versions
+sudo apt-get remove -qq autoconf automake autotools-dev libtool
+
+# prepare build environment
 cd ci
 rm -rf build
 mkdir -p build/src
 cd build/src
 
-### autoconf
-
+# autoconf
 (
 AUTOCONF_FILE=$(basename $AUTOCONF)
 AUTOCONF_DIR=$(echo $AUTOCONF_FILE | sed -e 's/\.tar.*//')
@@ -28,8 +31,7 @@ cd $AUTOCONF_DIR
 make install
 )
 
-### automake
-
+# automake
 (
 AUTOMAKE_FILE=$(basename $AUTOMAKE)
 AUTOMAKE_DIR=$(echo $AUTOMAKE_FILE | sed -e 's/\.tar.*//')
@@ -40,8 +42,7 @@ cd $AUTOMAKE_DIR
 make install
 )
 
-### libtool
-
+# libtool
 (
 LIBTOOL_FILE=$(basename $LIBTOOL)
 LIBTOOL_DIR=$(echo $LIBTOOL_FILE | sed -e 's/\.tar.*//')

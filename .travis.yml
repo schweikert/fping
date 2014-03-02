@@ -10,12 +10,13 @@ branches:
     only:
         - master
 install:
-    - sudo apt-get remove -qq autoconf automake autotools-dev libtool
     - ci/build-1-autotools.sh
     - curl -L http://cpanmin.us | perl - --sudo App::cpanminus
     - cpanm --sudo Test::Command
 script:
     - ci/build-2-install.sh
     - prove ci/test-*.pl
+    - make dist
+    - ci/test-tarball.sh
 after_success:
     - ci/deploy-bintray.sh

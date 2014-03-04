@@ -1,6 +1,7 @@
 .*.swp
 *.tar.gz
 *~
+src/*.gcno
 .deps
 Makefile
 Makefile.in

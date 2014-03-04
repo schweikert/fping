@@ -16,7 +16,7 @@ fi
 # unarchive
 TMPDIR=$(mktemp -d --tmpdir=ci)
 cd $TMPDIR
-tar xf ../fping-$VERSION.tar.gz
+tar xf ../../fping-$VERSION.tar.gz
 DIRNAME=$(ls)
 
 # build

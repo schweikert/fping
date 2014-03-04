@@ -2,6 +2,8 @@
 *.tar.gz
 *~
 src/*.gcno
+src/*.gcda
+src/*.gcov
 .deps
 Makefile
 Makefile.in

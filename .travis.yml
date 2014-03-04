@@ -10,6 +10,7 @@ branches:
         - master
 before_install:
     - sudo pip install cpp-coveralls --use-mirrors
+    - sudo apt-get install libcap2-bin
 install:
     - ci/build-1-autotools.sh
     - curl -L http://cpanmin.us | perl - --sudo App::cpanminus

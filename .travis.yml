@@ -21,4 +21,4 @@ script:
     - ci/test-tarball.sh
 after_success:
     - ci/deploy-bintray.sh
-    - coveralls -b src
+    - coveralls -b src --exclude ci

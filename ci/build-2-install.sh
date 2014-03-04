@@ -12,3 +12,4 @@ autoreconf -i
 make CFLAGS="-g -fprofile-arcs -ftest-coverage"
 sudo make install
 sudo setcap cap_net_raw+ep /opt/fping/sbin/fping
+sudo setcap cap_net_raw+ep /opt/fping/sbin/fping6

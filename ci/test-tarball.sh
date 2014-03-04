@@ -14,7 +14,7 @@ if [ -z "$VERSION" ]; then
 fi
 
 # unarchive
-TMPDIR=$(mktemp -d --tmpdir=.)
+TMPDIR=$(mktemp -d --tmpdir=ci)
 cd $TMPDIR
 tar xf ../fping-$VERSION.tar.gz
 DIRNAME=$(ls)

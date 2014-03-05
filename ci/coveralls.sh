@@ -8,6 +8,6 @@ cd src
 
 ls -l
 
-gcov *.c
+gcov *.o
 cd ..
 coveralls --exclude ci --no-gcov

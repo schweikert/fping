@@ -19,5 +19,5 @@ script:
     - env PATH=`pwd`/src:$PATH prove ci/test-*.pl
     - ci/test-tarball.sh
 after_success:
-    - ci/deploy-bintray.sh
     - ci/coveralls.sh
+    - ci/deploy-bintray.sh

@@ -4,6 +4,7 @@
 #define __APPLE_USE_RFC_3542 1
 
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <netinet/in.h>
 
 #ifndef IPV6

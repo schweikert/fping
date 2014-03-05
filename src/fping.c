@@ -570,7 +570,8 @@ int main( int argc, char **argv )
             }
             break;
         default:
-            usage(1);
+            fprintf(stderr, "see 'fping -h' for usage information\n");
+            exit(1);
             break;
 
         }/* SWITCH */
@@ -579,7 +580,7 @@ int main( int argc, char **argv )
     /* validate various option settings */
 
     if (ttl > 255) {
-        fprintf(stderr, "ping: ttl %u out of range\n", ttl);  
+        fprintf(stderr, "ttl %u out of range\n", ttl);  
         usage(1);
     }  
 

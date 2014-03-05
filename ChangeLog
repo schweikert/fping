@@ -1,5 +1,6 @@
 UNRELEASED  David Schweikert  <david@schweikert.ch>
   * Fix random output on socket error (reported by Aleksandrs Saveljevs, #56)
+  * Initial test suite and continous intergration (with travis-ci.org / coveralls.io)
 
 2013-11-08  David Schweikert  <david@schweikert.ch>
   * Version 3.8

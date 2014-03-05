@@ -10,6 +10,5 @@ fi
 autoreconf -i
 ./configure --enable-ipv4 --enable-ipv6 --prefix=/opt/fping
 make CFLAGS="-g -fprofile-arcs -ftest-coverage"
-sudo make install
-sudo setcap cap_net_raw+ep /opt/fping/sbin/fping
-sudo setcap cap_net_raw+ep /opt/fping/sbin/fping6
+sudo setcap cap_net_raw+ep src/fping
+sudo setcap cap_net_raw+ep src/fping6

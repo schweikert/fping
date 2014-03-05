@@ -17,7 +17,7 @@ install:
     - cpanm --sudo Test::Command
 script:
     - ci/build-2-install.sh
-    - env PATH=/opt/fping/sbin:$PATH prove ci/test-*.pl
+    - env PATH=`pwd`/src:$PATH prove ci/test-*.pl
     - ci/test-tarball.sh
 after_success:
     - ci/deploy-bintray.sh

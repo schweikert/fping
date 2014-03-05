@@ -9,7 +9,6 @@ branches:
     only:
         - master
 before_install:
-    - sudo pip install cpp-coveralls --use-mirrors
     - sudo apt-get install libcap2-bin
 install:
     - ci/build-1-autotools.sh
@@ -21,4 +20,4 @@ script:
     - ci/test-tarball.sh
 after_success:
     - ci/deploy-bintray.sh
-    - coveralls --exclude ci
+    - ci/coveralls.sh

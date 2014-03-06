@@ -3,7 +3,7 @@
 use Test::Command tests => 33;
 
 # fping -i 9
-my $cmd1 = Test::Command->new(cmd => "fping -i 9 -g 127.0.0.1/29");
+my $cmd1 = Test::Command->new(cmd => "fping -i 9 -T10 -g 127.0.0.1/29");
 $cmd1->exit_is_num(1);
 $cmd1->stdout_is_eq("");
 $cmd1->stderr_is_eq(<<END);

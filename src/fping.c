@@ -581,20 +581,20 @@ int main( int argc, char **argv )
 
     if (ttl > 255) {
         fprintf(stderr, "ttl %u out of range\n", ttl);  
-        usage(1);
+        exit(1);
     }  
 
     if( unreachable_flag && alive_flag )
     {
         fprintf( stderr, "%s: specify only one of a, u\n", argv[0] );
-        usage(1);
+        exit(1);
 
     }/* IF */
 
     if( count_flag && loop_flag )
     {
         fprintf( stderr, "%s: specify only one of c, l\n", argv[0] );
-        usage(1);
+        exit(1);
     
     }/* IF */
     
@@ -607,15 +607,14 @@ int main( int argc, char **argv )
         fprintf( stderr, "%s: these options are too risky for mere mortals.\n", prog );
         fprintf( stderr, "%s: You need i >= %u, p >= %u, r < %u, and t >= %u\n",
             prog, MIN_INTERVAL, MIN_PERHOST_INTERVAL, MAX_RETRY, MIN_TIMEOUT );
-        usage(1);
-
+        exit(1);
     }/* IF */
     
     if( ( ping_data_size > MAX_PING_DATA ) || ( ping_data_size < MIN_PING_DATA ) )
     {
         fprintf( stderr, "%s: data size %u not valid, must be between %u and %u\n",
             prog, ping_data_size, (unsigned int) MIN_PING_DATA, (unsigned int) MAX_PING_DATA );
-        usage(1);
+        exit(1);
     
     }/* IF */
     
@@ -623,7 +622,7 @@ int main( int argc, char **argv )
     {
         fprintf( stderr, "%s: backoff factor %.1f not valid, must be between %.1f and %.1f\n",
             prog, backoff, MIN_BACKOFF_FACTOR, MAX_BACKOFF_FACTOR );
-        usage(1);
+        exit(1);
     
     }/* IF */
 
@@ -631,7 +630,7 @@ int main( int argc, char **argv )
     {
         fprintf( stderr, "%s: count %u not valid, must be less than %u\n",
             prog, count, MAX_COUNT );
-        usage(1);
+        exit(1);
     
     }/* IF */
     

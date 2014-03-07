@@ -79,3 +79,4 @@ my $cmd11 = Test::Command->new(cmd => "fping -C 11000 127.0.0.1");
 $cmd11->exit_is_num(1);
 $cmd11->stdout_is_eq("");
 $cmd11->stderr_is_eq("fping: count 11000 not valid, must be less than 10000\n");
+

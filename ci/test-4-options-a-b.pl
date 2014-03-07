@@ -30,7 +30,7 @@ $cmd3->stderr_is_eq("");
 # fping -B
 my $t0 = [gettimeofday];
 my $cmd4 = Test::Command->new(cmd => "fping  -t 100 -r 3 -B 2  8.8.8.7");
-$cmd4->exit_is_num(0);
+$cmd4->exit_is_num(1);
 $cmd4->stdout_is_eq("8.8.8.7 is unreachable\n");
 $cmd4->stderr_is_eq("");
 my $elapsed = tv_interval($t0);

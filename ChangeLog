@@ -1,9 +1,9 @@
 UNRELEASED  David Schweikert  <david@schweikert.ch>
   * Fix random output on socket error (reported by Aleksandrs Saveljevs, #56)
-  * Initial test suite and continous intergration (with travis-ci.org / coveralls.io)
   * Support ppc64le architecture by including alpha libtool version
     (reported by Amit Kumar Gupta and Aravinda B Thunug)
-  * Fix compliation problem on FreeBSD (#57)
+  * Fix compilation problem on FreeBSD (#57)
+  * Initial test suite and continous intergration (with travis-ci.org / coveralls.io)
   * Don't output usage information on error
 
 2013-11-08  David Schweikert  <david@schweikert.ch>

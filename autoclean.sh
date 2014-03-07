@@ -19,3 +19,6 @@ rm -f stamp-h1
 rm -f doc/Makefile.in
 rm -f src/Makefile.in
 rm -f doc/fping.8
+rm -f src/*.gcda
+rm -f src/*.gcno
+rm -f src/*.gcov

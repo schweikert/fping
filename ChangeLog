@@ -1,4 +1,5 @@
-UNRELEASED  David Schweikert  <david@schweikert.ch>
+2014-03-08  David Schweikert  <david@schweikert.ch>
+  * Version 3.9
   * Fix random output on socket error (reported by Aleksandrs Saveljevs, #56)
   * Support ppc64le architecture by including alpha libtool version
     (reported by Amit Kumar Gupta and Aravinda B Thunug)

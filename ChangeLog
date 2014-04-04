@@ -1,3 +1,7 @@
+UNRELEASED
+  * More tests added
+  * Fix confusing error message with -g and IPv6 addresses (#58, reported by Axel Beckert)
+
 2014-03-08  David Schweikert  <david@schweikert.ch>
   * Version 3.9
   * Fix random output on socket error (reported by Aleksandrs Saveljevs, #56)

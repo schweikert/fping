@@ -794,7 +794,7 @@ int main( int argc, char **argv )
     }
     
     if( !num_hosts )
-        exit( 2 );
+        exit(1);
 
     if(src_addr_present) {
         socket_set_src_addr(s, src_addr);
@@ -880,10 +880,6 @@ void add_cidr(char *addr)
     *addr_end = '\0';
     mask_str = addr_end + 1;
     mask = atoi(mask_str);
-    if(mask < 1 || mask > 30) {
-        fprintf(stderr, "Error: netmask must be between 1 and 30 (is: %s)\n", mask_str);
-        exit(2);
-    }
 
     /* parse address (IPv4 only) */
     memset(&addr_hints, 0, sizeof(struct addrinfo));
@@ -892,13 +888,19 @@ void add_cidr(char *addr)
     ret = getaddrinfo(addr, NULL, &addr_hints, &addr_res);
     if(ret) {
         fprintf(stderr, "Error: can't parse address %s: %s\n", addr, gai_strerror(ret));
-        exit(2);
+        exit(1);
     }
     if(addr_res->ai_family != AF_INET) {
         fprintf(stderr, "Error: -g works only with IPv4 addresses\n");
-        exit(2);
+        exit(1);
     }
     net_addr = ntohl(((struct sockaddr_in *) addr_res->ai_addr)->sin_addr.s_addr);
+
+    /* check mask */
+    if(mask < 1 || mask > 30) {
+        fprintf(stderr, "Error: netmask must be between 1 and 30 (is: %s)\n", mask_str);
+        exit(1);
+    }
 
     /* convert mask integer from 1 to 32 to a bitmask */
     bitmask = ((unsigned long) 0xFFFFFFFF) << (32-mask);
@@ -934,11 +936,11 @@ void add_range(char *start, char *end)
     ret = getaddrinfo(start, NULL, &addr_hints, &addr_res);
     if(ret) {
         fprintf(stderr, "Error: can't parse address %s: %s\n", start, gai_strerror(ret));
-        exit(2);
+        exit(1);
     }
     if(addr_res->ai_family != AF_INET) {
         fprintf(stderr, "Error: -g works only with IPv4 addresses\n");
-        exit(2);
+        exit(1);
     }
     start_long = ntohl(((struct sockaddr_in *) addr_res->ai_addr)->sin_addr.s_addr);
 
@@ -949,11 +951,11 @@ void add_range(char *start, char *end)
     ret = getaddrinfo(end, NULL, &addr_hints, &addr_res);
     if(ret) {
         fprintf(stderr, "Error: can't parse address %s: %s\n", end, gai_strerror(ret));
-        exit(2);
+        exit(1);
     }
     if(addr_res->ai_family != AF_INET) {
         fprintf(stderr, "Error: -g works only with IPv4 addresses\n");
-        exit(2);
+        exit(1);
     }
     end_long = ntohl(((struct sockaddr_in *) addr_res->ai_addr)->sin_addr.s_addr);
 

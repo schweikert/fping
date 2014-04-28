@@ -1,6 +1,7 @@
 UNRELEASED
   * More tests added
   * Fix confusing error message with -g and IPv6 addresses (#58, reported by Axel Beckert)
+  * Allow option '-f' also for non-root (since setuid privileges are dropped)
 
 2014-03-08  David Schweikert  <david@schweikert.ch>
   * Version 3.9

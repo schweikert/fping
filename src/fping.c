@@ -369,7 +369,8 @@ int main( int argc, char **argv )
     s = open_ping_socket();
 
     if((uid = getuid())) {
-        seteuid( getuid() );
+        /* drop privileges */
+        setuid( getuid() );
     }
 
     prog = argv[0];
@@ -509,27 +510,8 @@ int main( int argc, char **argv )
             exit( 0 );
 
         case 'f': 
-#ifdef ENABLE_F_OPTION
             filename = optarg;
-            generate_flag = 0;
             break;
-#else
-            if( getuid() )
-            {
-                printf( "%s: this option can only be used by root.\n", argv[0] );
-                printf( "%s: fping will read from stdin by default.\n", argv[0] );
-                exit( 3 );
-
-            }/* IF */
-            else
-            {
-                filename = optarg;
-                generate_flag = 0;
-
-            }/* ELSE */
-
-            break;
-#endif /* ENABLE_F_OPTION */
 
         case 'g':
             /* use IP list generation */

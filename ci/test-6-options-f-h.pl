@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 9;
+use Test::Command tests => 15;
 use Test::More;
 use Time::HiRes qw(gettimeofday tv_interval);
 use File::Temp;
@@ -36,5 +36,21 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping -f ".$tmpfile->filename);
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("127.0.0.1 is alive\n127.0.0.2 is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping -g
+{
+my $cmd = Test::Command->new(cmd => "fping -g 127.0.0.1/30");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("127.0.0.1 is alive\n127.0.0.2 is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping -H
+{
+my $cmd = Test::Command->new(cmd => "fping -H 1 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("127.0.0.1 is alive\n");
 $cmd->stderr_is_eq("");
 }

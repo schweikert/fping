@@ -29,6 +29,6 @@ $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 84 bytes, 0\.\d+ ms \(0.\d+ avg, 0% l
 {
 my $cmd = Test::Command->new(cmd => "fping -m localhost");
 $cmd->exit_is_num(0);
-$cmd->stdout_is_eq("127.0.0.1 is alive\n");
+$cmd->stdout_is_eq("localhost is alive\n");
 $cmd->stderr_is_eq("");
 }

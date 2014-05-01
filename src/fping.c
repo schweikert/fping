@@ -2687,6 +2687,9 @@ void usage(int is_error)
     fprintf(out, "                (ex. %s -g 192.168.1.0 192.168.1.255 or %s -g 192.168.1.0/24)\n", prog, prog );
     fprintf(out, "   -H n       Set the IP TTL value (Time To Live hops)\n");
     fprintf(out, "   -i n       interval between sending ping packets (in millisec) (default %d)\n", interval / 100 );
+#ifdef SO_BINDTODEVICE
+        fprintf(out, "   -I if      bind to a particular interface\n");
+#endif
     fprintf(out, "   -l         loop sending pings forever\n" );
     fprintf(out, "   -m         ping multiple interfaces on target host\n" );
     fprintf(out, "   -n         show targets by name (-d is equivalent)\n" );
@@ -2696,9 +2699,6 @@ void usage(int is_error)
     fprintf(out, "   -Q n       same as -q, but show summary every n seconds\n" );
     fprintf(out, "   -r n       number of retries (default %d)\n", DEFAULT_RETRY );
     fprintf(out, "   -s         print final stats\n" );
-#ifdef SO_BINDTODEVICE
-        fprintf(out, "   -I if      bind to a particular interface\n");
-#endif
     fprintf(out, "   -S addr    set source address\n" );
     fprintf(out, "   -t n       individual target initial timeout (in millisec) (default %d)\n", timeout / 100 );
     fprintf(out, "   -T n       ignored (for compatibility with fping 2.4)\n");

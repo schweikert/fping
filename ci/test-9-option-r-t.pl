@@ -1,9 +1,6 @@
 #!/usr/bin/perl -w
 
 use Test::Command tests => 6;
-use Test::More;
-use Time::HiRes qw(gettimeofday tv_interval);
-use File::Temp;
 
 #  -r n       number of retries (default 3)
 #  -s         print final stats

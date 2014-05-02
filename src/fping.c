@@ -2693,6 +2693,7 @@ void usage(int is_error)
     fprintf(out, "   -l         loop sending pings forever\n" );
     fprintf(out, "   -m         ping multiple interfaces on target host\n" );
     fprintf(out, "   -n         show targets by name (-d is equivalent)\n" );
+    fprintf(out, "   -O n       set the type of service (tos) flag on the ICMP packets\n" );
     fprintf(out, "   -p n       interval between ping packets to one target (in millisec)\n" );
     fprintf(out, "                (in looping and counting modes, default %d)\n", perhost_interval / 100 );
     fprintf(out, "   -q         quiet (don't show per-target/per-ping results)\n" );
@@ -2703,7 +2704,6 @@ void usage(int is_error)
     fprintf(out, "   -t n       individual target initial timeout (in millisec) (default %d)\n", timeout / 100 );
     fprintf(out, "   -T n       ignored (for compatibility with fping 2.4)\n");
     fprintf(out, "   -u         show targets that are unreachable\n" );
-    fprintf(out, "   -O n       set the type of service (tos) flag on the ICMP packets\n" );
     fprintf(out, "   -v         show version\n" );
     fprintf(out, "   targets    list of targets to check (if no -f specified)\n" );
     fprintf(out, "\n");

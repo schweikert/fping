@@ -1,11 +1,9 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 9;
-use Test::More;
-use Time::HiRes qw(gettimeofday tv_interval);
-use File::Temp;
+use Test::Command tests => 12;
 
 #  -n         show targets by name (-d is equivalent)
+#  -O n       set the type of service (tos) flag on the ICMP packets
 #  -p n       interval between ping packets to one target (in millisec)
 #               (in looping and counting modes, default 1000)
 #  -q         quiet (don't show per-target/per-ping results)
@@ -16,6 +14,14 @@ use File::Temp;
 my $cmd = Test::Command->new(cmd => "fping -n 8.8.8.8");
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("google-public-dns-a.google.com is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping -O
+{
+my $cmd = Test::Command->new(cmd => "fping -O 2 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("127.0.0.1 is alive\n");
 $cmd->stderr_is_eq("");
 }
 

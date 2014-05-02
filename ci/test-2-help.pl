@@ -26,6 +26,7 @@ Usage: fping [options] [targets...]
    -l         loop sending pings forever
    -m         ping multiple interfaces on target host
    -n         show targets by name (-d is equivalent)
+   -O n       set the type of service (tos) flag on the ICMP packets
    -p n       interval between ping packets to one target (in millisec)
                 (in looping and counting modes, default 1000)
    -q         quiet (don't show per-target/per-ping results)
@@ -36,7 +37,6 @@ Usage: fping [options] [targets...]
    -t n       individual target initial timeout (in millisec) (default 500)
    -T n       ignored (for compatibility with fping 2.4)
    -u         show targets that are unreachable
-   -O n       set the type of service (tos) flag on the ICMP packets
    -v         show version
    targets    list of targets to check (if no -f specified)
 

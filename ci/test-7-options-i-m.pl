@@ -1,9 +1,6 @@
 #!/usr/bin/perl -w
 
 use Test::Command tests => 7;
-use Test::More;
-use Time::HiRes qw(gettimeofday tv_interval);
-use File::Temp;
 
 #  -i n       interval between sending ping packets (in millisec) (default 25)
 #  -l         loop sending pings forever

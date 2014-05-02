@@ -1,8 +1,6 @@
 #!/usr/bin/perl -w
 
 use Test::Command tests => 15;
-use Test::More;
-use Time::HiRes qw(gettimeofday tv_interval);
 use File::Temp;
 
 #  -f file    read list of targets from a file ( - means stdin) (only if no -g specified)

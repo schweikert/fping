@@ -1,8 +1,6 @@
 #!/usr/bin/perl -w
 
 use Test::Command tests => 12;
-use Test::More;
-use Time::HiRes qw(gettimeofday tv_interval);
 
 #  -c n       count of pings to send to each target (default 1)
 #  -C n       same as -c, report results in verbose format

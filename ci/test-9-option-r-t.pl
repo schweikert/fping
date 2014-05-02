@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 6;
+use Test::Command tests => 9;
 
 #  -r n       number of retries (default 3)
 #  -s         print final stats
@@ -41,5 +41,12 @@ $cmd->stdout_is_eq("127.0.0.1 is alive\n");
 $cmd->stderr_is_eq("");
 }
 
+# fping6 -S
+{
+my $cmd = Test::Command->new(cmd => "fping6 -S ::1 ::1");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("::1 is alive\n");
+$cmd->stderr_is_eq("");
+}
 
 # fping -t tested in test-4-options-a-b.pl

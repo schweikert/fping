@@ -27,8 +27,8 @@ $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 84 bytes, 0\.\d+ ms \(0.\d+ avg, 0% l
 
 # fping -m
 {
-my $cmd = Test::Command->new(cmd => "fping -m localhost");
+my $cmd = Test::Command->new(cmd => "fping -m google-public-dns-a.google.com is alive");
 $cmd->exit_is_num(0);
-$cmd->stdout_is_eq("localhost is alive\n");
+$cmd->stdout_is_eq("google-public-dns-a.google.com is alive\n");
 $cmd->stderr_is_eq("");
 }

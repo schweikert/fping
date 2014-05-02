@@ -13,9 +13,9 @@ use File::Temp;
 
 # fping -n
 {
-my $cmd = Test::Command->new(cmd => "fping -n 127.0.0.1");
+my $cmd = Test::Command->new(cmd => "fping -n 8.8.8.8");
 $cmd->exit_is_num(0);
-$cmd->stdout_is_eq("localhost is alive\n");
+$cmd->stdout_is_eq("google-public-dns-a.google.com is alive\n");
 $cmd->stderr_is_eq("");
 }
 

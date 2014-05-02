@@ -392,7 +392,8 @@ int main( int argc, char **argv )
             break;
         
         case 'r':
-            retry = ( unsigned int )atoi( optarg );
+            if(!(retry = ( unsigned int )atoi( optarg )))
+                usage(1);
             break;
         
         case 'i':
@@ -549,6 +550,9 @@ int main( int argc, char **argv )
                 if ( setsockopt(s, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
                     perror("setting type of service octet IP_TOS");
                 }
+            }
+            else {
+                usage(1);
             }
             break;
         default:

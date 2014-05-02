@@ -392,7 +392,7 @@ int main( int argc, char **argv )
             break;
         
         case 'r':
-            if(!(retry = ( unsigned int )atoi( optarg )))
+            if (!sscanf(optarg,"%i",&retry))
                 usage(1);
             break;
         

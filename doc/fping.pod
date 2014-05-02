@@ -49,10 +49,11 @@ number.
 
 =item B<-B> I<n>
 
-In the default mode, B<fping> sends several requests to a target before giving
-up, waiting longer for a reply on each successive request.  This parameter is
-the value by which the wait time is multiplied on each successive request; it
-must be entered as a floating-point number (x.y).  The default is 1.5. 
+Backoff factor. In the default mode, B<fping> sends several requests to a
+target before giving up, waiting longer for a reply on each successive request.
+This parameter is the value by which the wait time is multiplied on each
+successive request; it must be entered as a floating-point number (x.y).  The
+default is 1.5. 
 
 =item B<-c> I<n>
 

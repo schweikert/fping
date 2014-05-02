@@ -424,9 +424,7 @@ int main( int argc, char **argv )
             break;
 
         case 'b':
-            errno = 0;
-            ping_data_size = (unsigned int) strtol(optarg, (char **)NULL, 10);
-            if( errno )
+            if (!sscanf(optarg,"%i",&ping_data_size))
                 usage(1);
             
             break;

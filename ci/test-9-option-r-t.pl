@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 9;
+use Test::Command tests => 12;
 
 #  -r n       number of retries (default 3)
 #  -s         print final stats
@@ -24,6 +24,29 @@ $cmd->stderr_like(qr{\s*
 \s*0 timeouts \(waiting for response\)
 \s*1 ICMP Echos sent
 \s*1 ICMP Echo Replies received
+\s*0 other ICMP received
+
+\s*0.\d+ ms \(min round trip time\)
+\s*0.\d+ ms \(avg round trip time\)
+\s*0.\d+ ms \(max round trip time\)
+\s*0.\d+ sec \(elapsed real time\)
+});
+}
+
+# fping -s (no host reachable)
+{
+my $cmd = Test::Command->new(cmd => "fping -r0 -t100 -s 8.8.0.0");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("8.8.0.0 is unreachable\n");
+$cmd->stderr_like(qr{\s*
+\s*1 targets
+\s*0 alive
+\s*1 unreachable
+\s*0 unknown addresses
+\s*
+\s*1 timeouts \(waiting for response\)
+\s*1 ICMP Echos sent
+\s*0 ICMP Echo Replies received
 \s*0 other ICMP received
 
 \s*0.\d+ ms \(min round trip time\)

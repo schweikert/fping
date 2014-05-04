@@ -1986,45 +1986,10 @@ void add_name( char *name )
     host_ent = gethostbyname( name ); 
     if( host_ent == NULL )
     { 
-        if( h_errno == TRY_AGAIN )
-        { 
-            u_sleep( DNS_TIMEOUT ); 
-            host_ent = gethostbyname( name );
-
-        }/* IF */
-
-        if( host_ent == NULL )
-        {
-#ifdef NIS_GROUPS
-
-            /* maybe it's the name of a NIS netgroup */
-            char *machine, *user_ignored, *domain_ignored;
-            setnetgrent( name );
-            if( getnetgrent( &machine, &user_ignored, &domain_ignored ) == 0 )
-            {
-                endnetgrent();
-                print_warning("%s address not found\n", name );
-                
-                num_noaddress++;
-                return;
-            
-            }/* IF */
-            else
-                add_name(machine);
-
-            while( getnetgrent( &machine, &user_ignored, &domain_ignored ) )
-                add_name(machine);
-      
-            endnetgrent();
-            return;
-#else
             print_warning("%s address not found\n", name );
-            
             num_noaddress++;
             return ; 
-#endif /* NIS_GROUPS */
-        }/* IF */
-    }/* IF */
+    }
 
     if(host_ent->h_addrtype != AF_INET) {
         print_warning("%s: IPv6 address returned by gethostbyname (options inet6 in resolv.conf?)\n", name );

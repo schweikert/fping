@@ -49,6 +49,3 @@
 #ifndef DNS_TIMEOUT
 #define DNS_TIMEOUT 1000         /* time in micro_sec for dns retry */
 #endif
-
-/*  NIS_GROUPS allows input name to be an NIS netgroup name */
-/* #define NIS_GROUPS=1 */

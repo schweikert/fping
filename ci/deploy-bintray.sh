@@ -10,6 +10,12 @@ if [ "$CC" != "gcc" ]; then
     exit 0
 fi
 
+# do this only for the master branch
+if [ "$TRAVIS_BRANCH" != "master" ]; then
+    echo "skipped upload branch $TRAVIS_BRANCH isn't master"
+    exit 0
+fi
+
 VERSION=$(ls fping-*.tar.gz | sed -e 's/^fping-//' | sed -e 's/\.tar\.gz$//')
 if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+$ ]]; then
     REPO=release

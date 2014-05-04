@@ -51,8 +51,8 @@ number.
 
 Backoff factor. In the default mode, B<fping> sends several requests to a
 target before giving up, waiting longer for a reply on each successive request.
-This parameter is the value by which the wait time is multiplied on each
-successive request; it must be entered as a floating-point number (x.y).  The
+This parameter is the value by which the wait time (B<-t>) is multiplied on each
+successive request; it must be entered as a floating-point number (x.y). The
 default is 1.5. 
 
 =item B<-c> I<n>
@@ -166,7 +166,9 @@ Set the interface (requires SO_BINDTODEVICE support)
 
 Initial target timeout in milliseconds (default 500). In the default mode, this
 is the amount of time that B<fping> waits for a response to its first request.
-Successive timeouts are multiplied by the backoff factor. 
+Successive timeouts are multiplied by the backoff factor specified with B<-B>.
+Note that this option has no effect looping or counting modes (B<-l>, B<-c>, or
+B<-C>).
 
 =item B<-T> I<n>
 

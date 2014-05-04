@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 15;
+use Test::Command tests => 18;
 use File::Temp;
 
 #  -f file    read list of targets from a file ( - means stdin) (only if no -g specified)
@@ -37,7 +37,15 @@ $cmd->stdout_is_eq("127.0.0.1 is alive\n127.0.0.2 is alive\n");
 $cmd->stderr_is_eq("");
 }
 
-# fping -g
+# fping -g (range)
+{
+my $cmd = Test::Command->new(cmd => "fping -g 127.0.0.1 127.0.0.5");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("127.0.0.1 is alive\n127.0.0.2 is alive\n127.0.0.3 is alive\n127.0.0.4 is alive\n127.0.0.5 is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping -g (cidr)
 {
 my $cmd = Test::Command->new(cmd => "fping -g 127.0.0.1/30");
 $cmd->exit_is_num(0);

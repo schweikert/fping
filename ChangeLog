@@ -1,10 +1,11 @@
-UNRELEASED
-  * More tests added
+2014-05-03  David Schweikert  <david@schweikert.ch>
+  * Version 3.10
   * Fix confusing error message with -g and IPv6 addresses (#58, reported by Axel Beckert)
   * Allow option '-f' also for non-root (since setuid privileges are dropped)
-  * Remove support for NIS groups
   * Do not retry twice DNS lookup on DNS lookup problem
+  * Remove support for NIS groups
   * Better document -B backoff-factor and when it can be used (#33, Oleksiy Zagorskyi)
+  * More tests added
 
 2014-03-08  David Schweikert  <david@schweikert.ch>
   * Version 3.9

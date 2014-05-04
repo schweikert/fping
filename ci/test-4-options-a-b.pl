@@ -35,9 +35,9 @@ $cmd->stderr_is_eq("");
 
 # fping6 -A -n
 {
-my $cmd = Test::Command->new(cmd => "fping6 -n -A ip6-localhost");
+my $cmd = Test::Command->new(cmd => "fping6 -n -A 2001:4860:4860::8888");
 $cmd->exit_is_num(0);
-$cmd->stdout_is_eq("ip6-localhost (::1) is alive\n");
+$cmd->stdout_is_eq("google-public-dns-a.google.com (2001:4860:4860::8888) is alive\n");
 $cmd->stderr_is_eq("");
 }
 

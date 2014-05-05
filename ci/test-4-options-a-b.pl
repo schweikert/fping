@@ -59,5 +59,5 @@ $cmd->stderr_is_eq("");
 my $elapsed = tv_interval($t0);
 # 0.1 + 0.2 + 0.4 + 0.8 = 1.5
 cmp_ok($elapsed, '>=', 1.5);
-cmp_ok($elapsed, '<', 1.7);
+cmp_ok($elapsed, '<', 1.8);
 }

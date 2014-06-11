@@ -2,6 +2,9 @@
 
 use Test::Command tests => 9;
 
+my $I_HELP = "  -I if      bind to a particular interface\n";
+$I_HELP = '' if $^O eq 'darwin';
+
 # fping -h
 my $cmd1 = Test::Command->new(cmd => "fping -h");
 $cmd1->exit_is_num(0);
@@ -22,8 +25,7 @@ Usage: fping [options] [targets...]
                 (ex. fping -g 192.168.1.0 192.168.1.255 or fping -g 192.168.1.0/24)
    -H n       Set the IP TTL value (Time To Live hops)
    -i n       interval between sending ping packets (in millisec) (default 25)
-   -I if      bind to a particular interface
-   -l         loop sending pings forever
+${I_HELP}   -l         loop sending pings forever
    -m         ping multiple interfaces on target host
    -n         show targets by name (-d is equivalent)
    -O n       set the type of service (tos) flag on the ICMP packets
@@ -54,5 +56,9 @@ $cmd2->stderr_is_eq("");
 my $cmd3 = Test::Command->new(cmd => "fping -Z");
 $cmd3->exit_is_num(1);
 $cmd3->stdout_is_eq("");
-$cmd3->stderr_is_eq("fping: invalid option -- 'Z'
-see 'fping -h' for usage information\n");
+if($^O eq 'darwin') {
+    $cmd3->stderr_is_eq("fping: illegal option -- Z\nsee 'fping -h' for usage information\n");
+}
+else {
+    $cmd3->stderr_is_eq("fping: invalid option -- 'Z'\nsee 'fping -h' for usage information\n");
+}

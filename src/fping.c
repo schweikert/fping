@@ -1440,12 +1440,8 @@ int send_ping( int s, HOST_ENTRY *h )
         && errno != EHOSTDOWN
 #endif
     ) {
-        if( verbose_flag || unreachable_flag ) {
-            printf( "%s", h->host );
-            if( verbose_flag )
-                printf( " error while sending ping: %s\n", strerror( errno ) );
-            
-            printf( "\n" );
+        if( verbose_flag ) {
+            print_warning( "%s: error while sending ping: %s\n", h->host, strerror( errno ) );
         }
         
         if( !loop_flag )

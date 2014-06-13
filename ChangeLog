@@ -1,3 +1,6 @@
+UNRELEASED
+  * Fix double entries with fping -u and unreachable hosts
+
 2014-05-03  David Schweikert  <david@schweikert.ch>
   * Version 3.10
   * Fix confusing error message with -g and IPv6 addresses (#58, reported by Axel Beckert)

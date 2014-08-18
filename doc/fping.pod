@@ -35,7 +35,8 @@ Show systems that are alive.
 
 =item B<-A>
 
-Display targets by address rather than DNS name. 
+Display targets by address rather than DNS name. Combined with -d, the output
+will be both the ip and (if available) the hostname.
 
 =item B<-b> I<n>
 

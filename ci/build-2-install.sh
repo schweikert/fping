@@ -14,5 +14,6 @@ pwd
 df -k .
 which setcap
 uname -a
+mount
 sudo setcap cap_net_raw+ep src/fping
 sudo setcap cap_net_raw+ep src/fping6

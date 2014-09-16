@@ -8,6 +8,8 @@ compiler:
     - gcc
 before_install:
     - sudo apt-get install libcap2-bin
+    - sudo apt-get install traceroute
+    - traceroute google.com
 install:
     - ci/build-1-autotools.sh
     - curl -L http://cpanmin.us | perl - --sudo App::cpanminus

@@ -17,3 +17,4 @@ uname -a
 mount
 sudo setcap cap_net_raw+ep src/fping
 sudo setcap cap_net_raw+ep src/fping6
+sudo strace setcap cap_net_raw+ep src/fping

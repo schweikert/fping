@@ -18,4 +18,6 @@ uname -a
 mount
 sudo setcap cap_net_raw+ep src/fping
 sudo setcap cap_net_raw+ep src/fping6
+
+sudo apt-get install strace
 sudo strace setcap cap_net_raw+ep src/fping

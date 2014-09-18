@@ -1,4 +1,5 @@
-#!/bin/bash -e
+#!/bin/bash
+set -x
 
 PATH=$(pwd)/ci/build/bin:$PATH
 

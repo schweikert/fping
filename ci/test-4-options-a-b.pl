@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 20;
+use Test::Command tests => 23;
 use Test::More;
 use Time::HiRes qw(gettimeofday tv_interval);
 
@@ -27,9 +27,17 @@ $cmd->stderr_is_eq("");
 
 # fping -A -n
 {
-my $cmd = Test::Command->new(cmd => "fping -A -n localhost");
+my $cmd = Test::Command->new(cmd => "fping -A -n 8.8.8.8");
 $cmd->exit_is_num(0);
-$cmd->stdout_is_eq("localhost (127.0.0.1) is alive\n");
+$cmd->stdout_is_eq("google-public-dns-a.google.com (8.8.8.8) is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping -A -n
+{
+my $cmd = Test::Command->new(cmd => "fping -A -n google-public-dns-a.google.com");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("google-public-dns-a.google.com (8.8.8.8) is alive\n");
 $cmd->stderr_is_eq("");
 }
 

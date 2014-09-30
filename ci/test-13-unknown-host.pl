@@ -7,7 +7,7 @@ use Test::Command tests => 6;
 my $cmd = Test::Command->new(cmd => "fping nosuchname.example.com");
 $cmd->exit_is_num(1);
 $cmd->stdout_is_eq("");
-$cmd->stderr_is_eq("nosuchname.example.com address not found\n");
+$cmd->stderr_is_eq("nosuchname.example.com: Name or service not known\n");
 }
 
 # fping6

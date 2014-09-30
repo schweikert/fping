@@ -25,5 +25,6 @@ make CFLAGS="-g -fprofile-arcs -ftest-coverage"
 #sudo strace setcap cap_net_raw+ep src/fping
 
 # use setuid, since setcap is not available
-chmod +s src/fping
-chmod +s src/fping6
+sudo chown root src/fping
+sudo chmod u+s src/fping
+sudo chmod u+s src/fping6

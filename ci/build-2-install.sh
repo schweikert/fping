@@ -11,13 +11,19 @@ fi
 autoreconf -i
 ./configure --enable-ipv4 --enable-ipv6 --prefix=/opt/fping
 make CFLAGS="-g -fprofile-arcs -ftest-coverage"
-pwd
-df -k .
-which setcap
-uname -a
-mount
-sudo setcap cap_net_raw+ep src/fping
-sudo setcap cap_net_raw+ep src/fping6
+## setcap currently doesn't worn anymore on travis-ci
+#sudo setcap cap_net_raw+ep src/fping
+#sudo setcap cap_net_raw+ep src/fping6
+## setcap debugging:
+#pwd
+#df -k .
+#which setcap
+#uname -a
+#mount
+#
+#sudo apt-get install strace
+#sudo strace setcap cap_net_raw+ep src/fping
 
-sudo apt-get install strace
-sudo strace setcap cap_net_raw+ep src/fping
+# use setuid, since setcap is not available
+chmod +s src/fping
+chmod +s src/fping6

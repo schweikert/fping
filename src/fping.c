@@ -1913,7 +1913,13 @@ void add_name( char *name )
         num_noaddress++;
         return; 
     }
-    for (res = res0; res; res = res->ai_next) {
+
+    // NOTE: we could/should loop with res on all addresses like this:
+    // for (res = res0; res; res = res->ai_next) {
+    // We don't do it yet, however, because is is an incompatible change
+    // (need to implement a separate option for this)
+
+    for (res = res0; res; res = 0) {
         len = res->ai_addrlen;
         /* name_flag: addr -> name lookup requested) */
         if(!name_flag) {
@@ -1958,6 +1964,8 @@ void add_name( char *name )
         else {
             add_addr(name, printname, res->ai_addr, res->ai_addrlen);
         }
+
+        return;
     }
 } /* add_name() */
 

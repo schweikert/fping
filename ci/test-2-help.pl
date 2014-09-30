@@ -2,7 +2,7 @@
 
 use Test::Command tests => 9;
 
-my $I_HELP = "  -I if      bind to a particular interface\n";
+my $I_HELP = "   -I if      bind to a particular interface\n";
 $I_HELP = '' if $^O eq 'darwin';
 
 # fping -h

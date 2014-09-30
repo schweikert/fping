@@ -8,11 +8,9 @@
 #include <netinet/in.h>
 
 #ifndef IPV6
-#define FPING_SOCKADDR struct sockaddr_in
 #define FPING_INADDR   struct in_addr
 #define FPING_ICMPHDR  struct icmp
 #else
-#define FPING_SOCKADDR struct sockaddr_in6
 #define FPING_INADDR   struct in6_addr
 #define FPING_ICMPHDR  struct icmp6_hdr
 #endif

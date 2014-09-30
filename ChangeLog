@@ -1,4 +1,8 @@
 UNRELEASED
+  * INCOMPATIBLE CHANGE: when a name with multiple IPs is provided, fping will
+    now ping all addresses (instead of just the first one)
+  * Use sockaddr_storage and simplify code, so that we can one day
+    support both IPv4 and IPv6 with the same binary
   * Fix double entries with fping -u and unreachable hosts
 
 2014-05-03  David Schweikert  <david@schweikert.ch>

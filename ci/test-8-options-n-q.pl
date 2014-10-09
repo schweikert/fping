@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 12;
+use Test::Command tests => 9;
 
 #  -n         show targets by name (-d is equivalent)
 #  -O n       set the type of service (tos) flag on the ICMP packets
@@ -9,13 +9,7 @@ use Test::Command tests => 12;
 #  -q         quiet (don't show per-target/per-ping results)
 #  -Q n       same as -q, but show summary every n seconds
 
-# fping -n
-{
-my $cmd = Test::Command->new(cmd => "fping -n 8.8.8.8");
-$cmd->exit_is_num(0);
-$cmd->stdout_is_eq("google-public-dns-a.google.com is alive\n");
-$cmd->stderr_is_eq("");
-}
+# fping -n -> test-14-internet-hosts
 
 # fping -O
 {

@@ -299,6 +299,8 @@ int verbose_flag, quiet_flag, stats_flag, unreachable_flag, alive_flag;
 int elapsed_flag, version_flag, count_flag, loop_flag;
 int per_recv_flag, report_all_rtts_flag, name_flag, addr_flag, backoff_flag;
 int multif_flag;
+int mark_flag = 0;
+int mark = 0;
 int timestamp_flag = 0;
 #if defined( DEBUG ) || defined( _DEBUG )
 int randomly_lose_flag, sent_times_flag, trace_flag, print_per_system_flag;
@@ -381,7 +383,7 @@ int main( int argc, char **argv )
 
     /* get command line options */
 
-    while( ( c = getopt( argc, argv, "gedhlmnqusaAvDz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:" ) ) != EOF )
+    while( ( c = getopt( argc, argv, "gedhlmnqusaAvDz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:K:" ) ) != EOF )
     {
         switch( c )
         {
@@ -553,6 +555,16 @@ int main( int argc, char **argv )
                 usage(1);
             }
             break;
+
+        case 'K':
+            mark_flag = 1; 
+            if (sscanf(optarg,"%i",&mark)) {
+                if ( setsockopt(s, SOL_SOCKET, SO_MARK, &mark, sizeof(mark))) {
+                    fprintf(stderr, "Warning: failed to set mark %d (%0x)", mark, mark);
+                }
+            }
+            break;
+
         default:
             fprintf(stderr, "see 'fping -h' for usage information\n");
             exit(1);
@@ -680,6 +692,7 @@ int main( int argc, char **argv )
         
         if( verbose_flag ) fprintf( stderr, "  verbose_flag set\n" );
         if( multif_flag ) fprintf( stderr, "  multif_flag set\n" );
+        if( mark_flag ) fprintf( stderr, "  mark_flag set\n" );
         if( name_flag ) fprintf( stderr, "  name_flag set\n" );
         if( addr_flag ) fprintf( stderr, "  addr_flag set\n" );
         if( stats_flag ) fprintf( stderr, "  stats_flag set\n" );

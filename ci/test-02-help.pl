@@ -34,6 +34,7 @@ ${I_HELP}   -l         loop sending pings forever
    -q         quiet (don't show per-target/per-ping results)
    -Q n       same as -q, but show summary every n seconds
    -r n       number of retries (default 3)
+   -R         random packet data (to foil link data compression)
    -s         print final stats
    -S addr    set source address
    -t n       individual target initial timeout (in millisec) (default 500)

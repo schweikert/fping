@@ -45,7 +45,7 @@
 char *ping_buffer = 0;
 size_t ping_pkt_size;
 
-int open_ping_socket_ipv4(size_t ping_data_size)
+int open_ping_socket_ipv4()
 {
     struct protoent *proto;
     int s;
@@ -64,13 +64,16 @@ int open_ping_socket_ipv4(size_t ping_data_size)
         }
     }
 
+    return s;
+}
+
+void init_ping_buffer_ipv4(size_t ping_data_size)
+{
     /* allocate ping buffer */
     ping_pkt_size = ping_data_size + ICMP_MINLEN;
     ping_buffer = (char *) calloc(1, ping_pkt_size);
     if(!ping_buffer)
         crash_and_burn( "can't malloc ping packet" );
-
-    return s;
 }
 
 void socket_set_src_addr_ipv4(int s, FPING_INADDR src_addr)
@@ -93,9 +96,15 @@ int socket_sendto_ping_ipv4(int s, struct sockaddr *saddr, socklen_t saddr_len, 
 
     icp->icmp_type = ICMP_ECHO;
     icp->icmp_code = 0;
-    icp->icmp_cksum = 0;
     icp->icmp_seq = htons(icmp_seq_nr);
     icp->icmp_id = htons(icmp_id_nr);
+
+    if (random_data_flag) {
+        for (n = ((void*)&icp->icmp_data - (void *)icp); n < ping_pkt_size; ++n) {
+            ping_buffer[n] = random() & 0xFF;
+        }
+    }
+
     icp->icmp_cksum = in_cksum((unsigned short*) icp, ping_pkt_size );
 
     n = sendto(s, icp, ping_pkt_size, 0, saddr, saddr_len);

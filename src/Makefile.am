@@ -1,4 +1,4 @@
-AM_CFLAGS = -Wall -Wextra
+AM_CFLAGS = -Wall -Wextra -Wno-sign-compare
 
 prog =
 

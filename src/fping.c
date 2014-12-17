@@ -259,7 +259,6 @@ unsigned int interval = DEFAULT_INTERVAL * 100;
 unsigned int perhost_interval = DEFAULT_PERHOST_INTERVAL * 100;
 float backoff = DEFAULT_BACKOFF_FACTOR;
 unsigned int ping_data_size = DEFAULT_PING_DATA_SIZE;
-unsigned int ping_pkt_size;
 unsigned int count = 1;
 unsigned int trials;
 unsigned int report_interval = 0;
@@ -301,6 +300,7 @@ int elapsed_flag, version_flag, count_flag, loop_flag;
 int per_recv_flag, report_all_rtts_flag, name_flag, addr_flag, backoff_flag;
 int multif_flag;
 int timestamp_flag = 0;
+int random_data_flag = 0;
 #if defined( DEBUG ) || defined( _DEBUG )
 int randomly_lose_flag, sent_times_flag, trace_flag, print_per_system_flag;
 int lose_factor;
@@ -379,7 +379,7 @@ int main( int argc, char **argv )
 
     /* get command line options */
 
-    while( ( c = getopt( argc, argv, "gedhlmnqusaAvDz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:" ) ) != EOF )
+    while( ( c = getopt( argc, argv, "gedhlmnqusaAvDRz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:" ) ) != EOF )
     {
         switch( c )
         {
@@ -473,6 +473,10 @@ int main( int argc, char **argv )
 
         case 'D':
             timestamp_flag = 1;
+            break;
+
+        case 'R':
+            random_data_flag = 1;
             break;
 
         case 'l':
@@ -815,8 +819,8 @@ int main( int argc, char **argv )
 
     }/* FOR */
 
-    ping_pkt_size = ping_data_size + SIZE_ICMP_HDR;
-    
+    init_ping_buffer(ping_data_size);
+
     signal( SIGINT, finish );
     
     gettimeofday( &start_time, &tz );
@@ -1407,7 +1411,7 @@ int send_ping( int s, HOST_ENTRY *h )
     n = socket_sendto_ping(s, (struct sockaddr *) &h->saddr, h->saddr_len, myseq, ident);
 
     if(
-        (n < 0 || n != ping_pkt_size)
+        (n < 0)
 #if defined( EHOSTDOWN )
         && errno != EHOSTDOWN
 #endif
@@ -2473,6 +2477,7 @@ void usage(int is_error)
     fprintf(out, "   -q         quiet (don't show per-target/per-ping results)\n" );
     fprintf(out, "   -Q n       same as -q, but show summary every n seconds\n" );
     fprintf(out, "   -r n       number of retries (default %d)\n", DEFAULT_RETRY );
+    fprintf(out, "   -R         random packet data (to foil link data compression)\n" );
     fprintf(out, "   -s         print final stats\n" );
     fprintf(out, "   -S addr    set source address\n" );
     fprintf(out, "   -t n       individual target initial timeout (in millisec) (default %d)\n", timeout / 100 );

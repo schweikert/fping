@@ -35,17 +35,28 @@
 
 int open_ping_socket_ipv4();
 int open_ping_socket_ipv6();
+void init_ping_buffer_ipv4(size_t ping_data_size);
+void init_ping_buffer_ipv6(size_t ping_data_size);
 void socket_set_src_addr_ipv4(int s, FPING_INADDR src_addr);
 void socket_set_src_addr_ipv6(int s, FPING_INADDR src_addr);
 int socket_sendto_ping_ipv4(int s, struct sockaddr *saddr, socklen_t saddr_len, uint16_t icmp_seq_nr, uint16_t icmp_id_nr);
 int socket_sendto_ping_ipv6(int s, struct sockaddr *saddr, socklen_t saddr_len, uint16_t icmp_seq_nr, uint16_t icmp_id_nr);
 
-int open_ping_socket(size_t ping_data_size)
+int open_ping_socket()
 {
 #ifndef IPV6
-    return open_ping_socket_ipv4(ping_data_size);
+    return open_ping_socket_ipv4();
 #else
-    return open_ping_socket_ipv6(ping_data_size);
+    return open_ping_socket_ipv6();
+#endif
+}
+
+void init_ping_buffer(size_t ping_data_size)
+{
+#ifndef IPV6
+    return init_ping_buffer_ipv4(ping_data_size);
+#else
+    return init_ping_buffer_ipv6(ping_data_size);
 #endif
 }
 

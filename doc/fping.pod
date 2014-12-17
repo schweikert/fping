@@ -151,6 +151,11 @@ Like B<-q>, but show summary results every n seconds.
 Retry limit (default 3). This is the number of times an attempt at pinging
 a target will be made, not including the first try. 
 
+=item B<-R>
+
+Instead of using all-zeros as the packet data, generate random bytes.
+Use to defeat, e.g., link data compression.
+
 =item B<-s>
 
 Print cumulative statistics upon exit. 

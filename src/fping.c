@@ -259,6 +259,7 @@ unsigned int perhost_interval = DEFAULT_PERHOST_INTERVAL * 100;
 float backoff = DEFAULT_BACKOFF_FACTOR;
 unsigned int ping_data_size = DEFAULT_PING_DATA_SIZE;
 unsigned int ping_pkt_size;
+char *ping_buffer;
 unsigned int count = 1;
 unsigned int trials;
 unsigned int report_interval = 0;
@@ -341,8 +342,30 @@ void ev_remove(HOST_ENTRY *h);
 void add_cidr(char *);
 void add_range(char *, char *);
 void print_warning(char *fmt, ...);
+void free_ping_buffer( void );
 
 /*** function definitions ***/
+
+/************************************************************
+
+  Function: free_ping_buffer
+
+*************************************************************
+
+  Inputs:  void (none)
+
+  Description:
+  
+  Free the ping packet buffer.
+
+************************************************************/
+
+void free_ping_buffer( void )
+{
+    if (ping_buffer != NULL) {
+        free( ping_buffer );
+    }
+}
 
 /************************************************************
 
@@ -818,6 +841,15 @@ int main( int argc, char **argv )
     }/* FOR */
 
     ping_pkt_size = ping_data_size + SIZE_ICMP_HDR;
+    ping_buffer = ( char* )malloc( ( size_t )ping_pkt_size );
+    if( !ping_buffer )
+        crash_and_burn( "can't malloc ping packet" );
+
+    if ( atexit( free_ping_buffer ) < 0 )
+    {
+        perror("atexit");
+        exit(1);
+    }
     
     signal( SIGINT, finish );
     
@@ -1394,18 +1426,13 @@ void print_global_stats( void )
 
 int send_ping( int s, HOST_ENTRY *h )
 {
-    char *buffer;
     FPING_ICMPHDR *icp;
     int n;
     int myseq;
     int ret = 1;
 
-    buffer = ( char* )malloc( ( size_t )ping_pkt_size );
-    if( !buffer )
-        crash_and_burn( "can't malloc ping packet" );
-    
-    memset( buffer, 0, ping_pkt_size * sizeof( char ) );
-    icp = ( FPING_ICMPHDR* )buffer;
+    memset( ping_buffer, 0, ping_pkt_size * sizeof( char ) );
+    icp = ( FPING_ICMPHDR* )ping_buffer;
 
     gettimeofday( &h->last_send_time, &tz );
     myseq = seqmap_add(h->i, h->num_sent, &h->last_send_time);
@@ -1431,7 +1458,7 @@ int send_ping( int s, HOST_ENTRY *h )
         printf( "sending [%d] to %s\n", h->num_sent, h->host );
 #endif /* DEBUG || _DEBUG */
 
-    n = sendto( s, buffer, ping_pkt_size, 0,
+    n = sendto( s, ping_buffer, ping_pkt_size, 0,
         ( struct sockaddr* )&h->saddr, sizeof( FPING_SOCKADDR ) );
 
     if(
@@ -1465,7 +1492,6 @@ int send_ping( int s, HOST_ENTRY *h )
     h->waiting++;
     num_pingsent++;
     last_send_time = h->last_send_time;
-    free( buffer );
 
     return(ret);
 }

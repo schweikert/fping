@@ -320,7 +320,6 @@ void crash_and_burn( char *message );
 void errno_crash_and_burn( char *message );
 char *get_host_by_address( struct in_addr in );
 int in_cksum( unsigned short *p, int n );
-void u_sleep( int u_sec );
 int recvfrom_wto ( int s, char *buf, int len, FPING_SOCKADDR *saddr, long timo );
 void remove_job( HOST_ENTRY *h );
 int send_ping( int s, HOST_ENTRY *h );
@@ -2397,47 +2396,6 @@ char * sprint_tm( int t )
 
     return( buf );
 }
-
-/************************************************************
-
-  Function: u_sleep
-
-*************************************************************
-
-  Inputs:  int u_sec
-
-  Description:
-
-************************************************************/
-
-void u_sleep( int u_sec )
-{
-    int nfound;
-    struct timeval to;
-    fd_set readset, writeset;
-
-select_again:
-    to.tv_sec = u_sec / 1000000;
-    to.tv_usec = u_sec - ( to.tv_sec * 1000000 );
-
-    FD_ZERO( &readset );
-    FD_ZERO( &writeset );
-
-    nfound = select( 0, &readset, &writeset, NULL, &to );
-    if(nfound < 0) {
-	if(errno == EINTR) {
-	    /* interrupted system call: redo the select */
-	    goto select_again;
-	}
-	else {
-	    errno_crash_and_burn( "select" );
-	}
-    }
-
-    return;
-
-} /* u_sleep() */
-
 
 /************************************************************
 

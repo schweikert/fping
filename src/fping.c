@@ -342,30 +342,8 @@ void ev_remove(HOST_ENTRY *h);
 void add_cidr(char *);
 void add_range(char *, char *);
 void print_warning(char *fmt, ...);
-void free_ping_buffer( void );
 
 /*** function definitions ***/
-
-/************************************************************
-
-  Function: free_ping_buffer
-
-*************************************************************
-
-  Inputs:  void (none)
-
-  Description:
-  
-  Free the ping packet buffer.
-
-************************************************************/
-
-void free_ping_buffer( void )
-{
-    if (ping_buffer != NULL) {
-        free( ping_buffer );
-    }
-}
 
 /************************************************************
 
@@ -845,12 +823,6 @@ int main( int argc, char **argv )
     if( !ping_buffer )
         crash_and_burn( "can't malloc ping packet" );
 
-    if ( atexit( free_ping_buffer ) < 0 )
-    {
-        perror("atexit");
-        exit(1);
-    }
-    
     signal( SIGINT, finish );
     
     gettimeofday( &start_time, &tz );

@@ -300,6 +300,7 @@ int elapsed_flag, version_flag, count_flag, loop_flag;
 int per_recv_flag, report_all_rtts_flag, name_flag, addr_flag, backoff_flag;
 int multif_flag;
 int timestamp_flag = 0;
+int random_data_flag = 0;
 #if defined( DEBUG ) || defined( _DEBUG )
 int randomly_lose_flag, sent_times_flag, trace_flag, print_per_system_flag;
 int lose_factor;
@@ -380,7 +381,7 @@ int main( int argc, char **argv )
 
     /* get command line options */
 
-    while( ( c = getopt( argc, argv, "gedhlmnqusaAvDz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:" ) ) != EOF )
+    while( ( c = getopt( argc, argv, "gedhlmnqusaAvDRz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:" ) ) != EOF )
     {
         switch( c )
         {
@@ -474,6 +475,10 @@ int main( int argc, char **argv )
 
         case 'D':
             timestamp_flag = 1;
+            break;
+
+        case 'R':
+            random_data_flag = 1;
             break;
 
         case 'l':
@@ -1403,7 +1408,13 @@ int send_ping( int s, HOST_ENTRY *h )
     if( !buffer )
         crash_and_burn( "can't malloc ping packet" );
     
-    memset( buffer, 0, ping_pkt_size * sizeof( char ) );
+    if (random_data_flag) {
+        for (n = 0; n < ping_pkt_size; ++n) {
+            buffer[n] = random() & 0xFF;
+        }
+    } else {
+        memset( buffer, 0, ping_pkt_size * sizeof( char ) );
+    }
     icp = ( FPING_ICMPHDR* )buffer;
 
     gettimeofday( &h->last_send_time, &tz );
@@ -2620,6 +2631,7 @@ void usage(int is_error)
     fprintf(out, "   -q         quiet (don't show per-target/per-ping results)\n" );
     fprintf(out, "   -Q n       same as -q, but show summary every n seconds\n" );
     fprintf(out, "   -r n       number of retries (default %d)\n", DEFAULT_RETRY );
+    fprintf(out, "   -R         random packet data (to foil link data compression)\n" );
     fprintf(out, "   -s         print final stats\n" );
     fprintf(out, "   -S addr    set source address\n" );
     fprintf(out, "   -t n       individual target initial timeout (in millisec) (default %d)\n", timeout / 100 );

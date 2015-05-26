@@ -301,6 +301,7 @@ int elapsed_flag, version_flag, count_flag, loop_flag;
 int per_recv_flag, report_all_rtts_flag, name_flag, addr_flag, backoff_flag;
 int multif_flag;
 int timestamp_flag = 0;
+int random_data_flag = 0;
 #if defined( DEBUG ) || defined( _DEBUG )
 int randomly_lose_flag, sent_times_flag, trace_flag, print_per_system_flag;
 int lose_factor;
@@ -321,7 +322,6 @@ void crash_and_burn( char *message );
 void errno_crash_and_burn( char *message );
 char *get_host_by_address( struct in_addr in );
 int in_cksum( unsigned short *p, int n );
-void u_sleep( int u_sec );
 int recvfrom_wto ( int s, char *buf, int len, FPING_SOCKADDR *saddr, long timo );
 void remove_job( HOST_ENTRY *h );
 int send_ping( int s, HOST_ENTRY *h );
@@ -382,7 +382,7 @@ int main( int argc, char **argv )
 
     /* get command line options */
 
-    while( ( c = getopt( argc, argv, "gedhlmnqusaAvDz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:" ) ) != EOF )
+    while( ( c = getopt( argc, argv, "gedhlmnqusaAvDRz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:" ) ) != EOF )
     {
         switch( c )
         {
@@ -476,6 +476,10 @@ int main( int argc, char **argv )
 
         case 'D':
             timestamp_flag = 1;
+            break;
+
+        case 'R':
+            random_data_flag = 1;
             break;
 
         case 'l':
@@ -1403,7 +1407,13 @@ int send_ping( int s, HOST_ENTRY *h )
     int myseq;
     int ret = 1;
 
-    memset( ping_buffer, 0, ping_pkt_size * sizeof( char ) );
+    if (random_data_flag) {
+        for (n = 0; n < ping_pkt_size; ++n) {
+            ping_buffer[n] = random() & 0xFF;
+        }
+    } else {
+        memset( ping_buffer, 0, ping_pkt_size * sizeof( char ) );
+    }
     icp = ( FPING_ICMPHDR* )ping_buffer;
 
     gettimeofday( &h->last_send_time, &tz );
@@ -2398,47 +2408,6 @@ char * sprint_tm( int t )
 
 /************************************************************
 
-  Function: u_sleep
-
-*************************************************************
-
-  Inputs:  int u_sec
-
-  Description:
-
-************************************************************/
-
-void u_sleep( int u_sec )
-{
-    int nfound;
-    struct timeval to;
-    fd_set readset, writeset;
-
-select_again:
-    to.tv_sec = u_sec / 1000000;
-    to.tv_usec = u_sec - ( to.tv_sec * 1000000 );
-
-    FD_ZERO( &readset );
-    FD_ZERO( &writeset );
-
-    nfound = select( 0, &readset, &writeset, NULL, &to );
-    if(nfound < 0) {
-	if(errno == EINTR) {
-	    /* interrupted system call: redo the select */
-	    goto select_again;
-	}
-	else {
-	    errno_crash_and_burn( "select" );
-	}
-    }
-
-    return;
-
-} /* u_sleep() */
-
-
-/************************************************************
-
   Function: recvfrom_wto
 
 *************************************************************
@@ -2660,6 +2629,7 @@ void usage(int is_error)
     fprintf(out, "   -q         quiet (don't show per-target/per-ping results)\n" );
     fprintf(out, "   -Q n       same as -q, but show summary every n seconds\n" );
     fprintf(out, "   -r n       number of retries (default %d)\n", DEFAULT_RETRY );
+    fprintf(out, "   -R         random packet data (to foil link data compression)\n" );
     fprintf(out, "   -s         print final stats\n" );
     fprintf(out, "   -S addr    set source address\n" );
     fprintf(out, "   -t n       individual target initial timeout (in millisec) (default %d)\n", timeout / 100 );

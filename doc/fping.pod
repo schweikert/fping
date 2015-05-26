@@ -151,6 +151,11 @@ Like B<-q>, but show summary results every n seconds.
 Retry limit (default 3). This is the number of times an attempt at pinging
 a target will be made, not including the first try. 
 
+=item B<-R>
+
+Instead of using all-zeros as the packet data, generate random bytes.
+Use to defeat, e.g., link data compression.
+
 =item B<-s>
 
 Print cumulative statistics upon exit. 
@@ -193,6 +198,15 @@ Print B<fping> version information.
 Set the IP TTL field (time to live hops). 
 
 =back
+
+=head1 EXAMPLES
+
+Generate ~1000 pings per second to a host until canceled, printing statistics
+on the fly at one second intervals, and printing statistics at the end:
+
+# fping -s -l -i 1 -p 1 -T 1 -Q 1 127.0.0.1
+
+Note that ping intervals less than 10ms can only be used as root.
 
 =head1 AUTHORS
 

@@ -35,11 +35,17 @@
 
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/ip.h>
+#include <netinet/ip_icmp.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
-int open_ping_socket_ipv4()
+char *ping_buffer = 0;
+size_t ping_pkt_size;
+
+int open_ping_socket_ipv4(size_t ping_data_size)
 {
     struct protoent *proto;
     int s;
@@ -58,6 +64,12 @@ int open_ping_socket_ipv4()
         }
     }
 
+    /* allocate ping buffer */
+    ping_pkt_size = ping_data_size + ICMP_MINLEN;
+    ping_buffer = (char *) calloc(1, ping_pkt_size);
+    if(!ping_buffer)
+        crash_and_burn( "can't malloc ping packet" );
+
     return s;
 }
 
@@ -70,4 +82,23 @@ void socket_set_src_addr_ipv4(int s, FPING_INADDR src_addr)
 
     if ( bind( s, (struct sockaddr *)&sa, sizeof( sa ) ) < 0 )
         errno_crash_and_burn( "cannot bind source address" );
+}
+
+int socket_sendto_ping_ipv4(int s, struct sockaddr *saddr, socklen_t saddr_len, size_t ping_pkt_size, uint16_t icmp_seq_nr, uint16_t icmp_id_nr)
+{
+    struct icmp *icp;
+    int n;
+
+    icp = (struct icmp *) ping_buffer;
+
+    icp->icmp_type = ICMP_ECHO;
+    icp->icmp_code = 0;
+    icp->icmp_cksum = 0;
+    icp->icmp_seq = htons(icmp_seq_nr);
+    icp->icmp_id = htons(icmp_id_nr);
+    icp->icmp_cksum = in_cksum((unsigned short*) icp, ping_pkt_size );
+
+    n = sendto(s, icp, ping_pkt_size, 0, saddr, saddr_len);
+
+    return n;
 }

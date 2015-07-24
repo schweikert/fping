@@ -1393,44 +1393,19 @@ void print_global_stats( void )
 
 int send_ping( int s, HOST_ENTRY *h )
 {
-    char *buffer;
-    FPING_ICMPHDR *icp;
     int n;
     int myseq;
     int ret = 1;
 
-    buffer = ( char* )malloc( ( size_t )ping_pkt_size );
-    if( !buffer )
-        crash_and_burn( "can't malloc ping packet" );
-    
-    memset( buffer, 0, ping_pkt_size * sizeof( char ) );
-    icp = ( FPING_ICMPHDR* )buffer;
-
     gettimeofday( &h->last_send_time, &tz );
     myseq = seqmap_add(h->i, h->num_sent, &h->last_send_time);
 
-#ifndef IPV6
-    icp->icmp_type = ICMP_ECHO;
-    icp->icmp_code = 0;
-    icp->icmp_cksum = 0;
-    icp->icmp_seq = htons(myseq);
-    icp->icmp_id = htons(ident);
-
-    icp->icmp_cksum = in_cksum( ( unsigned short* )icp, ping_pkt_size );
-#else
-    icp->icmp6_type = ICMP6_ECHO_REQUEST;
-    icp->icmp6_code = 0;
-    icp->icmp6_seq = htons(myseq);
-    icp->icmp6_id = htons(ident);
-
-    icp->icmp6_cksum = 0;   // The IPv6 stack calculates the checksum for us...
-#endif
 #if defined(DEBUG) || defined(_DEBUG)
     if( trace_flag )
         printf( "sending [%d] to %s\n", h->num_sent, h->host );
 #endif /* DEBUG || _DEBUG */
 
-    n = sendto( s, buffer, ping_pkt_size, 0, (struct sockaddr *) &h->saddr, h->saddr_len);
+    n = socket_sendto_ping(s, (struct sockaddr *) &h->saddr, h->saddr_len, ping_pkt_size, myseq, ident);
 
     if(
         (n < 0 || n != ping_pkt_size)
@@ -1463,7 +1438,6 @@ int send_ping( int s, HOST_ENTRY *h )
     h->waiting++;
     num_pingsent++;
     last_send_time = h->last_send_time;
-    free( buffer );
 
     return(ret);
 }

@@ -21,8 +21,8 @@ void errno_crash_and_burn( char *message );
 int in_cksum( unsigned short *p, int n );
 
 /* socket.c */
-int  open_ping_socket();
+int  open_ping_socket(size_t ping_data_size);
 void socket_set_src_addr(int s, FPING_INADDR src_addr);
-int  socket_sendto_ping(int s, struct sockaddr *saddr, socklen_t saddr_len, size_t ping_pkg_size, uint16_t icmp_seq, uint16_t icmp_id);
+int  socket_sendto_ping(int s, struct sockaddr *saddr, socklen_t saddr_len, uint16_t icmp_seq, uint16_t icmp_id);
 
 #endif

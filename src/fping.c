@@ -365,7 +365,7 @@ int main( int argc, char **argv )
     int tos = 0; 
     HOST_ENTRY *cursor;
 
-    s = open_ping_socket();
+    s = open_ping_socket(ping_data_size);
 
     if((uid = getuid())) {
         /* drop privileges */
@@ -1405,7 +1405,7 @@ int send_ping( int s, HOST_ENTRY *h )
         printf( "sending [%d] to %s\n", h->num_sent, h->host );
 #endif /* DEBUG || _DEBUG */
 
-    n = socket_sendto_ping(s, (struct sockaddr *) &h->saddr, h->saddr_len, ping_pkt_size, myseq, ident);
+    n = socket_sendto_ping(s, (struct sockaddr *) &h->saddr, h->saddr_len, myseq, ident);
 
     if(
         (n < 0 || n != ping_pkt_size)

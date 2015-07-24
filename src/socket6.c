@@ -92,10 +92,6 @@ int socket_sendto_ping_ipv6(int s, struct sockaddr *saddr, socklen_t saddr_len, 
 
     // FIXME: randomization
     icp = (struct icmp6_hdr *) ping_buffer;
-    if(!icp) {
-        crash_and_burn("can't malloc ping packet");
-    }
-
     icp->icmp6_type  = ICMP6_ECHO_REQUEST;
     icp->icmp6_code  = 0;
     icp->icmp6_seq   = htons(icmp_seq_nr);

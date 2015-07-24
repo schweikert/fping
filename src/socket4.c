@@ -84,7 +84,7 @@ void socket_set_src_addr_ipv4(int s, FPING_INADDR src_addr)
         errno_crash_and_burn( "cannot bind source address" );
 }
 
-int socket_sendto_ping_ipv4(int s, struct sockaddr *saddr, socklen_t saddr_len, size_t ping_pkt_size, uint16_t icmp_seq_nr, uint16_t icmp_id_nr)
+int socket_sendto_ping_ipv4(int s, struct sockaddr *saddr, socklen_t saddr_len, uint16_t icmp_seq_nr, uint16_t icmp_id_nr)
 {
     struct icmp *icp;
     int n;

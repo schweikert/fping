@@ -1,3 +1,5 @@
+AM_CFLAGS = -Wall -Wextra
+
 prog =
 
 if IPV4

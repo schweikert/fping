@@ -331,7 +331,7 @@ void print_per_system_splits( void );
 void print_global_stats( void );
 void main_loop();
 void finish();
-int handle_random_icmp( FPING_ICMPHDR *p, int psize, struct sockaddr *addr, socklen_t addr_len);
+int handle_random_icmp( FPING_ICMPHDR *p, struct sockaddr *addr, socklen_t addr_len);
 char *sprint_tm( int t );
 void ev_enqueue(HOST_ENTRY  *h);
 HOST_ENTRY *ev_dequeue();
@@ -1525,7 +1525,7 @@ int wait_for_reply(long wait_time)
 #endif
     {
         /* handle some problem */
-        if( handle_random_icmp( icp, result, (struct sockaddr *)&response_addr, response_addr_len ) )
+        if( handle_random_icmp( icp, (struct sockaddr *)&response_addr, response_addr_len ) )
             num_othericmprcvd++;
         return 1;
     }/* IF */
@@ -1691,7 +1691,7 @@ int wait_for_reply(long wait_time)
 
 ************************************************************/
 
-int handle_random_icmp(FPING_ICMPHDR *p, int psize, struct sockaddr *addr, socklen_t addr_len)
+int handle_random_icmp(FPING_ICMPHDR *p, struct sockaddr *addr, socklen_t addr_len)
 {
     FPING_ICMPHDR *sent_icmp;
     unsigned char *c;
@@ -1743,7 +1743,7 @@ int handle_random_icmp(FPING_ICMPHDR *p, int psize, struct sockaddr *addr, sockl
                 print_warning("%s from %s for ICMP Echo sent to %s", icmp_code, addr_ascii, h->host);
             }
 
-            if( inet_addr( h->host ) == -1 )
+            if( inet_addr( h->host ) == INADDR_NONE )
                 print_warning(" (%s)", addr_ascii);
             
             print_warning("\n" );
@@ -1771,7 +1771,7 @@ int handle_random_icmp(FPING_ICMPHDR *p, int psize, struct sockaddr *addr, sockl
                     icmp_type, addr_ascii, h->host );
             }
       
-            if( inet_addr( h->host ) == -1 )
+            if( inet_addr( h->host ) == INADDR_NONE )
                 fprintf( stderr, " (%s)", addr_ascii );
 
             fprintf( stderr, "\n" );

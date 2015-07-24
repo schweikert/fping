@@ -48,7 +48,6 @@ size_t ping_pkt_size;
 int open_ping_socket_ipv6(size_t ping_data_size)
 {
     struct protoent *proto;
-    int opton = 1;
     int s;
 
     /* confirm that ICMP is available on this machine */

@@ -239,7 +239,6 @@ typedef struct host_entry
 
 /*** globals ***/
 
-HOST_ENTRY *rrlist = NULL;  /* linked list of hosts be pinged */
 HOST_ENTRY **table = NULL;  /* array of pointers to items in the list */
 
 /* event queue (ev): This, together with the ev_next / ev_prev elements are used

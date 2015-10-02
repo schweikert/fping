@@ -7,7 +7,7 @@ use Test::Command tests => 6;
 my $cmd = Test::Command->new(cmd => "fping nosuchname.example.com");
 $cmd->exit_is_num(1);
 $cmd->stdout_is_eq("");
-$cmd->stderr_like(qr{^nosuchname\.example\.com: (Name or service not known|nodename nor servname provided, or not known)\n});
+$cmd->stderr_like(qr{^nosuchname\.example\.com: .*not (known|found)});
 }
 
 # fping6
@@ -15,5 +15,5 @@ $cmd->stderr_like(qr{^nosuchname\.example\.com: (Name or service not known|noden
 my $cmd = Test::Command->new(cmd => "fping6 nosuchname.example.com");
 $cmd->exit_is_num(1);
 $cmd->stdout_is_eq("");
-$cmd->stderr_like(qr{^nosuchname\.example\.com: (Name or service not known|nodename nor servname provided, or not known)\n});
+$cmd->stderr_like(qr{^nosuchname\.example\.com: .*not (known|found)});
 }

@@ -316,7 +316,6 @@ char *na_cat( char *name, struct in_addr ipaddr );
 void crash_and_burn( char *message );
 void errno_crash_and_burn( char *message );
 char *get_host_by_address( struct in_addr in );
-int in_cksum( unsigned short *p, int n );
 void u_sleep( int u_sec );
 int recvfrom_wto( int s, char *buf, int len, struct sockaddr *saddr, socklen_t *saddr_len, long timo );
 void remove_job( HOST_ENTRY *h );
@@ -1797,54 +1796,6 @@ int handle_random_icmp(FPING_ICMPHDR *p, struct sockaddr *addr, socklen_t addr_l
     }/* SWITCH */
 
 } /* handle_random_icmp() */
-
-
-/************************************************************
-
-  Function: in_cksum
-
-*************************************************************
-
-  Inputs:  unsigned short *p, int n
-
-  Returns:  int
-
-  Description:
-
-  Checksum routine for Internet Protocol family headers (C Version)
-  From ping examples in W.Richard Stevens "UNIX NETWORK PROGRAMMING" book.
-
-************************************************************/
-
-int in_cksum( unsigned short *p, int n )
-{
-    register unsigned short answer;
-    register long sum = 0;
-    unsigned short odd_byte = 0;
-
-    while( n > 1 )
-    {
-        sum += *p++;
-        n -= 2;
-    
-    }/* WHILE */
-
-
-    /* mop up an odd byte, if necessary */
-    if( n == 1 )
-    {
-        *( unsigned char* )( &odd_byte ) = *( unsigned char* )p;
-        sum += odd_byte;
-    
-    }/* IF */
-
-    sum = ( sum >> 16 ) + ( sum & 0xffff ); /* add hi 16 to low 16 */
-    sum += ( sum >> 16 );                   /* add carry */
-    answer = ~sum;                          /* ones-complement, truncate*/
-    
-    return ( answer );
-
-} /* in_cksum() */
 
 
 /************************************************************

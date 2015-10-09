@@ -87,6 +87,23 @@ void socket_set_src_addr_ipv4(int s, FPING_INADDR src_addr)
         errno_crash_and_burn( "cannot bind source address" );
 }
 
+unsigned short calcsum(unsigned short *buffer, int length)
+{
+    unsigned long sum;
+
+    // initialize sum to zero and loop until length (in words) is 0
+    for (sum=0; length>1; length-=2) // sizeof() returns number of bytes, we're interested in number of words
+	sum += *buffer++;	// add 1 word of buffer to sum and proceed to the next
+
+    // we may have an extra byte
+    if (length==1)
+	sum += (char)*buffer;
+
+    sum = (sum >> 16) + (sum & 0xFFFF); // add high 16 to low 16
+    sum += (sum >> 16);			// add carry
+    return ~sum;
+}
+
 int socket_sendto_ping_ipv4(int s, struct sockaddr *saddr, socklen_t saddr_len, uint16_t icmp_seq_nr, uint16_t icmp_id_nr)
 {
     struct icmp *icp;
@@ -106,7 +123,7 @@ int socket_sendto_ping_ipv4(int s, struct sockaddr *saddr, socklen_t saddr_len, 
         }
     }
 
-    icp->icmp_cksum = in_cksum((unsigned short*) icp, ping_pkt_size );
+    icp->icmp_cksum = calcsum((unsigned short *) icp, ping_pkt_size);
 
     n = sendto(s, icp, ping_pkt_size, 0, saddr, saddr_len);
 

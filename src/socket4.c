@@ -96,6 +96,7 @@ int socket_sendto_ping_ipv4(int s, struct sockaddr *saddr, socklen_t saddr_len, 
 
     icp->icmp_type = ICMP_ECHO;
     icp->icmp_code = 0;
+    icp->icmp_cksum = 0;
     icp->icmp_seq = htons(icmp_seq_nr);
     icp->icmp_id = htons(icmp_id_nr);
 

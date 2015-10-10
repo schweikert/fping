@@ -1,6 +1,13 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 6;
+use Test::Command;
+use Test::More;
+
+if( $^O eq 'darwin' ) {
+    plan skip_all => 'Test irrelevant on MacOS';
+    exit 0;
+}
+plan tests => 6;
 
 # run without privileges
 my $fping_bin = `which fping`; chomp $fping_bin;

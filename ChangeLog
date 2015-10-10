@@ -1,5 +1,9 @@
 UNRELEASED
+  * Use sockaddr_storage and simplify code, so that we can one day
+    support both IPv4 and IPv6 with the same binary
   * Fix double entries with fping -u and unreachable hosts
+  * New option -R to use random bytes instead of NULLs (#72, Anthony DeRobertis)
+  * Small documentation and performance improvements (Ryan Underwood)
 
 2014-05-03  David Schweikert  <david@schweikert.ch>
   * Version 3.10

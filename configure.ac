@@ -29,7 +29,7 @@ if test x$ipv4 = xfalse && test x$ipv6 = xfalse; then
 fi
 
 AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([foreign])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_MAINTAINER_MODE
 
 AC_CONFIG_HEADERS([config.h])

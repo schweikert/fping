@@ -1,3 +1,5 @@
+AM_CFLAGS = -Wall -Wextra -Wno-sign-compare
+
 prog =
 
 if IPV4

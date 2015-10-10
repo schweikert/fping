@@ -1,12 +1,19 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 12;
+use Test::Command tests => 15;
 
+#  -R         random bytes
 #  -r n       number of retries (default 3)
 #  -s         print final stats
 #  -S addr    set source address
 #  -t n       individual target initial timeout (in millisec) (default 500)
 #  -T n       ignored (for compatibility with fping 2.4)
+
+# fping -R
+my $cmd1 = Test::Command->new(cmd => "fping -q -R -c3 -p100 127.0.0.1");
+$cmd1->exit_is_num(0);
+$cmd1->stdout_is_eq("");
+$cmd1->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 3/3/0%.*});
 
 # fping -r tested in test-4-options-a-b.pl
 

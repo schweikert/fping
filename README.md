@@ -7,15 +7,9 @@ but much better performing when pinging multiple hosts. fping has a long long
 story: Roland Schemers did publish a first version of it in 1992 and it has
 established itself since then as a standard tool.
 
-Current maintainer:
-   David Schweikert <david@schweikert.ch>
-
-Website:
-   http://fping.org/
-
-Mailing-list:
-   https://groups.google.com/group/fping-users
-
+| *Current maintainer* | David Schweikert \<david@schweikert.ch\> |
+| *Website*            | http://fping.org/ |
+| *Mailing-list*       | https://groups.google.com/group/fping-users |
 
 ## Installation
 

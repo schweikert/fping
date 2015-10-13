@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/schweikert/fping.svg?branch=develop)](https://travis-ci.org/schweikert/fping)
+[![Coverage Status](https://coveralls.io/repos/schweikert/fping/badge.svg?branch=develop&service=github)](https://coveralls.io/github/schweikert/fping?branch=develop)
 
 # fping 3
 

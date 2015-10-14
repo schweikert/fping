@@ -99,7 +99,7 @@ int socket_sendto_ping_ipv6(int s, struct sockaddr *saddr, socklen_t saddr_len, 
     icp->icmp6_id    = htons(icmp_id_nr);
 
     if (random_data_flag) {
-        for (n = ((void*)&icp->icmp6_data8 - (void *)icp); n < ping_pkt_size; ++n) {
+        for (n = sizeof(struct icmp6_hdr); n < ping_pkt_size; ++n) {
             ping_buffer[n] = random() & 0xFF;
         }
     }

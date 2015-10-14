@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 15;
+use Test::Command tests => 18;
 
 #  -R         random bytes
 #  -r n       number of retries (default 3)

@@ -1,3 +1,7 @@
+2015-10-14  David Schweikert  <david@schweikert.ch>
+  * Version 3.12
+  * (bugfix) Fix fping6 -R (fixes #84, reported by Stuart Henderson)
+
 2015-10-12  David Schweikert  <david@schweikert.ch>
   * Version 3.11
   * (feature)  New option -R to use random bytes instead of NULLs (#72, Anthony DeRobertis)

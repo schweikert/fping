@@ -1741,7 +1741,8 @@ int handle_random_icmp(FPING_ICMPHDR *p, struct sockaddr *addr, socklen_t addr_l
                     addr_ascii, h->host );
             }
             else {
-                print_warning("%s from %s for ICMP Echo sent to %s", icmp_code, addr_ascii, h->host);
+                print_warning("%s from %s for ICMP Echo sent to %s",
+                        icmp_unreach_str[icmp_code], addr_ascii, h->host);
             }
 
             if( inet_addr( h->host ) == INADDR_NONE )

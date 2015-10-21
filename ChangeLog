@@ -1,3 +1,8 @@
+2015-10-21  David Schweikert  <david@schweikert.ch>
+  * Version 3.13
+  * (bugfix) Fix ICMP errors sometimes causing crashes with fping >= 3.11
+             (fixes #85, reported by Jamie Heilman and Bill Blough)
+
 2015-10-14  David Schweikert  <david@schweikert.ch>
   * Version 3.12
   * (bugfix) Fix fping6 -R (fixes #84, reported by Stuart Henderson)

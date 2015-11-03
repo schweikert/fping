@@ -1,4 +1,4 @@
-/* 
+/*
  * fping: fast-ping, file-ping, favorite-ping, funky-ping
  *
  *   Ping a list of target hosts in a round robin fashion.
@@ -22,8 +22,8 @@
  * duplicated in all such forms and that any documentation,
  * advertising materials, and other materials related to such
  * distribution and use acknowledge that the software was developed
- * by Stanford University.  The name of the University may not be used 
- * to endorse or promote products derived from this software without 
+ * by Stanford University.  The name of the University may not be used
+ * to endorse or promote products derived from this software without
  * specific prior written permission.
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
@@ -45,7 +45,7 @@ int open_ping_socket_ipv4()
     int s;
 
     /* confirm that ICMP is available on this machine */
-    if( ( proto = getprotobyname( "icmp" ) ) == NULL ) 
+    if( ( proto = getprotobyname( "icmp" ) ) == NULL )
         crash_and_burn( "icmp: unknown protocol" );
 
     /* create raw socket for ICMP calls (ping) */

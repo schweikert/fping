@@ -1,20 +1,20 @@
 
-/* 
- *  Interval is the minimum amount of time between sending a ping packet to 
+/*
+ *  Interval is the minimum amount of time between sending a ping packet to
  *  any host.
- * 
- *  Perhost_interval is the minimum amount of time between sending a ping 
+ *
+ *  Perhost_interval is the minimum amount of time between sending a ping
  *  packet to a particular responding host (when count is > 1)
- * 
+ *
  *  Timeout  is the initial amount of time between sending a ping packet to
  *  a particular non-responding host.
- * 
+ *
  *  Retry is the number of ping packets to send to a non-responding host
  *  before giving up (in is-it-alive mode).
- * 
+ *
  *  Backoff factor is how much longer to wait on successive retries.
- * 
- * 
+ *
+ *
  */
 
 /* constants */
@@ -32,7 +32,7 @@
 #endif
 
 
-#ifndef DEFAULT_RETRY 
+#ifndef DEFAULT_RETRY
 #define DEFAULT_RETRY 3            /* number of times to retry a host */
 #endif
 

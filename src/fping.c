@@ -299,6 +299,7 @@ int verbose_flag, quiet_flag, stats_flag, unreachable_flag, alive_flag;
 int elapsed_flag, version_flag, count_flag, loop_flag;
 int per_recv_flag, report_all_rtts_flag, name_flag, addr_flag, backoff_flag;
 int multif_flag;
+int outage_flag = 0;
 int timestamp_flag = 0;
 int random_data_flag = 0;
 #if defined( DEBUG ) || defined( _DEBUG )
@@ -377,7 +378,7 @@ int main( int argc, char **argv )
 
     /* get command line options */
 
-    while( ( c = getopt( argc, argv, "gedhlmnqusaAvDRz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:" ) ) != EOF )
+    while( ( c = getopt( argc, argv, "gedhlmnqusaAvDRz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:o" ) ) != EOF )
     {
         switch( c )
         {
@@ -553,6 +554,11 @@ int main( int argc, char **argv )
                 usage(1);
             }
             break;
+        
+        case 'o':
+            outage_flag = 1;
+            break;
+            
         default:
             fprintf(stderr, "see 'fping -h' for usage information\n");
             exit(1);
@@ -695,6 +701,7 @@ int main( int argc, char **argv )
         if( randomly_lose_flag ) fprintf( stderr, "  randomly_lose_flag set\n" );
         if( sent_times_flag ) fprintf( stderr, "  sent_times_flag set\n" );
         if( print_per_system_flag ) fprintf( stderr, "  print_per_system_flag set\n" );
+        if( outage_flag ) fprintf( stderr, "  outage_flag set\n" );
 
     }/* IF */
 #endif /* DEBUG || _DEBUG */
@@ -1159,7 +1166,7 @@ void finish()
 
 void print_per_system_stats( void )
 {
-    int i, j, avg;
+    int i, j, avg, outage_ms;
     HOST_ENTRY *h;
     char *buf;
     int bufsize;
@@ -1205,7 +1212,14 @@ void print_per_system_stats( void )
                     h->num_sent, h->num_recv, h->num_sent > 0 ?
                     ( ( h->num_sent - h->num_recv ) * 100 ) / h->num_sent : 0 );
 
-            }/* IF */
+				if (outage_flag)
+				{
+					/* Time outage total */
+                	outage_ms = (h->num_sent - h->num_recv) * perhost_interval/100;
+                	fprintf( stderr, ", outage(ms) = %d", outage_ms );
+                }
+
+	     }/* IF */
             else
             {
                 fprintf( stderr, " xmt/rcv/%%return = %d/%d/%d%%",
@@ -1216,7 +1230,8 @@ void print_per_system_stats( void )
           
             if( h->num_recv )
             {
-                avg = h->total_time / h->num_recv;
+                
+		avg = h->total_time / h->num_recv;
                 fprintf( stderr, ", min/avg/max = %s", sprint_tm( h->min_reply ) );
                 fprintf( stderr, "/%s", sprint_tm( avg ) );
                 fprintf( stderr, "/%s", sprint_tm( h->max_reply ) );
@@ -1264,7 +1279,7 @@ void print_per_system_stats( void )
 
 void print_per_system_splits( void )
 {
-    int i, avg;
+    int i, avg, outage_ms_i;
     HOST_ENTRY *h;
     char *buf;
     int bufsize;
@@ -1297,6 +1312,12 @@ void print_per_system_splits( void )
                 h->num_sent_i, h->num_recv_i, h->num_sent_i > 0 ?
                 ( ( h->num_sent_i - h->num_recv_i ) * 100 ) / h->num_sent_i : 0 );
 
+			if (outage_flag)
+			{
+	        /* Time outage  */
+                outage_ms_i = (h->num_sent_i - h->num_recv_i) * perhost_interval/100;
+                fprintf( stderr, ", outage(ms) = %d", outage_ms_i );
+			}
         }/* IF */
         else
         {
@@ -2381,6 +2402,7 @@ void usage(int is_error)
     fprintf(out, "   -l         loop sending pings forever\n" );
     fprintf(out, "   -m         ping multiple interfaces on target host\n" );
     fprintf(out, "   -n         show targets by name (-d is equivalent)\n" );
+    fprintf(out, "   -o         show the accumulated outage time (lost packets * packet interval [option -i]) \n" );
     fprintf(out, "   -O n       set the type of service (tos) flag on the ICMP packets\n" );
     fprintf(out, "   -p n       interval between ping packets to one target (in millisec)\n" );
     fprintf(out, "                (in looping and counting modes, default %d)\n", perhost_interval / 100 );

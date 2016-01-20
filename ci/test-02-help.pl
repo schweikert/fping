@@ -28,6 +28,7 @@ Usage: fping [options] [targets...]
 ${I_HELP}   -l         loop sending pings forever
    -m         ping multiple interfaces on target host
    -n         show targets by name (-d is equivalent)
+   -o         show the accumulated outage time (lost packets * packet interval [option -i])
    -O n       set the type of service (tos) flag on the ICMP packets
    -p n       interval between ping packets to one target (in millisec)
                 (in looping and counting modes, default 1000)

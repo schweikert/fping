@@ -109,7 +109,10 @@ extern int h_errno;
 
 /*** Constants ***/
 
-#define EMAIL       "david@schweikert.ch"
+#define EMAIL               "david@schweikert.ch"
+#define ANSI_COLOUR_RED     "\x1b[31m"
+#define ANSI_COLOUR_GREEN   "\x1b[32m"
+#define ANSI_COLOUR_RESET   "\x1b[0m"
 
 /*** Ping packet defines ***/
 
@@ -301,6 +304,7 @@ int per_recv_flag, report_all_rtts_flag, name_flag, addr_flag, backoff_flag;
 int multif_flag;
 int timestamp_flag = 0;
 int random_data_flag = 0;
+int colour_flag = 0;
 #if defined( DEBUG ) || defined( _DEBUG )
 int randomly_lose_flag, sent_times_flag, trace_flag, print_per_system_flag;
 int lose_factor;
@@ -377,7 +381,7 @@ int main( int argc, char **argv )
 
     /* get command line options */
 
-    while( ( c = getopt( argc, argv, "gedhlmnqusaAvDRz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:" ) ) != EOF )
+    while( ( c = getopt( argc, argv, "gedhklmnqusaAvDRz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:" ) ) != EOF )
     {
         switch( c )
         {
@@ -427,6 +431,10 @@ int main( int argc, char **argv )
 
         case 'h':
             usage(0);
+            break;
+
+        case 'k':
+            colour_flag = 1;
             break;
 
         case 'q':
@@ -1113,11 +1121,17 @@ void finish()
 
             if( verbose_flag || unreachable_flag )
             {
+                if( colour_flag )
+                    printf( ANSI_COLOUR_RED );
+
                 printf( "%s", h->host );
 
                 if( verbose_flag ) 
                     printf( " is unreachable" );
                 
+                if( colour_flag )
+                    printf( ANSI_COLOUR_RESET );
+
                 printf( "\n" );
             
             }/* IF */
@@ -1622,6 +1636,9 @@ int wait_for_reply(long wait_time)
         num_alive++;
         if( verbose_flag || alive_flag )
         {
+            if( colour_flag )
+                printf( ANSI_COLOUR_GREEN );
+
             printf( "%s", h->host );
 
             if( verbose_flag )
@@ -1635,6 +1652,9 @@ int wait_for_reply(long wait_time)
                 getnameinfo((struct sockaddr *)&response_addr, response_addr_len, buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
                 fprintf( stderr, " [<- %s]", buf);
             }
+
+            if( colour_flag )
+                printf( ANSI_COLOUR_RESET );
 
             printf( "\n" );
         

@@ -118,6 +118,10 @@ Print usage message.
 The minimum amount of time (in milliseconds) between sending a ping packet
 to any target (default is 25). 
 
+=item B<-k>
+
+Colourise the output.
+
 =item B<-l>
 
 Loop sending packets to each target indefinitely. Can be interrupted with

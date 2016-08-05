@@ -777,8 +777,9 @@ int main( int argc, char **argv )
         usage(1);
     }
     
-    if( !num_hosts )
-        exit(1);
+    if(!num_hosts) {
+        exit(num_noaddress ? 2 : 1);
+    }
 
     if(src_addr_present) {
         socket_set_src_addr(s, src_addr);

@@ -1,3 +1,7 @@
+UNRELEASED
+  * (bugfix) Exit code should be 2 when the hostname can't be resolved
+            (fixes #98, reported by @green-fox)
+
 2015-10-21  David Schweikert  <david@schweikert.ch>
   * Version 3.13
   * (bugfix) Fix ICMP errors sometimes causing crashes with fping >= 3.11

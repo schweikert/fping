@@ -113,7 +113,6 @@ extern int h_errno;
 
 /*** Ping packet defines ***/
 
-#define MIN_PING_DATA   0
 #define MAX_IP_PACKET   65536   /* (theoretical) max IP packet size */
 #define SIZE_IP_HDR     20
 #ifndef IPV6
@@ -594,10 +593,10 @@ int main( int argc, char **argv )
         exit(1);
     }/* IF */
     
-    if( ( ping_data_size > MAX_PING_DATA ) || ( ping_data_size < MIN_PING_DATA ) )
+    if( ping_data_size > MAX_PING_DATA )
     {
-        fprintf( stderr, "%s: data size %u not valid, must be between %u and %u\n",
-            prog, ping_data_size, (unsigned int) MIN_PING_DATA, (unsigned int) MAX_PING_DATA );
+        fprintf( stderr, "%s: data size %u not valid, must be lower than %u\n",
+            prog, ping_data_size, (unsigned int) MAX_PING_DATA );
         exit(1);
     
     }/* IF */
@@ -1466,7 +1465,6 @@ int wait_for_reply(long wait_time)
     static char buffer[4096];
     struct sockaddr_storage response_addr;
     socklen_t response_addr_len;
-    struct ip *ip;
     int hlen = 0;
     FPING_ICMPHDR *icp;
     int n, avg;
@@ -1475,6 +1473,9 @@ int wait_for_reply(long wait_time)
     int this_count;
     struct timeval *sent_time;
     SEQMAP_VALUE *seqmap_value;
+#ifndef IPV6
+    struct ip *ip;
+#endif
 
     response_addr_len = sizeof(struct sockaddr_storage);
     result = recvfrom_wto( s, buffer, sizeof(buffer), (struct sockaddr *) &response_addr, &response_addr_len, wait_time );
@@ -1491,9 +1492,8 @@ int wait_for_reply(long wait_time)
     }
 #endif
 
-    ip = ( struct ip* )buffer;
-
 #ifndef IPV6
+    ip = ( struct ip* )buffer;
 #if defined( __alpha__ ) && __STDC__ && !defined( __GLIBC__ )
     /* The alpha headers are decidedly broken.
      * Using an ANSI compiler, it provides ip_vhl instead of ip_hl and
@@ -1819,7 +1819,6 @@ void add_name( char *name )
 {
     struct addrinfo   *res0, *res, hints;
     int               ret_ga;
-    size_t            len;
     char              *printname;
     char              namebuf[256];
     char              addrbuf[256];
@@ -1849,7 +1848,6 @@ void add_name( char *name )
     // (need to implement a separate option for this)
 
     for (res = res0; res; res = 0) {
-        len = res->ai_addrlen;
         /* name_flag: addr -> name lookup requested) */
         if(!name_flag) {
             printname = name;

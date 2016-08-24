@@ -1,6 +1,8 @@
 # travis-ci.org configuration
 # 
 language: c
+sudo: required
+dist: trusty
 env:
     global:
         - secure: "CoI8hwHH1yfQoQxIfWGRS0WfTyScox+5aJn0fDDgz2uKrrIxmBvIw/WKX8wcSiV6fLmLuwgNkKqSM3hdO4qaG+JxfWcuEiZZHm+kxSGMkWbGb/fvAI+gHg8ldKyYttcIX71O5rlZiC2QpNKQi2v18S6pI5p8eqnx7DYx4YrmguQ="

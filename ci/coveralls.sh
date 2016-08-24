@@ -2,7 +2,7 @@
 
 set -x
 
-sudo pip install cpp-coveralls
+sudo -H pip install cpp-coveralls
 
 cd src
 

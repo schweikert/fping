@@ -1,6 +1,6 @@
 # travis-ci.org configuration
 # 
-language: c
+language: generic
 sudo: required
 dist: trusty
 env:

@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 
 use Test::Command tests => 9;
+use Test::More;
 
 # ping 127.0.0.1
 {

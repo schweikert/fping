@@ -881,8 +881,8 @@ void add_cidr(char *addr)
     net_addr = ntohl(((struct sockaddr_in *) addr_res->ai_addr)->sin_addr.s_addr);
 
     /* check mask */
-    if(mask < 1 || mask > 30) {
-        fprintf(stderr, "Error: netmask must be between 1 and 30 (is: %s)\n", mask_str);
+    if(mask < 1 || mask > 32) {
+        fprintf(stderr, "Error: netmask must be between 1 and 32 (is: %s)\n", mask_str);
         exit(1);
     }
 
@@ -893,14 +893,21 @@ void add_cidr(char *addr)
     net_addr &= bitmask;
     net_last = net_addr + ((unsigned long) 0x1 << (32-mask)) - 1;
 
-    /* add all hosts in that network (excluding network and broadcast address) */
-    while(++net_addr < net_last) {
+    /* exclude network and broadcast address for regular prefixes */
+    if (mask < 31) {
+        net_last--;
+        net_addr++;
+    }
+
+    /* add all hosts in that network (net_addr and net_last inclusive) */
+    for(; net_addr <= net_last; net_addr++) {
         struct in_addr in_addr_tmp;
         char buffer[20];
         in_addr_tmp.s_addr = htonl(net_addr);
         inet_ntop(AF_INET, &in_addr_tmp, buffer, sizeof(buffer));
         add_name(buffer);
     }
+
 
     freeaddrinfo(addr_res);
 }

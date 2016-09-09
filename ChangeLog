@@ -1,6 +1,7 @@
 UNRELEASED
   * (bugfix) Exit code should be 2 when the hostname can't be resolved
             (fixes #98, reported by @green-fox)
+  * (feature) Ignore network and broadcast for cidrs /31 and /32 (#102, Martin Topholm)
 
 2015-10-21  David Schweikert  <david@schweikert.ch>
   * Version 3.13

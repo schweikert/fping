@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 18;
+use Test::Command tests => 24;
 use File::Temp;
 
 #  -f file    read list of targets from a file ( - means stdin) (only if no -g specified)
@@ -51,6 +51,22 @@ my $cmd = Test::Command->new(cmd => "fping -g 127.0.0.1/30");
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("127.0.0.1 is alive\n127.0.0.2 is alive\n");
 $cmd->stderr_is_eq("");
+}
+
+# fping -g (cidr - long prefixes)
+{
+my $cmd = Test::Command->new(cmd => "fping -g 127.0.0.2/31");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("127.0.0.2 is alive\n127.0.0.3 is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping -g (cidr - too long prefixes)
+{
+my $cmd = Test::Command->new(cmd => "fping -g 127.0.0.2/33");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_is_eq("Error: netmask must be between 1 and 32 (is: 33)\n");
 }
 
 # fping -H

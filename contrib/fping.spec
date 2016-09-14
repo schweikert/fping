@@ -2,7 +2,7 @@ Summary: send ICMP echo probes to multiple hosts
 Name: fping
 Version: 3.4
 Release: 1
-License: MIT
+License: BSD with advertising
 Group: Applications/System
 Source0: http://fping.org/dist/%{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot

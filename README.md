@@ -31,6 +31,9 @@ If you want to install fping from source, proceed as follows:
 4. Have a look at the fping(8) manual for usage help
    (fping -h will also give a minimal help output)
 
+## Usage
+
+See: [fping man-page](doc/fping.pod)
 
 ## IPv6 support
 You can can compile fping with support for IPv6 addresses. A separate binary

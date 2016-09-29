@@ -127,9 +127,22 @@ Ctrl-C; statistics about responses for each target are then displayed.
 
 Send pings to each of a target host's multiple interfaces.
 
+=item B<-M>
+
+Set the "Don't Fragment" bit in the IP header (used to determine/test the MTU).
+
 =item B<-n>
 
 Same as -d. 
+
+=item B<-o>
+
+Calculate "outage time" based on the number of lost pings and the interval used (useful for network convergence tests).
+
+=item B<-O> I<n>
+
+Set the typ of service flag (TOS). I<n> can be either decimal or hexadecimal
+(0xh) format. 
 
 =item B<-p> <n>
 
@@ -184,11 +197,6 @@ Ignored (for compatibility with fping 2.4).
 
 Show targets that are unreachable. 
 
-=item B<-O> I<n>
-
-Set the typ of service flag (TOS). I<n> can be either decimal or hexadecimal
-(0xh) format. 
-
 =item B<-v>
 
 Print B<fping> version information. 
@@ -196,10 +204,6 @@ Print B<fping> version information.
 =item B<-H> I<n>
 
 Set the IP TTL field (time to live hops). 
-
-=item B<-M>
-
-Set the "Don't Fragment" bit in the IP header (used to determine/test the MTU).
 
 =back
 

@@ -29,6 +29,7 @@ ${I_HELP}   -l         loop sending pings forever
    -m         ping multiple interfaces on target host
    -M         set the Don't Fragment flag
    -n         show targets by name (-d is equivalent)
+   -o         show the accumulated outage time (lost packets * packet interval)
    -O n       set the type of service (tos) flag on the ICMP packets
    -p n       interval between ping packets to one target (in millisec)
                 (in looping and counting modes, default 1000)

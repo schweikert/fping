@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 9;
+use Test::Command tests => 12;
 
 #  -n         show targets by name (-d is equivalent)
 #  -O n       set the type of service (tos) flag on the ICMP packets
@@ -10,6 +10,14 @@ use Test::Command tests => 9;
 #  -Q n       same as -q, but show summary every n seconds
 
 # fping -n -> test-14-internet-hosts
+
+# fping -o
+{
+my $cmd = Test::Command->new(cmd => "fping -t100 -p 100 -o -c 5 8.8.8.7");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{^\s*8\.8\.8\.7 : xmt/rcv/%loss = 5/0/100%, outage\(ms\) = 50\d\s*$});
+}
 
 # fping -O
 {

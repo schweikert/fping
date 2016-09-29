@@ -27,6 +27,7 @@ Usage: fping [options] [targets...]
    -i n       interval between sending ping packets (in millisec) (default 25)
 ${I_HELP}   -l         loop sending pings forever
    -m         ping multiple interfaces on target host
+   -M         set the Don't Fragment flag
    -n         show targets by name (-d is equivalent)
    -O n       set the type of service (tos) flag on the ICMP packets
    -p n       interval between ping packets to one target (in millisec)

@@ -197,6 +197,10 @@ Print B<fping> version information.
 
 Set the IP TTL field (time to live hops). 
 
+=item B<-M>
+
+Set the "Don't Fragment" bit in the IP header (used to determine/test the MTU).
+
 =back
 
 =head1 EXAMPLES

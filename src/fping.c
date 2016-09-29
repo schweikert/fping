@@ -2395,7 +2395,7 @@ void usage(int is_error)
 #endif
     fprintf(out, "   -l         loop sending pings forever\n" );
     fprintf(out, "   -m         ping multiple interfaces on target host\n" );
-    fprintf(out, "   -M         Don't Fragment (IP_PMTUDISC_DO)\n" );
+    fprintf(out, "   -M         set the Don't Fragment flag\n" );
     fprintf(out, "   -n         show targets by name (-d is equivalent)\n" );
     fprintf(out, "   -O n       set the type of service (tos) flag on the ICMP packets\n" );
     fprintf(out, "   -p n       interval between ping packets to one target (in millisec)\n" );

@@ -376,10 +376,19 @@ int main( int argc, char **argv )
 
     /* get command line options */
 
-    while( ( c = getopt( argc, argv, "gedhlmnqusaAvDRz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:" ) ) != EOF )
+    while( ( c = getopt( argc, argv, "gedhlmnqusaAvDRz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:M" ) ) != EOF )
     {
         switch( c )
         {
+        case 'M':
+            {
+            int val = IP_PMTUDISC_DO;
+            if (setsockopt(s, IPPROTO_IP, IP_MTU_DISCOVER, &val, sizeof(val))) {
+                perror("setsockopt IP_MTU_DISCOVER");
+            }
+            }
+            break;
+
         case 't':
             if( !( timeout = ( unsigned int )atoi( optarg ) * 100 ) )
                 usage(1);
@@ -2386,6 +2395,7 @@ void usage(int is_error)
 #endif
     fprintf(out, "   -l         loop sending pings forever\n" );
     fprintf(out, "   -m         ping multiple interfaces on target host\n" );
+    fprintf(out, "   -M         Don't Fragment (IP_PMTUDISC_DO)\n" );
     fprintf(out, "   -n         show targets by name (-d is equivalent)\n" );
     fprintf(out, "   -O n       set the type of service (tos) flag on the ICMP packets\n" );
     fprintf(out, "   -p n       interval between ping packets to one target (in millisec)\n" );

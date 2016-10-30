@@ -1324,22 +1324,22 @@ void print_netdata( void )
         h = table[i];
 
         if(!sent_charts) {
-            printf("CHART fping_%s.packets '' 'FPing Packets for host %s' packets 'packets' fping.packets line 70020 %d\n", h->name, h->host, report_interval / 100000);
+            printf("CHART fping.%s_packets '' 'FPing Packets for host %s' packets '%s' fping.packets line 110020 %d\n", h->name, h->host, h->name, report_interval / 100000);
             printf("DIMENSION xmt sent absolute 1 1\n");
             printf("DIMENSION rcv received absolute 1 1\n");
         }
 
-        printf("BEGIN fping_%s.packets\n", h->name);
+        printf("BEGIN fping.%s_packets\n", h->name);
         printf("SET xmt = %d\n", h->num_sent_i);
         printf("SET rcv = %d\n", h->num_recv_i);
         printf("END\n");
 
         if(!sent_charts) {
-            printf("CHART fping_%s.loss '' 'FPing Packet Loss for host %s' percentage loss fping.loss line 70010 %d\n", h->name, h->host, report_interval / 100000);
+            printf("CHART fping.%s_loss '' 'FPing Packet Loss for host %s' percentage '%s' fping.loss line 110010 %d\n", h->name, h->host, h->name, report_interval / 100000);
             printf("DIMENSION pcent '' absolute 1 1\n");
         }
 
-        printf("BEGIN fping_%s.loss\n", h->name);
+        printf("BEGIN fping.%s_loss\n", h->name);
         if( h->num_recv_i <= h->num_sent_i )
         {
             printf("SET pcent = %d\n", h->num_sent_i > 0 ?
@@ -1361,13 +1361,13 @@ void print_netdata( void )
         printf("END\n");
 
         if(!sent_charts) {
-            printf("CHART fping_%s.latency '' 'FPing Latency for host %s' ms latency fping.latency line 70000 %d\n", h->name, h->host, report_interval / 100000);
+            printf("CHART fping.%s_latency '' 'FPing Latency for host %s' ms '%s' fping.latency line 110000 %d\n", h->name, h->host, h->name, report_interval / 100000);
             printf("DIMENSION min minimum absolute 10 1000\n");
             printf("DIMENSION max maximum absolute 10 1000\n");
             printf("DIMENSION avg average absolute 10 1000\n");
         }
 
-        printf("BEGIN fping_%s.latency\n", h->name);
+        printf("BEGIN fping.%s_latency\n", h->name);
         if( h->num_recv_i )
         {
             avg = h->total_time_i / h->num_recv_i;

@@ -1305,7 +1305,7 @@ void print_netdata( void )
 {
     static int sent_charts = 0;
 
-    int i, avg /*, outage_ms_i */;
+    int i, avg;
     HOST_ENTRY *h;
     char *buf;
     int bufsize;
@@ -1337,25 +1337,16 @@ void print_netdata( void )
         if(!sent_charts) {
             printf("CHART fping.%s_quality '' 'FPing Quality for host %s' percentage '%s' fping.quality line 110010 %d\n", h->name, h->host, h->name, report_interval / 100000);
             printf("DIMENSION returned '' absolute 1 1\n");
-            printf("DIMENSION lost '' absolute 1 1\n");
+            /* printf("DIMENSION lost '' absolute 1 1\n"); */
         }
 
         printf("BEGIN fping.%s_quality\n", h->name);
+/*
         if( h->num_recv_i <= h->num_sent_i )
-        {
             printf("SET lost = %d\n", h->num_sent_i > 0 ? ( ( h->num_sent_i - h->num_recv_i ) * 100 ) / h->num_sent_i : 0 );
-
-/*            if (outage_flag) {
-                // Time outage
-                outage_ms_i = (h->num_sent_i - h->num_recv_i) * perhost_interval/100;
-                fprintf( stderr, ", outage(ms) = %d", outage_ms_i );
-            }
-*/
-        }/* IF */
         else
-        {
             printf("SET lost = 0\n");
-        }/* ELSE */
+*/
 
         printf("SET returned = %d\n", h->num_sent_i > 0 ? ( ( h->num_recv_i * 100 ) / h->num_sent_i ) : 0 );
         printf("END\n");

@@ -1335,15 +1335,15 @@ void print_netdata( void )
         printf("END\n");
 
         if(!sent_charts) {
-            printf("CHART fping.%s_loss '' 'FPing Packet Loss for host %s' percentage '%s' fping.loss line 110010 %d\n", h->name, h->host, h->name, report_interval / 100000);
-            printf("DIMENSION pcent '' absolute 1 1\n");
+            printf("CHART fping.%s_quality '' 'FPing Quality for host %s' percentage '%s' fping.quality line 110010 %d\n", h->name, h->host, h->name, report_interval / 100000);
+            printf("DIMENSION returned '' absolute 1 1\n");
+            printf("DIMENSION lost '' absolute 1 1\n");
         }
 
-        printf("BEGIN fping.%s_loss\n", h->name);
+        printf("BEGIN fping.%s_quality\n", h->name);
         if( h->num_recv_i <= h->num_sent_i )
         {
-            printf("SET pcent = %d\n", h->num_sent_i > 0 ?
-                                                  ( ( h->num_sent_i - h->num_recv_i ) * 100 ) / h->num_sent_i : 0 );
+            printf("SET lost = %d\n", h->num_sent_i > 0 ? ( ( h->num_sent_i - h->num_recv_i ) * 100 ) / h->num_sent_i : 0 );
 
 /*            if (outage_flag) {
                 // Time outage
@@ -1354,10 +1354,10 @@ void print_netdata( void )
         }/* IF */
         else
         {
-            printf("SET pcent = %d\n", h->num_sent_i > 0 ?
-                                                  ( ( h->num_recv_i * 100 ) / h->num_sent_i ) : 0 );
-
+            printf("SET lost = 0\n");
         }/* ELSE */
+
+        printf("SET returned = %d\n", h->num_sent_i > 0 ? ( ( h->num_recv_i * 100 ) / h->num_sent_i ) : 0 );
         printf("END\n");
 
         if(!sent_charts) {

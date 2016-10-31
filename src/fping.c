@@ -2524,6 +2524,7 @@ void usage(int is_error)
     fprintf(out, "   -m         ping multiple interfaces on target host\n" );
     fprintf(out, "   -M         set the Don't Fragment flag\n" );
     fprintf(out, "   -n         show targets by name (-d is equivalent)\n" );
+    fprintf(out, "   -N         output compatible for netdata (-l -Q are required)\n" );
     fprintf(out, "   -o         show the accumulated outage time (lost packets * packet interval)\n" );
     fprintf(out, "   -O n       set the type of service (tos) flag on the ICMP packets\n" );
     fprintf(out, "   -p n       interval between ping packets to one target (in millisec)\n" );

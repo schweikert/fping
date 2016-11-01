@@ -400,12 +400,14 @@ int main( int argc, char **argv )
             break;
         
         case 'r':
-            if (!sscanf(optarg,"%i",&retry))
+            if (!sscanf(optarg,"%u",&retry))
                 usage(1);
             break;
         
         case 'i':
-            interval = ( unsigned int )atoi( optarg ) * 100;
+            if (!sscanf(optarg,"%u",&interval))
+                usage(1);
+            interval *= 100;
             break;
 
         case 'p':

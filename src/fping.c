@@ -231,6 +231,7 @@ typedef struct host_entry
      int                  max_reply_i;        /* longest response time */
      int                  min_reply_i;        /* shortest response time */
      int                  total_time_i;       /* sum of response times */
+     int                  discard_next_recv_i;/* don't count next received reply for split reporting */
      int                  *resp_times;        /* individual response times */
 #if defined( DEBUG ) || defined( _DEBUG )
      int                  *sent_times;        /* per-sent-ping timestamp */
@@ -1398,8 +1399,12 @@ void print_per_system_splits( void )
         fprintf( stderr, "%s%s :", h->host, h->pad );
 
         /* if we just sent the probe and didn't receive a reply, we shouldn't count it */
+        h->discard_next_recv_i=0;
         if( h->waiting && timeval_diff(&current_time, &h->last_send_time) < h->timeout) {
-            if(h->num_sent_i) h->num_sent_i--;
+            if(h->num_sent_i) {
+                h->num_sent_i--;
+                h->discard_next_recv_i=1;
+            }
         }
 
         if( h->num_recv_i <= h->num_sent_i ) {
@@ -1548,6 +1553,7 @@ int send_ping( int s, HOST_ENTRY *h )
     h->waiting++;
     num_pingsent++;
     last_send_time = h->last_send_time;
+    h->discard_next_recv_i=0;
 
     return(ret);
 }
@@ -1671,7 +1677,12 @@ int wait_for_reply(long wait_time)
         h->waiting = 0;
         h->timeout = timeout;
         h->num_recv++;
-        h->num_recv_i++;
+        if(h->discard_next_recv_i) {
+            h->discard_next_recv_i=0;
+        }
+        else {
+            h->num_recv_i++;
+        }
 
         if( !max_reply      || this_reply > max_reply ) max_reply = this_reply;
         if( !min_reply      || this_reply < min_reply ) min_reply = this_reply;

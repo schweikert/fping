@@ -8,7 +8,7 @@ UNRELEASED
   * (bugfix)  Fix issue compliling on RHEL/Centos 7 (#95, @jbackman)
   * (bugfix) Lower -i limit to 1 instead of 10
   * (bugfix) Improve interval preciseness of -Q reporting
-  * (bugfix) Fix occasional false positive in interval reporting (#97)
+  * (bugfix) Fix occasional false positive in -Q reporting (#97)
 
 2015-10-21  David Schweikert  <david@schweikert.ch>
   * Version 3.13

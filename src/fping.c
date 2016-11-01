@@ -1323,8 +1323,12 @@ void print_netdata( void )
         }
 
         /* if we just sent the probe and didn't receive a reply, we shouldn't count it */
+        h->discard_next_recv_i=0;
         if( h->waiting && timeval_diff(&current_time, &h->last_send_time) < h->timeout) {
-            if(h->num_sent_i) h->num_sent_i--;
+            if(h->num_sent_i) {
+                h->num_sent_i--;
+                h->discard_next_recv_i=1;
+            }
         }
 
 

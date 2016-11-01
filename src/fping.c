@@ -1321,6 +1321,12 @@ void print_netdata( void )
             /* printf("DIMENSION lost '' absolute 1 1\n"); */
         }
 
+        /* if we just sent the probe and didn't receive a reply, we shouldn't count it */
+        if( h->waiting && timeval_diff(&current_time, &h->last_send_time) < h->timeout) {
+            if(h->num_sent_i) h->num_sent_i--;
+        }
+
+
         printf("BEGIN fping.%s_quality\n", h->name);
 /*
         if( h->num_recv_i <= h->num_sent_i )
@@ -1382,17 +1388,21 @@ void print_per_system_splits( void )
     if( verbose_flag || per_recv_flag )
         fprintf( stderr, "\n" );
 
+    gettimeofday( &current_time, &tz );
     curr_tm = localtime( ( time_t* )&current_time.tv_sec );
     fprintf( stderr, "[%2.2d:%2.2d:%2.2d]\n", curr_tm->tm_hour,
         curr_tm->tm_min, curr_tm->tm_sec );
 
-    for( i = 0; i < num_hosts; i++ )
-    {
+    for( i = 0; i < num_hosts; i++ ) {
         h = table[i];
         fprintf( stderr, "%s%s :", h->host, h->pad );
 
-        if( h->num_recv_i <= h->num_sent_i )
-        {
+        /* if we just sent the probe and didn't receive a reply, we shouldn't count it */
+        if( h->waiting && timeval_diff(&current_time, &h->last_send_time) < h->timeout) {
+            if(h->num_sent_i) h->num_sent_i--;
+        }
+
+        if( h->num_recv_i <= h->num_sent_i ) {
             fprintf( stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
                 h->num_sent_i, h->num_recv_i, h->num_sent_i > 0 ?
                 ( ( h->num_sent_i - h->num_recv_i ) * 100 ) / h->num_sent_i : 0 );
@@ -1402,29 +1412,26 @@ void print_per_system_splits( void )
                 outage_ms_i = (h->num_sent_i - h->num_recv_i) * perhost_interval/100;
                 fprintf( stderr, ", outage(ms) = %d", outage_ms_i );
             }
-        }/* IF */
-        else
-        {
+        }
+        else {
             fprintf( stderr, " xmt/rcv/%%return = %d/%d/%d%%",
                 h->num_sent_i, h->num_recv_i, h->num_sent_i > 0 ?
                 ( ( h->num_recv_i * 100 ) / h->num_sent_i ) : 0 );
+        }
 
-        }/* ELSE */
-
-        if( h->num_recv_i )
-        {
+        if( h->num_recv_i ) {
             avg = h->total_time_i / h->num_recv_i;
             fprintf( stderr, ", min/avg/max = %s", sprint_tm( h->min_reply_i ) );
             fprintf( stderr, "/%s", sprint_tm( avg ) );
             fprintf( stderr, "/%s", sprint_tm( h->max_reply_i ) );
         
-        }/* IF */
+        }
         
         fprintf( stderr, "\n" );
         h->num_sent_i = h->num_recv_i = h->max_reply_i =
             h->min_reply_i = h->total_time_i = 0;
     
-    }/* FOR */
+    }
 } /* print_per_system_splits() */
 
 

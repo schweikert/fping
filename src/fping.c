@@ -128,7 +128,7 @@ extern int h_errno;
 
 /* maxima and minima */
 #define MAX_COUNT               10000
-#define MIN_INTERVAL            10      /* in millisec */
+#define MIN_INTERVAL            1       /* in millisec */
 #define MIN_PERHOST_INTERVAL    20      /* in millisec */
 #define MIN_TIMEOUT             50      /* in millisec */
 #define MAX_RETRY               20
@@ -290,7 +290,7 @@ struct timeval current_time;        /* current time (pseudo) */
 struct timeval start_time; 
 struct timeval end_time;
 struct timeval last_send_time;      /* time last ping was sent */
-struct timeval last_report_time;    /* time last report was printed */
+struct timeval next_report_time;    /* time next -Q report is expected */
 struct timezone tz;
 
 /* switches */
@@ -846,8 +846,10 @@ int main( int argc, char **argv )
     gettimeofday( &start_time, &tz );
     current_time = start_time;
 
-    if( report_interval )
-        last_report_time = start_time;
+    if( report_interval ) {
+        next_report_time = start_time;
+        timeval_add(&next_report_time, report_interval);
+    }
 
     last_send_time.tv_sec = current_time.tv_sec - 10000;
 
@@ -988,6 +990,7 @@ void main_loop()
 {
     long lt;
     long wait_time;
+    long wait_time_next_report;
     HOST_ENTRY *h;
 
     while(ev_first) {
@@ -1092,6 +1095,15 @@ void main_loop()
             wait_time = interval;
         }
 
+        /* Make sure we don't wait too long, in case a report is expected */
+        if( report_interval && ( loop_flag || count_flag ) ) {
+               wait_time_next_report = timeval_diff ( &current_time, &next_report_time );
+               if(wait_time_next_report < wait_time) {
+                    wait_time = wait_time_next_report;
+                    if(wait_time < 0) { wait_time = 0; }
+               }
+        }
+
         /* Receive replies */
         /* (this is what sleeps during each loop iteration) */
         if(wait_for_reply(wait_time)) {
@@ -1102,14 +1114,15 @@ void main_loop()
 
         /* Print report */
         if( report_interval && ( loop_flag || count_flag ) &&
-            ( timeval_diff ( &current_time, &last_report_time ) > report_interval ) )
+            ( timeval_diff ( &current_time, &next_report_time ) >= 0 ) )
         {
             if(netdata_flag)
                 print_netdata();
             else
                 print_per_system_splits();
 
-            last_report_time = current_time;
+            while(timeval_diff ( &current_time, &next_report_time ) >= 0 )
+                timeval_add(&next_report_time, report_interval);
         }
     }
 }

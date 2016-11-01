@@ -404,9 +404,7 @@ int main( int argc, char **argv )
             break;
         
         case 'i':
-            if( !( interval = ( unsigned int )atoi( optarg ) * 100 ) )
-                usage(1);
-
+            interval = ( unsigned int )atoi( optarg ) * 100;
             break;
 
         case 'p':

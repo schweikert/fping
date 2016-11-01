@@ -2,13 +2,13 @@
 
 use Test::Command tests => 33;
 
-# fping -i 9
-my $cmd1 = Test::Command->new(cmd => "fping -i 9 -T10 -g 127.0.0.1/29");
+# fping -i 0
+my $cmd1 = Test::Command->new(cmd => "fping -i 0 -T10 -g 127.0.0.1/29");
 $cmd1->exit_is_num(1);
 $cmd1->stdout_is_eq("");
 $cmd1->stderr_is_eq(<<END);
 fping: these options are too risky for mere mortals.
-fping: You need i >= 10, p >= 20, r < 20, and t >= 50
+fping: You need i >= 1, p >= 20, r < 20, and t >= 50
 END
 
 # fping -p 15
@@ -17,7 +17,7 @@ $cmd2->exit_is_num(1);
 $cmd2->stdout_is_eq("");
 $cmd2->stderr_is_eq(<<END);
 fping: these options are too risky for mere mortals.
-fping: You need i >= 10, p >= 20, r < 20, and t >= 50
+fping: You need i >= 1, p >= 20, r < 20, and t >= 50
 END
 
 # fping -r 30
@@ -26,7 +26,7 @@ $cmd3->exit_is_num(1);
 $cmd3->stdout_is_eq("");
 $cmd3->stderr_is_eq(<<END);
 fping: these options are too risky for mere mortals.
-fping: You need i >= 10, p >= 20, r < 20, and t >= 50
+fping: You need i >= 1, p >= 20, r < 20, and t >= 50
 END
 
 # fping -t 40
@@ -35,7 +35,7 @@ $cmd4->exit_is_num(1);
 $cmd4->stdout_is_eq("");
 $cmd4->stderr_is_eq(<<END);
 fping: these options are too risky for mere mortals.
-fping: You need i >= 10, p >= 20, r < 20, and t >= 50
+fping: You need i >= 1, p >= 20, r < 20, and t >= 50
 END
 
 # fping -H 300

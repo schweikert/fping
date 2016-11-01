@@ -16,12 +16,12 @@ BEGIN fping\.127_0_0_1_packets
 SET xmt = 1
 SET rcv = 1
 END
-CHART fping\.127_0_0_1_quality '' 'FPing Quality for host 127\.0\.0\.1' percentage '127_0_0_1' fping\.quality line 110010 1
+CHART fping\.127_0_0_1_quality '' 'FPing Quality for host 127\.0\.0\.1' percentage '127_0_0_1' fping\.quality area 110010 1
 DIMENSION returned '' absolute 1 1
 BEGIN fping\.127_0_0_1_quality
 SET returned = 100
 END
-CHART fping\.127_0_0_1_latency '' 'FPing Latency for host 127\.0\.0\.1' ms '127_0_0_1' fping\.latency line 110000 1
+CHART fping\.127_0_0_1_latency '' 'FPing Latency for host 127\.0\.0\.1' ms '127_0_0_1' fping\.latency area 110000 1
 DIMENSION min minimum absolute 10 1000
 DIMENSION max maximum absolute 10 1000
 DIMENSION avg average absolute 10 1000

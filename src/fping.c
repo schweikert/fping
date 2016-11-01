@@ -89,6 +89,7 @@ extern "C"
 
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <ctype.h>
 
 /* RS6000 has sys/select.h */
 #ifdef HAVE_SYS_SELECT_H
@@ -295,7 +296,7 @@ struct timezone tz;
 /* switches */
 int generate_flag = 0;              /* flag for IP list generation */
 int verbose_flag, quiet_flag, stats_flag, unreachable_flag, alive_flag;
-int elapsed_flag, version_flag, count_flag, loop_flag;
+int elapsed_flag, version_flag, count_flag, loop_flag, netdata_flag;
 int per_recv_flag, report_all_rtts_flag, name_flag, addr_flag, backoff_flag;
 int multif_flag;
 int outage_flag = 0;
@@ -325,6 +326,7 @@ void usage( int );
 int wait_for_reply( long );
 void print_per_system_stats( void );
 void print_per_system_splits( void );
+void print_netdata( void );
 void print_global_stats( void );
 void main_loop();
 void finish();
@@ -377,7 +379,7 @@ int main( int argc, char **argv )
 
     /* get command line options */
 
-    while( ( c = getopt( argc, argv, "gedhlmnqusaAvDRz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:M:o" ) ) != EOF )
+    while( ( c = getopt( argc, argv, "gedhlmnNqusaAvDRz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:M:o" ) ) != EOF )
     {
         switch( c )
         {
@@ -457,6 +459,10 @@ int main( int argc, char **argv )
 
         case 'm':
             multif_flag = 1;
+            break;
+
+        case 'N':
+            netdata_flag = 1;
             break;
 
         case 'd': 
@@ -1098,7 +1104,11 @@ void main_loop()
         if( report_interval && ( loop_flag || count_flag ) &&
             ( timeval_diff ( &current_time, &last_report_time ) > report_interval ) )
         {
-            print_per_system_splits();
+            if(netdata_flag)
+                print_netdata();
+            else
+                print_per_system_splits();
+
             last_report_time = current_time;
         }
     }
@@ -1277,6 +1287,97 @@ void print_per_system_stats( void )
 
 } /* print_per_system_stats() */
 
+
+/************************************************************
+
+  Function: print_netdata
+
+*************************************************************
+
+  Inputs:  void (none)
+
+  Description:
+
+
+************************************************************/
+
+void print_netdata( void )
+{
+    static int sent_charts = 0;
+
+    int i, avg;
+    HOST_ENTRY *h;
+    char *buf;
+    int bufsize;
+
+    bufsize = max_hostname_len + 1;
+    buf = ( char* )malloc( bufsize );
+    if( !buf )
+        crash_and_burn( "can't malloc print buf" );
+
+    memset( buf, 0, bufsize );
+
+    fflush( stdout );
+
+    for( i = 0; i < num_hosts; i++ )
+    {
+        h = table[i];
+
+        if(!sent_charts) {
+            printf("CHART fping.%s_packets '' 'FPing Packets for host %s' packets '%s' fping.packets line 110020 %d\n", h->name, h->host, h->name, report_interval / 100000);
+            printf("DIMENSION xmt sent absolute 1 1\n");
+            printf("DIMENSION rcv received absolute 1 1\n");
+        }
+
+        printf("BEGIN fping.%s_packets\n", h->name);
+        printf("SET xmt = %d\n", h->num_sent_i);
+        printf("SET rcv = %d\n", h->num_recv_i);
+        printf("END\n");
+
+        if(!sent_charts) {
+            printf("CHART fping.%s_quality '' 'FPing Quality for host %s' percentage '%s' fping.quality line 110010 %d\n", h->name, h->host, h->name, report_interval / 100000);
+            printf("DIMENSION returned '' absolute 1 1\n");
+            /* printf("DIMENSION lost '' absolute 1 1\n"); */
+        }
+
+        printf("BEGIN fping.%s_quality\n", h->name);
+/*
+        if( h->num_recv_i <= h->num_sent_i )
+            printf("SET lost = %d\n", h->num_sent_i > 0 ? ( ( h->num_sent_i - h->num_recv_i ) * 100 ) / h->num_sent_i : 0 );
+        else
+            printf("SET lost = 0\n");
+*/
+
+        printf("SET returned = %d\n", h->num_sent_i > 0 ? ( ( h->num_recv_i * 100 ) / h->num_sent_i ) : 0 );
+        printf("END\n");
+
+        if(!sent_charts) {
+            printf("CHART fping.%s_latency '' 'FPing Latency for host %s' ms '%s' fping.latency line 110000 %d\n", h->name, h->host, h->name, report_interval / 100000);
+            printf("DIMENSION min minimum absolute 10 1000\n");
+            printf("DIMENSION max maximum absolute 10 1000\n");
+            printf("DIMENSION avg average absolute 10 1000\n");
+        }
+
+        printf("BEGIN fping.%s_latency\n", h->name);
+        if( h->num_recv_i )
+        {
+            avg = h->total_time_i / h->num_recv_i;
+            printf("SET min = %d\n", h->min_reply_i);
+            printf("SET avg = %d\n", avg);
+            printf("SET max = %d\n", h->max_reply_i);
+
+        }/* IF */
+        printf("END\n");
+
+        h->num_sent_i = h->num_recv_i = h->max_reply_i =
+        h->min_reply_i = h->total_time_i = 0;
+
+    }/* FOR */
+
+    sent_charts = 1;
+    free( buf );
+
+} /* print_per_system_splits() */
 
 /************************************************************
 
@@ -1963,6 +2064,14 @@ void add_addr( char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr
     p->running = 1;
     p->min_reply = 0;
 
+    if(netdata_flag) {
+        char *s = p->name;
+        while(*s) {
+            if(!isalnum(*s)) *s = '_';
+            s++;
+        }
+    }
+
     if( strlen( p->host ) > max_hostname_len )
         max_hostname_len = strlen( p->host );
 
@@ -2415,6 +2524,7 @@ void usage(int is_error)
     fprintf(out, "   -m         ping multiple interfaces on target host\n" );
     fprintf(out, "   -M         set the Don't Fragment flag\n" );
     fprintf(out, "   -n         show targets by name (-d is equivalent)\n" );
+    fprintf(out, "   -N         output compatible for netdata (-l -Q are required)\n" );
     fprintf(out, "   -o         show the accumulated outage time (lost packets * packet interval)\n" );
     fprintf(out, "   -O n       set the type of service (tos) flag on the ICMP packets\n" );
     fprintf(out, "   -p n       interval between ping packets to one target (in millisec)\n" );

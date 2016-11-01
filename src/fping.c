@@ -1205,17 +1205,7 @@ void print_per_system_stats( void )
 {
     int i, j, avg, outage_ms;
     HOST_ENTRY *h;
-    char *buf;
-    int bufsize;
     int resp;
-
-    bufsize = max_hostname_len + 1;
-    buf = ( char* )malloc( bufsize );
-
-    if( !buf )
-        crash_and_burn( "can't malloc print buf" );
-
-    memset( buf, 0, bufsize );
 
     fflush( stdout );
 
@@ -1227,22 +1217,17 @@ void print_per_system_stats( void )
         h = table[i];
         fprintf( stderr, "%s%s :", h->host, h->pad );
 
-        if( report_all_rtts_flag )
-        {
-            for( j = 0; j < h->num_sent; j++ )
-            {
+        if( report_all_rtts_flag ) {
+            for( j = 0; j < h->num_sent; j++ ) {
                 if( ( resp = h->resp_times[j] ) >= 0 )
                     fprintf( stderr, " %d.%02d", resp / 100, resp % 100 );
                 else
                     fprintf( stderr, " -" );
-
-            }/* FOR */
+            }
           
             fprintf( stderr, "\n" );
-      
-        }/* IF */
-        else
-        {
+        }
+        else {
             if( h->num_recv <= h->num_sent )
             {
                 fprintf( stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
@@ -1255,27 +1240,24 @@ void print_per_system_stats( void )
                     fprintf( stderr, ", outage(ms) = %d", outage_ms );
                 }
 
-            }/* IF */
-            else
-            {
+            }
+            else {
                 fprintf( stderr, " xmt/rcv/%%return = %d/%d/%d%%",
                     h->num_sent, h->num_recv,
                     ( ( h->num_recv * 100 ) / h->num_sent ) );
           
-            }/* ELSE */
+            }
           
-            if( h->num_recv )
-            {
+            if( h->num_recv ) {
                 avg = h->total_time / h->num_recv;
                 fprintf( stderr, ", min/avg/max = %s", sprint_tm( h->min_reply ) );
                 fprintf( stderr, "/%s", sprint_tm( avg ) );
                 fprintf( stderr, "/%s", sprint_tm( h->max_reply ) );
           
-            }/* IF */
+            }
           
             fprintf(stderr, "\n");
-
-        }/* ELSE */
+        }
 
 #if defined( DEBUG ) || defined( _DEBUG )
         if( sent_times_flag )
@@ -1289,14 +1271,11 @@ void print_per_system_stats( void )
               
                 fprintf( stderr, "\n" );
 
-            }/* FOR */
-        }/* IF */
-#endif /* DEBUG || _DEBUG */
-    }/* FOR */
-  
-    free( buf );
-
-} /* print_per_system_stats() */
+            }
+        }
+#endif
+    }
+}
 
 
 /************************************************************
@@ -1318,15 +1297,6 @@ void print_netdata( void )
 
     int i, avg;
     HOST_ENTRY *h;
-    char *buf;
-    int bufsize;
-
-    bufsize = max_hostname_len + 1;
-    buf = ( char* )malloc( bufsize );
-    if( !buf )
-        crash_and_burn( "can't malloc print buf" );
-
-    memset( buf, 0, bufsize );
 
     fflush( stdout );
 
@@ -1386,8 +1356,6 @@ void print_netdata( void )
     }/* FOR */
 
     sent_charts = 1;
-    free( buf );
-
 } /* print_per_system_splits() */
 
 /************************************************************
@@ -1407,16 +1375,7 @@ void print_per_system_splits( void )
 {
     int i, avg, outage_ms_i;
     HOST_ENTRY *h;
-    char *buf;
-    int bufsize;
     struct tm *curr_tm;
-
-    bufsize = max_hostname_len + 1;
-    buf = ( char* )malloc( bufsize );
-    if( !buf )
-        crash_and_burn( "can't malloc print buf" );
-
-    memset( buf, 0, bufsize );
 
     fflush( stdout );
 
@@ -1466,9 +1425,6 @@ void print_per_system_splits( void )
             h->min_reply_i = h->total_time_i = 0;
     
     }/* FOR */
-
-    free( buf );
-
 } /* print_per_system_splits() */
 
 

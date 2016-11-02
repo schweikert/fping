@@ -369,7 +369,8 @@ int main( int argc, char **argv )
 
     if((uid = getuid())) {
         /* drop privileges */
-        setuid( getuid() );
+        if(setuid( getuid() ) == -1)
+            perror("cannot setuid");
     }
 
     prog = argv[0];
@@ -717,6 +718,7 @@ int main( int argc, char **argv )
         if( sent_times_flag ) fprintf( stderr, "  sent_times_flag set\n" );
         if( print_per_system_flag ) fprintf( stderr, "  print_per_system_flag set\n" );
         if( outage_flag ) fprintf( stderr, "  outage_flag set\n" );
+        if( netdata_flag ) fprintf( stderr, "  netdata_flag set\n" );
 
     }/* IF */
 #endif /* DEBUG || _DEBUG */
@@ -1319,7 +1321,7 @@ void print_netdata( void )
         printf("END\n");
 
         if(!sent_charts) {
-            printf("CHART fping.%s_quality '' 'FPing Quality for host %s' percentage '%s' fping.quality line 110010 %d\n", h->name, h->host, h->name, report_interval / 100000);
+            printf("CHART fping.%s_quality '' 'FPing Quality for host %s' percentage '%s' fping.quality area 110010 %d\n", h->name, h->host, h->name, report_interval / 100000);
             printf("DIMENSION returned '' absolute 1 1\n");
             /* printf("DIMENSION lost '' absolute 1 1\n"); */
         }
@@ -1346,7 +1348,7 @@ void print_netdata( void )
         printf("END\n");
 
         if(!sent_charts) {
-            printf("CHART fping.%s_latency '' 'FPing Latency for host %s' ms '%s' fping.latency line 110000 %d\n", h->name, h->host, h->name, report_interval / 100000);
+            printf("CHART fping.%s_latency '' 'FPing Latency for host %s' ms '%s' fping.latency area 110000 %d\n", h->name, h->host, h->name, report_interval / 100000);
             printf("DIMENSION min minimum absolute 10 1000\n");
             printf("DIMENSION max maximum absolute 10 1000\n");
             printf("DIMENSION avg average absolute 10 1000\n");

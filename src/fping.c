@@ -1098,7 +1098,7 @@ void main_loop()
 
         /* Make sure we don't wait too long, in case a report is expected */
         if( report_interval && ( loop_flag || count_flag ) ) {
-               wait_time_next_report = timeval_diff ( &current_time, &next_report_time );
+               wait_time_next_report = timeval_diff ( &next_report_time, &current_time );
                if(wait_time_next_report < wait_time) {
                     wait_time = wait_time_next_report;
                     if(wait_time < 0) { wait_time = 0; }

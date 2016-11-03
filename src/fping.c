@@ -1685,22 +1685,23 @@ int wait_for_reply(long wait_time)
         h->waiting = 0;
         h->timeout = timeout;
         h->num_recv++;
+
         if(h->discard_next_recv_i) {
             h->discard_next_recv_i=0;
         }
         else {
             h->num_recv_i++;
+            if( !h->max_reply_i || this_reply > h->max_reply_i ) h->max_reply_i = this_reply;
+            if( !h->min_reply_i || this_reply < h->min_reply_i ) h->min_reply_i = this_reply;
+            h->total_time_i += this_reply;
         }
 
         if( !max_reply      || this_reply > max_reply ) max_reply = this_reply;
         if( !min_reply      || this_reply < min_reply ) min_reply = this_reply;
         if( !h->max_reply   || this_reply > h->max_reply ) h->max_reply = this_reply;
         if( !h->min_reply   || this_reply < h->min_reply ) h->min_reply = this_reply;
-        if( !h->max_reply_i || this_reply > h->max_reply_i ) h->max_reply_i = this_reply;
-        if( !h->min_reply_i || this_reply < h->min_reply_i ) h->min_reply_i = this_reply;
         sum_replies += this_reply;
         h->total_time += this_reply;
-        h->total_time_i += this_reply;
         total_replies++;
     }
 

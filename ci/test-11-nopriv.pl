@@ -20,7 +20,7 @@ system("cp $fping6_bin /tmp/fping6.copy; chmod +x /tmp/fping6.copy");
 my $cmd = Test::Command->new(cmd => "/tmp/fping.copy 127.0.0.1");
 $cmd->exit_is_num(4);
 $cmd->stdout_is_eq("");
-$cmd->stderr_like(qr{\(null\): can't create socket \(must run as root\?\) : .*\n});
+$cmd->stderr_like(qr{: can't create socket \(must run as root\?\) : .*\n});
 }
 
 # fping6
@@ -28,5 +28,5 @@ $cmd->stderr_like(qr{\(null\): can't create socket \(must run as root\?\) : .*\n
 my $cmd = Test::Command->new(cmd => "/tmp/fping6.copy ::1");
 $cmd->exit_is_num(4);
 $cmd->stdout_is_eq("");
-$cmd->stderr_like(qr{\(null\): can't create raw socket \(must run as root\?\) : .*\n});
+$cmd->stderr_like(qr{: can't create raw socket \(must run as root\?\) : .*\n});
 }

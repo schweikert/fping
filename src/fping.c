@@ -365,6 +365,8 @@ int main( int argc, char **argv )
     int tos = 0; 
     HOST_ENTRY *cursor;
 
+    prog = argv[0];
+
     s = open_ping_socket(ping_data_size);
 
     if((uid = getuid())) {
@@ -373,7 +375,6 @@ int main( int argc, char **argv )
             perror("cannot setuid");
     }
 
-    prog = argv[0];
     ident = getpid() & 0xFFFF;
     verbose_flag = 1;
     backoff_flag = 1;

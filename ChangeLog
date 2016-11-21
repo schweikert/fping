@@ -9,6 +9,7 @@ UNRELEASED
   * (bugfix) Lower -i limit to 1 instead of 10
   * (bugfix) Improve interval preciseness of -Q reporting
   * (bugfix) Fix occasional false positive in -Q reporting (#97)
+  * (bugfix) Solaris 10 portability fix (#107, Peter Bray)
 
 2015-10-21  David Schweikert  <david@schweikert.ch>
   * Version 3.13

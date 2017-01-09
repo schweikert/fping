@@ -1,4 +1,5 @@
-UNRELEASED
+2017-01-10  David Schweikert  <david@schweikert.ch>
+  * Version 3.14
   * (feature) Ignore network and broadcast for cidrs /31 and /32 (#102, Martin Topholm)
   * (feature) New option '-M' to set the "Don't Fragment" flag (#91, Don Bowman) 
   * (feature) New option '-N' to output statistics for netdata (see: http://my-netdata.io/, #10, Costa Tsaousis)

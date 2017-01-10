@@ -5,10 +5,10 @@
 set -e
 
 # do this only for the gcc run
-if [ "$CC" != "gcc" ]; then
-    echo "skipped upload because $CC != gcc"
-    exit 0
-fi
+#if [ "$CC" != "gcc" ]; then
+#    echo "skipped upload because $CC != gcc"
+#    exit 0
+#fi
 
 # do this only for the master branch
 if [ "$TRAVIS_BRANCH" != "master" ]; then

@@ -135,6 +135,10 @@ Set the "Don't Fragment" bit in the IP header (used to determine/test the MTU).
 
 Same as -d. 
 
+=item B<-N>
+
+Format output for netdata (-l -Q are required). See: http://my-netdata.io/
+
 =item B<-o>
 
 Calculate "outage time" based on the number of lost pings and the interval used (useful for network convergence tests).

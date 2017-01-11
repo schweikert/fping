@@ -387,12 +387,17 @@ int main( int argc, char **argv )
         switch( c )
         {
         case 'M':
+#ifdef IP_MTU_DISCOVER
             {
-            int val = IP_PMTUDISC_DO;
-            if (setsockopt(s, IPPROTO_IP, IP_MTU_DISCOVER, &val, sizeof(val))) {
-                perror("setsockopt IP_MTU_DISCOVER");
+                int val = IP_PMTUDISC_DO;
+                if (setsockopt(s, IPPROTO_IP, IP_MTU_DISCOVER, &val, sizeof(val))) {
+                    perror("setsockopt IP_MTU_DISCOVER");
+                }
             }
-            }
+#else
+            fprintf(stderr, "-M option not supported on this platform\n");
+            exit(1);
+#endif
             break;
 
         case 't':

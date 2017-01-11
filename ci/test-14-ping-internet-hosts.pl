@@ -43,7 +43,7 @@ $cmd->stderr_is_eq("");
 
 # fping6 -A -n
 SKIP: {
-    if(system("/sbin/ifconfig | grep inet6") != 0) {
+    if(system("/sbin/ifconfig | grep inet6.*Scope:Global") != 0) {
         skip 'No IPv6 on this host', 3;
     }
     my $cmd = Test::Command->new(cmd => "fping6 -n -A 2001:4860:4860::8888");

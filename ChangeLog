@@ -1,8 +1,14 @@
+2017-01-11  David Schweikert  <david@schweikert.ch>
+  * Version 3.15
+  * (bugfix) Fix compiler errors on platforms other than Linux (related
+             to the new -M option, #109)
+  * Test suite fixes for macOS
+
 2017-01-10  David Schweikert  <david@schweikert.ch>
   * Version 3.14
   * (feature) Ignore network and broadcast for cidrs /31 and /32 (#102, Martin Topholm)
   * (feature) New option '-M' to set the "Don't Fragment" flag (#91, Don Bowman) 
-  * (feature) New option '-N' to output statistics for netdata (see: http://my-netdata.io/, #10, Costa Tsaousis)
+  * (feature) New option '-N' to output statistics for netdata (see: http://my-netdata.io/, #105, Costa Tsaousis)
   * (feature) New option '-o' to calculate total outage time (#90, @jgerbeck)
   * (bugfix) Exit code should be 2 when the hostname can't be resolved
             (fixes #98, reported by @green-fox)

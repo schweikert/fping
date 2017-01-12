@@ -54,7 +54,6 @@ extern "C"
 #include <errno.h>
 #include <time.h>
 #include <signal.h>
-#include <getopt.h>
 #include <stdarg.h>
 
 #include "config.h"
@@ -91,6 +90,11 @@ extern "C"
 #include <netdb.h>
 #include <ctype.h>
 
+/* RS6000 hasn't getopt.h */
+#ifdef HAVE_GETOPT_H
+#include <getopt.h>
+#endif /* HAVE_GETOPT_H */
+
 /* RS6000 has sys/select.h */
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
@@ -102,7 +106,9 @@ extern "C"
 
 extern char *optarg;
 extern int optind,opterr;
+#ifndef h_errno
 extern int h_errno;
+#endif
 
 #ifdef __cplusplus
 }

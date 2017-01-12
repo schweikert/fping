@@ -1,3 +1,6 @@
+Unreleased
+  * (bugfix) Fix compatibility issue with AIX (#69, @blentzgh)
+
 2017-01-11  David Schweikert  <david@schweikert.ch>
   * Version 3.15
   * (bugfix) Fix compiler errors on platforms other than Linux (related

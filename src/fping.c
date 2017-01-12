@@ -1907,18 +1907,18 @@ int handle_random_icmp(FPING_ICMPHDR *p, struct sockaddr *addr, socklen_t addr_l
             /* this is a response to a ping we sent */
             h = table[ntohs(sent_icmp_seq) % num_hosts];
             if(icmp_type <= ICMP_TYPE_STR_MAX) {
-                fprintf( stderr, "%s from %s for ICMP Echo sent to %s",
+                print_warning("%s from %s for ICMP Echo sent to %s",
                     icmp_type_str[icmp_type], addr_ascii, h->host );
             }
             else {
-                fprintf( stderr, "ICMP %d from %s for ICMP Echo sent to %s",
+                print_warning("ICMP %d from %s for ICMP Echo sent to %s",
                     icmp_type, addr_ascii, h->host );
             }
       
             if( inet_addr( h->host ) == INADDR_NONE )
-                fprintf( stderr, " (%s)", addr_ascii );
+                print_warning(" (%s)", addr_ascii );
 
-            fprintf( stderr, "\n" );
+            print_warning( "\n" );
         
         }/* IF */
 

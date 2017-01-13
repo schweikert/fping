@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <fcntl.h>
 
 #include <netinet/icmp6.h>  
 
@@ -62,6 +63,17 @@ int open_ping_socket_ipv6()
         if( s < 0 ) {
             errno_crash_and_burn( "can't create raw socket (must run as root?)" );
         }
+    }
+
+    /* Make sure that we use non-blocking IO */
+    {
+        int flags;
+
+        if((flags = fcntl(s, F_GETFL, 0)) < 0)
+            perror("fcntl");
+
+        if(fcntl(s, F_SETFL, flags | O_NONBLOCK) < 0)
+            perror("fcntl");
     }
 
     return s;

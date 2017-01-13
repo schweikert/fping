@@ -742,6 +742,15 @@ int main( int argc, char **argv )
         }
     }
 
+#if HAVE_SO_TIMESTAMP 
+    {
+        int opt = 1;
+        if (setsockopt(s, SOL_SOCKET, SO_TIMESTAMP,  &opt, sizeof(opt))) {
+            perror("setting SO_TIMESTAMP option");
+        }
+    }
+#endif
+
     /* handle host names supplied on command line or in a file */
     /* if the generate_flag is on, then generate the IP list */
 
@@ -1578,28 +1587,100 @@ int send_ping( int s, HOST_ENTRY *h )
     return(ret);
 }
 
+int wait_on_socket(int socket, struct timeval *timeout)
+{
+    int nfound;
+    fd_set readset, writeset;
 
-/************************************************************
+select_again:
+    FD_ZERO( &readset );
+    FD_ZERO( &writeset );
+    FD_SET( s, &readset );
 
-  Function: wait_for_reply
+    nfound = select(socket + 1, &readset, &writeset, NULL, timeout);
+    if(nfound < 0) {
+        if(errno == EINTR) {
+            /* interrupted system call: redo the select */
+            goto select_again;
+        }
+        else {
+            perror("select");
+        }
+    }
 
-*************************************************************
+    if(nfound == 0)
+        return 0;
+    else
+        return 1;
+}
 
-  Inputs:  void (none)
+int receive_reply(int socket,
+                  struct timeval    *timeout,
+                  struct timeval    *reply_timestamp,
+                  struct sockaddr   *reply_src_addr,
+                  size_t            reply_src_addr_len,
+                  char              *reply_buf,
+                  size_t            reply_buf_len)
+{
+    int recv_len;
 
-  Returns:  int
+    // Wait for input on the socket
+    if(timeout && !wait_on_socket(socket, timeout)) {
+        return 0;   /* timeout */
+    }
 
-  Description:
-  
+    // Receive data
+    {
+        static unsigned char msg_control[40];
+        struct iovec msg_iov = {
+            reply_buf,
+            reply_buf_len
+        };
+        struct msghdr recv_msghdr = {
+            reply_src_addr,
+            reply_src_addr_len,
+            &msg_iov,
+            1,
+            &msg_control,
+            sizeof(msg_control),
+            0
+        };
+        int timestamp_set = 0;
 
-************************************************************/
+        recv_len = recvmsg(socket, &recv_msghdr, 0);
+        if(recv_len <= 0) {
+            return 0;
+        }
+
+#if HAVE_SO_TIMESTAMP 
+	// ancilliary data
+	struct cmsghdr *cmsg;
+        for(cmsg = CMSG_FIRSTHDR(&recv_msghdr);
+            cmsg != NULL;
+            cmsg = CMSG_NXTHDR(&recv_msghdr, cmsg))
+        {
+            if(cmsg->cmsg_level == SOL_SOCKET &&
+               cmsg->cmsg_type == SCM_TIMESTAMP)
+            {
+                memcpy(reply_timestamp, CMSG_DATA(cmsg), sizeof(*reply_timestamp));
+                timestamp_set = 1;
+            }
+        }
+#endif
+
+        if(! timestamp_set) {
+            gettimeofday(reply_timestamp, NULL);
+        }
+    }
+
+    return recv_len;
+}
 
 int wait_for_reply(long wait_time)
 {
     int result;
     static char buffer[4096];
     struct sockaddr_storage response_addr;
-    socklen_t response_addr_len;
     int hlen = 0;
     FPING_ICMPHDR *icp;
     int n, avg;
@@ -1607,17 +1688,40 @@ int wait_for_reply(long wait_time)
     long this_reply;
     int this_count;
     struct timeval *sent_time;
+    struct timeval recv_time;
     SEQMAP_VALUE *seqmap_value;
 #ifndef IPV6
     struct ip *ip;
 #endif
 
-    response_addr_len = sizeof(struct sockaddr_storage);
-    result = recvfrom_wto( s, buffer, sizeof(buffer), (struct sockaddr *) &response_addr, &response_addr_len, wait_time );
+    // receive packet
+    {
+        struct timeval to;
+        if(wait_time) {
+            if(wait_time < 100000) {
+                to.tv_sec = 0;
+                to.tv_usec = wait_time * 10;
+            }
+            else {
+                to.tv_sec = wait_time / 100000 ;
+                to.tv_usec = (wait_time % 100000) * 10 ;
+            }
+        }
 
-    if( result < 0 )
-        return 0;   /* timeout */
-  
+        result = receive_reply(s,                            // socket
+                                wait_time ? &to : NULL,       // timeout
+                                &recv_time,                   // reply_timestamp
+                                (struct sockaddr *) &response_addr, // reply_src_addr
+                                sizeof(response_addr),        // reply_src_addr_len
+                                buffer,                       // reply_buf
+                                sizeof(buffer)                // reply_buf_len
+                            );
+
+        if(result <= 0) {
+            return 0;
+        }
+    }
+
 #if defined( DEBUG ) || defined( _DEBUG )
     if( randomly_lose_flag )
     {
@@ -1646,7 +1750,7 @@ int wait_for_reply(long wait_time)
         if( verbose_flag )
         {
             char buf[INET6_ADDRSTRLEN];
-            getnameinfo((struct sockaddr *)&response_addr, response_addr_len, buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+            getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
             printf( "received packet too short for ICMP (%d bytes from %s)\n", result, buf);
         }
         return( 1 ); /* too short */ 
@@ -1662,7 +1766,7 @@ int wait_for_reply(long wait_time)
 #endif
     {
         /* handle some problem */
-        if( handle_random_icmp( icp, (struct sockaddr *)&response_addr, response_addr_len ) )
+        if( handle_random_icmp( icp, (struct sockaddr *)&response_addr, sizeof(response_addr) ) )
             num_othericmprcvd++;
         return 1;
     }/* IF */
@@ -1689,7 +1793,7 @@ int wait_for_reply(long wait_time)
     h = table[n];
     sent_time  = &seqmap_value->ping_ts;
     this_count = seqmap_value->ping_count;
-    this_reply = timeval_diff( &current_time, sent_time );
+    this_reply = timeval_diff( &recv_time, sent_time );
 
     if( loop_flag || h->resp_times[this_count] == RESP_WAITING )
     {
@@ -1739,7 +1843,7 @@ int wait_for_reply(long wait_time)
 
                     if(addr_cmp((struct sockaddr *)&response_addr, (struct sockaddr *)&h->saddr)) {
                         char buf[INET6_ADDRSTRLEN];
-                        getnameinfo((struct sockaddr *)&response_addr, response_addr_len, buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+                        getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
                         fprintf( stderr, " [<- %s]", buf);
                     }
                     fprintf( stderr, "\n" );
@@ -1774,7 +1878,7 @@ int wait_for_reply(long wait_time)
 
             if(addr_cmp((struct sockaddr *)&response_addr, (struct sockaddr *)&h->saddr)) {
                 char buf[INET6_ADDRSTRLEN];
-                getnameinfo((struct sockaddr *)&response_addr, response_addr_len, buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+                getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
                 fprintf( stderr, " [<- %s]", buf);
             }
 
@@ -1787,8 +1891,8 @@ int wait_for_reply(long wait_time)
     {
         if(timestamp_flag) {
             printf("[%lu.%06lu] ",
-                 (unsigned long)current_time.tv_sec,
-                 (unsigned long)current_time.tv_usec);
+                 (unsigned long)recv_time.tv_sec,
+                 (unsigned long)recv_time.tv_usec);
         }
         avg = h->total_time / h->num_recv;
         printf( "%s%s : [%d], %d bytes, %s ms",
@@ -1808,7 +1912,7 @@ int wait_for_reply(long wait_time)
 
         if(addr_cmp((struct sockaddr *)&response_addr, (struct sockaddr *)&h->saddr)) {
             char buf[INET6_ADDRSTRLEN];
-            getnameinfo((struct sockaddr *)&response_addr, response_addr_len, buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+            getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
             fprintf( stderr, " [<- %s]", buf);
         }
         

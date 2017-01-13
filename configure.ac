@@ -28,6 +28,17 @@ if test x$ipv4 = xfalse && test x$ipv6 = xfalse; then
   AC_MSG_ERROR([You must enable at least one of IPv4 and IPv6.])
 fi
 
+AC_ARG_ENABLE([timestamp],
+  AS_HELP_STRING([--disable-timestamp], [Disable kernel-based packet timestaping (SO_TIMESTAMP)]))
+AS_IF([test "x$enable_timestamp" != "xno"], [
+   AC_CHECK_DECL([SO_TIMESTAMP], [AC_DEFINE(HAVE_SO_TIMESTAMP, [1], [set define])], [have_so_timestamp="no"], [#include <sys/types.h>
+#include <sys/socket.h>])
+])
+dnl Test if --enable-timestamp is explicitely enabled and make an error if this platform doesn't support it
+AS_IF([test "x$enable_timestamp" = "xyes" -a "x$have_so_timestamp" = "xno"], [
+  AC_MSG_ERROR([--enable-timestamp not supported on this platform])
+])
+
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_MAINTAINER_MODE

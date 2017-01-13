@@ -1,4 +1,5 @@
 Unreleased
+  * (feature) Support kernel-timestamping of received packets (#46)
   * (bugfix) Fix compatibility issue with AIX (#69, @blentzgh)
   * (bugfix) Fix -q not suppressing some ICMP error messages (#83)
 

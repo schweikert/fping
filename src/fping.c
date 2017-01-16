@@ -1574,7 +1574,7 @@ int send_ping( int s, HOST_ENTRY *h )
     return(ret);
 }
 
-int wait_on_socket(int socket, struct timeval *timeout)
+int socket_can_read(int socket, struct timeval *timeout)
 {
     int nfound;
     fd_set readset, writeset;
@@ -1601,8 +1601,7 @@ select_again:
         return 1;
 }
 
-int receive_reply(int socket,
-                  struct timeval    *timeout,
+int receive_packet(int socket,
                   struct timeval    *reply_timestamp,
                   struct sockaddr   *reply_src_addr,
                   size_t            reply_src_addr_len,
@@ -1610,55 +1609,54 @@ int receive_reply(int socket,
                   size_t            reply_buf_len)
 {
     int recv_len;
+    static unsigned char msg_control[40];
+    struct iovec msg_iov = {
+        reply_buf,
+        reply_buf_len
+    };
+    struct msghdr recv_msghdr = {
+        reply_src_addr,
+        reply_src_addr_len,
+        &msg_iov,
+        1,
+        &msg_control,
+        sizeof(msg_control),
+        0
+    };
+    int timestamp_set = 0;
 
-    // Wait for input on the socket
-    if(timeout && !wait_on_socket(socket, timeout)) {
-        return 0;   /* timeout */
+    recv_len = recvmsg(socket, &recv_msghdr, 0);
+    if(recv_len <= 0) {
+        return 0;
     }
-
-    // Receive data
-    {
-        static unsigned char msg_control[40];
-        struct iovec msg_iov = {
-            reply_buf,
-            reply_buf_len
-        };
-        struct msghdr recv_msghdr = {
-            reply_src_addr,
-            reply_src_addr_len,
-            &msg_iov,
-            1,
-            &msg_control,
-            sizeof(msg_control),
-            0
-        };
-        int timestamp_set = 0;
-
-        recv_len = recvmsg(socket, &recv_msghdr, 0);
-        if(recv_len <= 0) {
-            return 0;
-        }
 
 #if HAVE_SO_TIMESTAMP 
-	// ancilliary data
-	struct cmsghdr *cmsg;
-        for(cmsg = CMSG_FIRSTHDR(&recv_msghdr);
-            cmsg != NULL;
-            cmsg = CMSG_NXTHDR(&recv_msghdr, cmsg))
+    // ancilliary data
+    struct cmsghdr *cmsg;
+    for(cmsg = CMSG_FIRSTHDR(&recv_msghdr);
+        cmsg != NULL;
+        cmsg = CMSG_NXTHDR(&recv_msghdr, cmsg))
+    {
+        if(cmsg->cmsg_level == SOL_SOCKET &&
+           cmsg->cmsg_type == SCM_TIMESTAMP)
         {
-            if(cmsg->cmsg_level == SOL_SOCKET &&
-               cmsg->cmsg_type == SCM_TIMESTAMP)
-            {
-                memcpy(reply_timestamp, CMSG_DATA(cmsg), sizeof(*reply_timestamp));
-                timestamp_set = 1;
-            }
-        }
-#endif
-
-        if(! timestamp_set) {
-            gettimeofday(reply_timestamp, NULL);
+            memcpy(reply_timestamp, CMSG_DATA(cmsg), sizeof(*reply_timestamp));
+            timestamp_set = 1;
         }
     }
+#endif
+
+    if(! timestamp_set) {
+        gettimeofday(reply_timestamp, NULL);
+    }
+
+#if defined( DEBUG ) || defined( _DEBUG )
+    if( randomly_lose_flag )
+    {
+        if( ( random() & 0x07 ) <= lose_factor )
+            return 0;
+    }
+#endif
 
     return recv_len;
 }
@@ -1681,42 +1679,49 @@ int wait_for_reply(long wait_time)
     struct ip *ip;
 #endif
 
-    // receive packet
-    {
+    // Wait for the socket to become ready
+    if(wait_time) {
         struct timeval to;
-        if(wait_time) {
-            if(wait_time < 100000) {
-                to.tv_sec = 0;
-                to.tv_usec = wait_time * 10;
-            }
-            else {
-                to.tv_sec = wait_time / 100000 ;
-                to.tv_usec = (wait_time % 100000) * 10 ;
-            }
+        if(wait_time < 100000) {
+            to.tv_sec = 0;
+            to.tv_usec = wait_time * 10;
+        }
+        else {
+            to.tv_sec = wait_time / 100000 ;
+            to.tv_usec = (wait_time % 100000) * 10 ;
         }
 
-        result = receive_reply(s,                            // socket
-                                wait_time ? &to : NULL,       // timeout
-                                &recv_time,                   // reply_timestamp
-                                (struct sockaddr *) &response_addr, // reply_src_addr
-                                sizeof(response_addr),        // reply_src_addr_len
-                                buffer,                       // reply_buf
-                                sizeof(buffer)                // reply_buf_len
-                            );
-
-        if(result <= 0) {
-            return 0;
+        if(!socket_can_read(s, &to)) {
+            return 0;   /* timeout */
         }
     }
 
-#if defined( DEBUG ) || defined( _DEBUG )
-    if( randomly_lose_flag )
-    {
-        if( ( random() & 0x07 ) <= lose_factor )
-            return 0;
+    // Receive packet
+    result = receive_packet(s,                            // socket
+                            &recv_time,                   // reply_timestamp
+                            (struct sockaddr *) &response_addr, // reply_src_addr
+                            sizeof(response_addr),        // reply_src_addr_len
+                            buffer,                       // reply_buf
+                            sizeof(buffer)                // reply_buf_len
+                        );
 
+    if(result <= 0) {
+        return 0;
     }
-#endif
+
+    // Process ICMP packet and retrieve id/seq
+//    unsigned short icmp_id;
+//    unsigned short icmp_seq
+//#ifndef IPV6
+//    if(!process_icmp_ipv4(response_addr, sizeof(response_addr), buffer, sizeof(buffer),
+//                     &icmp_id, &icmp_seq))
+//#else
+//    if(!process_icmp_ipv6(response_addr, sizeof(response_addr), buffer, sizeof(buffer)
+//                     &icmp_id, &icmp_seq))
+//#endif
+//    {
+//        return(1);
+//    }
 
 #ifndef IPV6
     ip = ( struct ip* )buffer;

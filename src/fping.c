@@ -133,11 +133,8 @@ extern int h_errno;
 #define DEFAULT_PING_DATA_SIZE  56
 
 /* maxima and minima */
-#define MAX_COUNT               10000
 #define MIN_INTERVAL            1       /* in millisec */
-#define MIN_PERHOST_INTERVAL    20      /* in millisec */
-#define MIN_TIMEOUT             50      /* in millisec */
-#define MAX_RETRY               20
+#define MIN_PERHOST_INTERVAL    10      /* in millisec */
 
 /* response time array flags */
 #define RESP_WAITING    -1
@@ -617,14 +614,12 @@ int main( int argc, char **argv )
     }/* IF */
     
     if( ( interval < MIN_INTERVAL * 100 ||
-            perhost_interval < MIN_PERHOST_INTERVAL * 100 || 
-            retry > MAX_RETRY || 
-            timeout < MIN_TIMEOUT * 100 ) 
+            perhost_interval < MIN_PERHOST_INTERVAL * 100 ) 
         && getuid() )
     {
         fprintf( stderr, "%s: these options are too risky for mere mortals.\n", prog );
-        fprintf( stderr, "%s: You need i >= %u, p >= %u, r < %u, and t >= %u\n",
-            prog, MIN_INTERVAL, MIN_PERHOST_INTERVAL, MAX_RETRY, MIN_TIMEOUT );
+        fprintf( stderr, "%s: You need -i >= %u and -p >= %u\n",
+            prog, MIN_INTERVAL, MIN_PERHOST_INTERVAL );
         exit(1);
     }/* IF */
     
@@ -644,14 +639,6 @@ int main( int argc, char **argv )
     
     }/* IF */
 
-    if( count > MAX_COUNT )
-    {
-        fprintf( stderr, "%s: count %u not valid, must be less than %u\n",
-            prog, count, MAX_COUNT );
-        exit(1);
-    
-    }/* IF */
-    
     if( alive_flag || unreachable_flag )
         verbose_flag = 0;
     

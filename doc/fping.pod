@@ -116,7 +116,7 @@ Print usage message.
 =item B<-i> I<n>
 
 The minimum amount of time (in milliseconds) between sending a ping packet
-to any target (default is 25). 
+to any target (default is 25, minimum is 1).
 
 =item B<-l>
 
@@ -137,7 +137,7 @@ Same as -d.
 
 =item B<-N>
 
-Format output for netdata (-l -Q are required). See: http://my-netdata.io/
+Format output for netdata (-l -Q are required). See: L<http://my-netdata.io/>
 
 =item B<-o>
 
@@ -152,7 +152,7 @@ Set the typ of service flag (TOS). I<n> can be either decimal or hexadecimal
 
 In looping or counting modes (B<-l>, B<-c>, or B<-C>), this parameter sets
 the time in milliseconds that B<fping> waits between successive packets to
-an individual target.  Default is 1000. 
+an individual target. Default is 1000 and minimum is 10.
 
 =item B<-q>
 
@@ -252,10 +252,8 @@ line arguments, and 4 for a system call failure.
 
 =head1 RESTRICTIONS
 
-If certain options are used (i.e, a low value for B<-i> and B<-t>, and a high value
-for B<-r>) it is possible to flood the network. This program must be installed as
-setuid root in order to open up a raw socket, or must be run by root. In order
-to stop mere mortals from hosing the network, normal users can't specify the following: 
+In order to avoid users mistakingly flooding the network, the following values
+are not allowed for non-root users:
 
 =over 4
 
@@ -265,11 +263,7 @@ B<-i> I<n>, where I<n> < 1 msec
 
 =item *
 
-B<-r> I<n>, where I<n> > 20
-
-=item *
-
-B<-t> I<n>, where n < 250 msec
+B<-p> I<n>, where I<n> < 10 msec
 
 =back
 

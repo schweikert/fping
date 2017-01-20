@@ -3,6 +3,7 @@ Unreleased
   * (feature) Simplify restrictions: only -i >= 1 and -p >= 10 are enforced now
   * (bugfix) Fix compatibility issue with AIX (#69, @blentzgh)
   * (bugfix) Fix -q not suppressing some ICMP error messages (#83)
+  * (bugfix) Fix -M expecting an argument, when it shouldn't
 
 2017-01-11  David Schweikert  <david@schweikert.ch>
   * Version 3.15

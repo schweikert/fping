@@ -334,7 +334,6 @@ void print_netdata( void );
 void print_global_stats( void );
 void main_loop();
 void finish();
-int handle_random_icmp( FPING_ICMPHDR *p, struct sockaddr *addr, socklen_t addr_len);
 char *sprint_tm( int t );
 void ev_enqueue(HOST_ENTRY  *h);
 HOST_ENTRY *ev_dequeue();
@@ -1661,13 +1660,229 @@ int receive_packet(int socket,
     return recv_len;
 }
 
+#ifndef IPV6
+int decode_icmp_ipv4(
+                  struct sockaddr   *response_addr,
+                  size_t            response_addr_len,
+                  char              *reply_buf,
+                  size_t            reply_buf_len,
+                  unsigned short    *id,
+                  unsigned short    *seq
+                  )
+{
+    struct ip *ip = (struct ip *) reply_buf;
+    struct icmp *icp;
+    int hlen = 0;
+
+#if defined( __alpha__ ) && __STDC__ && !defined( __GLIBC__ )
+    /* The alpha headers are decidedly broken.
+     * Using an ANSI compiler, it provides ip_vhl instead of ip_hl and
+     * ip_v.  So, to get ip_hl, we mask off the bottom four bits.
+     */
+    hlen = ( ip->ip_vhl & 0x0F ) << 2;
+#else
+    hlen = ip->ip_hl << 2;
+#endif
+
+    if( reply_buf_len < hlen + ICMP_MINLEN ) {
+        /* too short */
+        if( verbose_flag )
+        {
+            char buf[INET6_ADDRSTRLEN];
+            getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+            printf( "received packet too short for ICMP (%d bytes from %s)\n", (int) reply_buf_len, buf);
+        }
+        return 0;
+    }
+
+    icp = (struct icmp *)(reply_buf + hlen);
+
+    if( icp->icmp_type != ICMP_ECHOREPLY )
+    {
+        /* Handle other ICMP packets */
+        struct icmp *sent_icmp;
+        SEQMAP_VALUE *seqmap_value;
+        char addr_ascii[INET6_ADDRSTRLEN];
+        HOST_ENTRY *h;
+
+        /* reply icmp packet (hlen + ICMP_MINLEN) followed by "sent packet" (ip + icmp headers) */
+        if(reply_buf_len < hlen + ICMP_MINLEN + sizeof(struct ip) + ICMP_MINLEN) {
+            /* discard ICMP message if we can't tell that it was caused by us (i.e. if the "sent packet" is not included). */
+            return 0;
+        }
+
+        sent_icmp = (struct icmp *) (reply_buf + hlen + ICMP_MINLEN + sizeof(struct ip));
+
+        if(sent_icmp->icmp_type != ICMP_ECHO || ntohs(sent_icmp->icmp_id) != ident) {
+            /* not caused by us */
+            return 0;
+        }
+
+        seqmap_value = seqmap_fetch(ntohs(sent_icmp->icmp_seq), &current_time);
+        if(seqmap_value == NULL) {
+            return 0;
+        }
+
+        getnameinfo(response_addr, response_addr_len, addr_ascii, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+           
+        switch(icp->icmp_type) {
+            case ICMP_UNREACH:
+                h = table[seqmap_value->host_nr];
+                if( icp->icmp_code > ICMP_UNREACH_MAXTYPE ) {
+                    print_warning("ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
+                            addr_ascii, h->host );
+                }
+                else {
+                    print_warning("%s from %s for ICMP Echo sent to %s",
+                            icmp_unreach_str[icp->icmp_code], addr_ascii, h->host);
+                }
+
+                if( inet_addr( h->host ) == INADDR_NONE )
+                    print_warning(" (%s)", addr_ascii);
+
+                print_warning("\n" );
+                num_othericmprcvd++;
+                break;
+
+            case ICMP_SOURCEQUENCH:
+            case ICMP_REDIRECT:
+            case ICMP_TIMXCEED:
+            case ICMP_PARAMPROB:
+                h = table[seqmap_value->host_nr];
+                if(icp->icmp_type <= ICMP_TYPE_STR_MAX) {
+                    print_warning("%s from %s for ICMP Echo sent to %s",
+                            icmp_type_str[icp->icmp_type], addr_ascii, h->host );
+                }
+                else {
+                    print_warning("ICMP %d from %s for ICMP Echo sent to %s",
+                            icp->icmp_type, addr_ascii, h->host );
+                }
+                if( inet_addr( h->host ) == INADDR_NONE )
+                    print_warning(" (%s)", addr_ascii );
+                print_warning( "\n" );
+                num_othericmprcvd++;
+                break;
+        }
+
+        return 0;
+    }
+
+    *id  = ntohs(icp->icmp_id);
+    *seq = ntohs(icp->icmp_seq);
+
+    return 1; // success
+}
+
+#else
+// IPV6
+
+int decode_icmp_ipv6(
+                  struct sockaddr   *response_addr,
+                  size_t            response_addr_len,
+                  char              *reply_buf,
+                  size_t            reply_buf_len,
+                  unsigned short    *id,
+                  unsigned short    *seq
+                  )
+{
+    struct icmp6_hdr *icp;
+
+    if( reply_buf_len < sizeof(FPING_ICMPHDR) )
+    {
+        if( verbose_flag )
+        {
+            char buf[INET6_ADDRSTRLEN];
+            getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+            printf( "received packet too short for ICMP (%d bytes from %s)\n", (int) reply_buf_len, buf);
+        }
+        return 0; /* too short */ 
+    }
+
+    icp = (struct icmp6_hdr *) reply_buf;
+
+    if( icp->icmp6_type != ICMP6_ECHO_REPLY )
+    {
+        /* Handle other ICMP packets */
+        struct icmp6_hdr *sent_icmp;
+        SEQMAP_VALUE *seqmap_value;
+        char addr_ascii[INET6_ADDRSTRLEN];
+        HOST_ENTRY *h;
+
+        /* reply icmp packet (ICMP_MINLEN) followed by "sent packet" (ip + icmp headers) */
+        if(reply_buf_len < ICMP_MINLEN + sizeof(struct ip) + ICMP_MINLEN) {
+            /* discard ICMP message if we can't tell that it was caused by us (i.e. if the "sent packet" is not included). */
+            return 0;
+        }
+
+        sent_icmp = (struct icmp6_hdr *) (reply_buf + sizeof(struct icmp6_hdr) + sizeof(struct ip));
+
+        if(sent_icmp->icmp6_type != ICMP_ECHO || ntohs(sent_icmp->icmp6_id) != ident) {
+            /* not caused by us */
+            return 0;
+        }
+
+        seqmap_value = seqmap_fetch(ntohs(sent_icmp->icmp6_seq), &current_time);
+        if(seqmap_value == NULL) {
+            return 0;
+        }
+
+        getnameinfo(response_addr, response_addr_len, addr_ascii, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+           
+        switch(icp->icmp6_type) {
+            case ICMP_UNREACH:
+                h = table[seqmap_value->host_nr];
+                if( icp->icmp6_code > ICMP_UNREACH_MAXTYPE ) {
+                    print_warning("ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
+                            addr_ascii, h->host );
+                }
+                else {
+                    print_warning("%s from %s for ICMP Echo sent to %s",
+                            icmp_unreach_str[icp->icmp6_code], addr_ascii, h->host);
+                }
+
+                if( inet_addr( h->host ) == INADDR_NONE )
+                    print_warning(" (%s)", addr_ascii);
+
+                print_warning("\n" );
+                num_othericmprcvd++;
+                break;
+
+            case ICMP_SOURCEQUENCH:
+            case ICMP_REDIRECT:
+            case ICMP_TIMXCEED:
+            case ICMP_PARAMPROB:
+                h = table[seqmap_value->host_nr];
+                if(icp->icmp6_type <= ICMP_TYPE_STR_MAX) {
+                    print_warning("%s from %s for ICMP Echo sent to %s",
+                            icmp_type_str[icp->icmp6_type], addr_ascii, h->host );
+                }
+                else {
+                    print_warning("ICMP %d from %s for ICMP Echo sent to %s",
+                            icp->icmp6_type, addr_ascii, h->host );
+                }
+                if( inet_addr( h->host ) == INADDR_NONE )
+                    print_warning(" (%s)", addr_ascii );
+                print_warning( "\n" );
+                num_othericmprcvd++;
+                break;
+        }
+
+        return 0;
+    }
+
+    *id  = ntohs(icp->icmp6_id);
+    *seq = ntohs(icp->icmp6_seq);
+
+    return 1;
+}
+#endif
+
+
 int wait_for_reply(long wait_time)
 {
     int result;
     static char buffer[4096];
     struct sockaddr_storage response_addr;
-    int hlen = 0;
-    FPING_ICMPHDR *icp;
     int n, avg;
     HOST_ENTRY *h;
     long this_reply;
@@ -1675,9 +1890,8 @@ int wait_for_reply(long wait_time)
     struct timeval *sent_time;
     struct timeval recv_time;
     SEQMAP_VALUE *seqmap_value;
-#ifndef IPV6
-    struct ip *ip;
-#endif
+    unsigned short id;
+    unsigned short seq;
 
     // Wait for the socket to become ready
     if(wait_time) {
@@ -1708,73 +1922,30 @@ int wait_for_reply(long wait_time)
     if(result <= 0) {
         return 0;
     }
-
-    // Process ICMP packet and retrieve id/seq
-//    unsigned short icmp_id;
-//    unsigned short icmp_seq
-//#ifndef IPV6
-//    if(!process_icmp_ipv4(response_addr, sizeof(response_addr), buffer, sizeof(buffer),
-//                     &icmp_id, &icmp_seq))
-//#else
-//    if(!process_icmp_ipv6(response_addr, sizeof(response_addr), buffer, sizeof(buffer)
-//                     &icmp_id, &icmp_seq))
-//#endif
-//    {
-//        return(1);
-//    }
-
-#ifndef IPV6
-    ip = ( struct ip* )buffer;
-#if defined( __alpha__ ) && __STDC__ && !defined( __GLIBC__ )
-    /* The alpha headers are decidedly broken.
-     * Using an ANSI compiler, it provides ip_vhl instead of ip_hl and
-     * ip_v.  So, to get ip_hl, we mask off the bottom four bits.
-     */
-    hlen = ( ip->ip_vhl & 0x0F ) << 2;
-#else
-    hlen = ip->ip_hl << 2;
-#endif /* defined(__alpha__) && __STDC__ */
-    if( result < hlen + ICMP_MINLEN )
-#else
-    if( result < sizeof(FPING_ICMPHDR) )
-#endif
-    {
-        if( verbose_flag )
-        {
-            char buf[INET6_ADDRSTRLEN];
-            getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
-            printf( "received packet too short for ICMP (%d bytes from %s)\n", result, buf);
-        }
-        return( 1 ); /* too short */ 
-    }/* IF */
-
+    
     gettimeofday( &current_time, &tz );
 
-    icp = ( FPING_ICMPHDR* )( buffer + hlen );
+    // Process ICMP packet and retrieve id/seq
 #ifndef IPV6
-    if( icp->icmp_type != ICMP_ECHOREPLY )
+    if(!decode_icmp_ipv4(
 #else
-    if( icp->icmp6_type != ICMP6_ECHO_REPLY )
+    if(!decode_icmp_ipv6(
 #endif
-    {
-        /* handle some problem */
-        if( handle_random_icmp( icp, (struct sockaddr *)&response_addr, sizeof(response_addr) ) )
-            num_othericmprcvd++;
-        return 1;
-    }/* IF */
+        (struct sockaddr *) &response_addr,
+        sizeof(response_addr),
+        buffer,
+        sizeof(buffer),
+        &id,
+        &seq)
+    ) {
+        return(1);
+    }
 
-#ifndef IPV6
-    if( ntohs(icp->icmp_id) != ident )
-#else
-    if( ntohs(icp->icmp6_id) != ident )
-#endif
+    if( id != ident ) {
         return 1; /* packet received, but not the one we are looking for! */
+    }
 
-#ifndef IPV6
-    seqmap_value = seqmap_fetch(ntohs(icp->icmp_seq), &current_time);
-#else
-    seqmap_value = seqmap_fetch(ntohs(icp->icmp6_seq), &current_time);
-#endif
+    seqmap_value = seqmap_fetch(seq, &current_time);
     if(seqmap_value == NULL) {
         return 1;
     }
@@ -1923,118 +2094,6 @@ int wait_for_reply(long wait_time)
     return num_jobs;
 
 } /* wait_for_reply() */
-
-/************************************************************
-
-  Function: handle_random_icmp
-
-************************************************************/
-
-int handle_random_icmp(FPING_ICMPHDR *p, struct sockaddr *addr, socklen_t addr_len)
-{
-    FPING_ICMPHDR *sent_icmp;
-    unsigned char *c;
-    HOST_ENTRY *h;
-    SEQMAP_VALUE *seqmap_value;
-    char addr_ascii[INET6_ADDRSTRLEN];
-    unsigned short icmp_type;
-    unsigned short icmp_code;
-    unsigned short sent_icmp_type;
-    unsigned short sent_icmp_seq;
-    unsigned short sent_icmp_id;
-
-    getnameinfo((struct sockaddr *) addr, addr_len, addr_ascii, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
-
-    c = ( unsigned char* )p;
-
-    sent_icmp = ( FPING_ICMPHDR* )( c + 28 );
-#ifndef IPV6
-    icmp_type = p->icmp_type;
-    icmp_code = p->icmp_code;
-    sent_icmp_type = sent_icmp->icmp_type;
-    sent_icmp_seq  = sent_icmp->icmp_seq;
-    sent_icmp_id   = sent_icmp->icmp_id;
-#else
-    icmp_type = p->icmp6_type;
-    icmp_code = p->icmp6_code;
-    sent_icmp_type = sent_icmp->icmp6_type;
-    sent_icmp_seq  = sent_icmp->icmp6_seq;
-    sent_icmp_id   = sent_icmp->icmp6_id;
-#endif
-
-    switch(icmp_type)
-    {
-    case ICMP_UNREACH:
-        seqmap_value = seqmap_fetch(ntohs(sent_icmp_seq), &current_time);
-
-        if( ( sent_icmp_type == ICMP_ECHO ) &&
-            ( ntohs(sent_icmp_id) == ident ) &&
-            ( seqmap_value != NULL ) )
-        {
-            /* this is a response to a ping we sent */
-            h = table[ntohs(sent_icmp_seq) % num_hosts];
-            
-            if( icmp_code > ICMP_UNREACH_MAXTYPE ) {
-                print_warning("ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
-                    addr_ascii, h->host );
-            }
-            else {
-                print_warning("%s from %s for ICMP Echo sent to %s",
-                        icmp_unreach_str[icmp_code], addr_ascii, h->host);
-            }
-
-            if( inet_addr( h->host ) == INADDR_NONE )
-                print_warning(" (%s)", addr_ascii);
-            
-            print_warning("\n" );
-        }
-        return 1;
-
-    case ICMP_SOURCEQUENCH:
-    case ICMP_REDIRECT:
-    case ICMP_TIMXCEED:
-    case ICMP_PARAMPROB:
-        seqmap_value = seqmap_fetch(ntohs(sent_icmp_seq), &current_time);
-
-        if( ( sent_icmp_type == ICMP_ECHO ) &&
-            ( ntohs(sent_icmp_id) == ident ) &&
-            ( seqmap_value != NULL ) )
-        {
-            /* this is a response to a ping we sent */
-            h = table[ntohs(sent_icmp_seq) % num_hosts];
-            if(icmp_type <= ICMP_TYPE_STR_MAX) {
-                print_warning("%s from %s for ICMP Echo sent to %s",
-                    icmp_type_str[icmp_type], addr_ascii, h->host );
-            }
-            else {
-                print_warning("ICMP %d from %s for ICMP Echo sent to %s",
-                    icmp_type, addr_ascii, h->host );
-            }
-      
-            if( inet_addr( h->host ) == INADDR_NONE )
-                print_warning(" (%s)", addr_ascii );
-
-            print_warning( "\n" );
-        
-        }/* IF */
-
-        return 2;
-
-    /* no way to tell whether any of these are sent due to our ping */
-    /* or not (shouldn't be, of course), so just discard            */
-    case ICMP_TSTAMP:
-    case ICMP_TSTAMPREPLY:
-    case ICMP_IREQ:
-    case ICMP_IREQREPLY:
-    case ICMP_MASKREQ:
-    case ICMP_MASKREPLY:
-    default:
-        return 0;
-    
-    }/* SWITCH */
-
-} /* handle_random_icmp() */
-
 
 /************************************************************
 

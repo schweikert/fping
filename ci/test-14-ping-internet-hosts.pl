@@ -9,7 +9,7 @@ if(!gethostbyname("www.google.com")) {
     exit 0;
 }
 
-plan tests => 18;
+plan tests => 21;
 
 my $re_num = qr{\d+(?:\.\d+)?};
 
@@ -69,4 +69,12 @@ my $cmd = Test::Command->new(cmd => "fping -n 8.8.8.8");
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("google-public-dns-a.google.com is alive\n");
 $cmd->stderr_is_eq("");
+}
+
+# fping -M
+{
+my $cmd = Test::Command->new(cmd => "fping -r 0 -b 10000 -M 8.8.8.8");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("8.8.8.8 is unreachable\n");
+$cmd->stderr_is_eq("8.8.8.8: error while sending ping: Message too long\n");
 }

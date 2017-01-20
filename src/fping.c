@@ -385,7 +385,7 @@ int main( int argc, char **argv )
 
     /* get command line options */
 
-    while( ( c = getopt( argc, argv, "gedhlmnNqusaAvDRz:t:H:i:p:f:r:c:b:C:Q:B:S:I:T:O:M:o" ) ) != EOF )
+    while( ( c = getopt( argc, argv, "ADMNRadeghlmnoqsuvzB:C:H:I:O:Q:S:T:b:c:f:i:p:r:t:" ) ) != EOF )
     {
         switch( c )
         {

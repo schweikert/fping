@@ -1,4 +1,4 @@
-/* 
+/*
  * fping: fast-ping, file-ping, favorite-ping, funky-ping
  *
  *   Ping a list of target hosts in a round robin fashion.
@@ -22,8 +22,8 @@
  * duplicated in all such forms and that any documentation,
  * advertising materials, and other materials related to such
  * distribution and use acknowledge that the software was developed
- * by Stanford University.  The name of the University may not be used 
- * to endorse or promote products derived from this software without 
+ * by Stanford University.  The name of the University may not be used
+ * to endorse or promote products derived from this software without
  * specific prior written permission.
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
@@ -258,7 +258,7 @@ unsigned int debugging = 0;
 
 /* times get *100 because all times are calculated in 10 usec units, not ms */
 unsigned int retry = DEFAULT_RETRY;
-unsigned int timeout = DEFAULT_TIMEOUT * 100; 
+unsigned int timeout = DEFAULT_TIMEOUT * 100;
 unsigned int interval = DEFAULT_INTERVAL * 100;
 unsigned int perhost_interval = DEFAULT_PERHOST_INTERVAL * 100;
 float backoff = DEFAULT_BACKOFF_FACTOR;
@@ -291,7 +291,7 @@ int num_timeout = 0,                /* number of times select timed out */
     num_othericmprcvd = 0;          /* total non-echo-reply ICMP received */
 
 struct timeval current_time;        /* current time (pseudo) */
-struct timeval start_time; 
+struct timeval start_time;
 struct timeval end_time;
 struct timeval last_send_time;      /* time last ping was sent */
 struct timeval next_report_time;    /* time next -Q report is expected */
@@ -354,7 +354,7 @@ int addr_cmp(struct sockaddr *a, struct sockaddr *b);
   Inputs:  int argc, char** argv
 
   Description:
-  
+
   Main program entry point
 
 ************************************************************/
@@ -364,7 +364,7 @@ int main( int argc, char **argv )
     int c, i, n;
     char *buf;
     uid_t uid;
-    int tos = 0; 
+    int tos = 0;
     HOST_ENTRY *cursor;
 
     prog = argv[0];
@@ -475,7 +475,7 @@ int main( int argc, char **argv )
             netdata_flag = 1;
             break;
 
-        case 'd': 
+        case 'd':
         case 'n':
             name_flag = 1;
             break;
@@ -515,10 +515,10 @@ int main( int argc, char **argv )
             alive_flag = 1;
             break;
 
-        case 'H':  
+        case 'H':
             if( !( ttl = ( u_int )atoi( optarg ) ))
                 usage(1);
-            break;  
+            break;
 
 #if defined( DEBUG ) || defined( _DEBUG )
         case 'z':
@@ -533,7 +533,7 @@ int main( int argc, char **argv )
             printf( "%s: comments to %s\n", argv[0], EMAIL );
             exit( 0 );
 
-        case 'f': 
+        case 'f':
             filename = optarg;
             break;
 
@@ -594,9 +594,9 @@ int main( int argc, char **argv )
     /* validate various option settings */
 
     if (ttl > 255) {
-        fprintf(stderr, "ttl %u out of range\n", ttl);  
+        fprintf(stderr, "ttl %u out of range\n", ttl);
         exit(1);
-    }  
+    }
 
     if( unreachable_flag && alive_flag )
     {
@@ -613,7 +613,7 @@ int main( int argc, char **argv )
     }/* IF */
     
     if( ( interval < MIN_INTERVAL * 100 ||
-            perhost_interval < MIN_PERHOST_INTERVAL * 100 ) 
+            perhost_interval < MIN_PERHOST_INTERVAL * 100 )
         && getuid() )
     {
         fprintf( stderr, "%s: these options are too risky for mere mortals.\n", prog );
@@ -728,7 +728,7 @@ int main( int argc, char **argv )
         }
     }
 
-#if HAVE_SO_TIMESTAMP 
+#if HAVE_SO_TIMESTAMP
     {
         int opt = 1;
         if (setsockopt(s, SOL_SOCKET, SO_TIMESTAMP,  &opt, sizeof(opt))) {
@@ -864,7 +864,7 @@ int main( int argc, char **argv )
     last_send_time.tv_sec = current_time.tv_sec - 10000;
 
 #if defined( DEBUG ) || defined( _DEBUG )
-    if( randomly_lose_flag ) 
+    if( randomly_lose_flag )
         srandom( start_time.tv_usec );
 #endif /* DEBUG || _DEBUG */
 
@@ -881,7 +881,7 @@ int main( int argc, char **argv )
 void add_cidr(char *addr)
 {
     char *addr_end;
-    char *mask_str; 
+    char *mask_str;
     unsigned long mask;
     unsigned long bitmask;
     int ret;
@@ -1171,7 +1171,7 @@ void finish()
             {
                 printf( "%s", h->host );
 
-                if( verbose_flag ) 
+                if( verbose_flag )
                     printf( " is unreachable" );
                 
                 printf( "\n" );
@@ -1193,7 +1193,7 @@ void finish()
     if( num_noaddress )
         exit( 2 );
     else if( num_alive != num_hosts )
-        exit( 1 ); 
+        exit( 1 );
     
     exit(0);
 
@@ -1629,7 +1629,7 @@ int receive_packet(int socket,
         return 0;
     }
 
-#if HAVE_SO_TIMESTAMP 
+#if HAVE_SO_TIMESTAMP
     // ancilliary data
     struct cmsghdr *cmsg;
     for(cmsg = CMSG_FIRSTHDR(&recv_msghdr);
@@ -1795,7 +1795,7 @@ int decode_icmp_ipv6(
             getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
             printf( "received packet too short for ICMP (%d bytes from %s)\n", (int) reply_buf_len, buf);
         }
-        return 0; /* too short */ 
+        return 0; /* too short */
     }
 
     icp = (struct icmp6_hdr *) reply_buf;
@@ -1988,7 +1988,7 @@ int wait_for_reply(long wait_time)
     h->num_recv_total++;
 
 #if defined( DEBUG ) || defined( _DEBUG )
-    if( trace_flag ) 
+    if( trace_flag )
         printf( "received [%d] from %s\n", this_count, h->host );
 #endif /* DEBUG || _DEBUG */
 
@@ -2135,7 +2135,7 @@ void add_name( char *name )
         if(!quiet_flag)
             print_warning("%s: %s\n", name, gai_strerror(ret_ga));
         num_noaddress++;
-        return; 
+        return;
     }
 
     // NOTE: we could/should loop with res on all addresses like this:
@@ -2157,7 +2157,7 @@ void add_name( char *name )
                     print_warning("%s: %s\n", name, gai_strerror(ret_ga));
                 }
                 num_noaddress++;
-                return; 
+                return;
             }
             printname = namebuf;
         }
@@ -2172,7 +2172,7 @@ void add_name( char *name )
                     print_warning("%s: %s\n", name, gai_strerror(ret_ga));
                 }
                 num_noaddress++;
-                return; 
+                return;
             }
 
             if(name_flag) {
@@ -2377,7 +2377,7 @@ void print_warning(char *format, ...) {
   Description:
 
   timeval_diff now returns result in hundredths of milliseconds
-  ie, tens of microseconds                                    
+  ie, tens of microseconds
 
 ************************************************************/
 
@@ -2585,7 +2585,7 @@ void ev_enqueue(HOST_ENTRY  *h)
     i = ev_last;
     while(1) {
         i_prev = i->ev_prev;
-        if(i_prev == NULL || 
+        if(i_prev == NULL ||
            h->ev_time.tv_sec > i_prev->ev_time.tv_sec ||
            (h->ev_time.tv_sec == i_prev->ev_time.tv_sec &&
             h->ev_time.tv_usec >= i_prev->ev_time.tv_usec))
@@ -2668,7 +2668,7 @@ void usage(int is_error)
     fprintf(out, "   -A         show targets by address\n" );
     fprintf(out, "   -b n       amount of ping data to send, in bytes (default %d)\n", DEFAULT_PING_DATA_SIZE);
     fprintf(out, "   -B f       set exponential backoff factor to f\n" );
-    fprintf(out, "   -c n       count of pings to send to each target (default %d)\n", count );  
+    fprintf(out, "   -c n       count of pings to send to each target (default %d)\n", count );
     fprintf(out, "   -C n       same as -c, report results in verbose format\n" );
     fprintf(out, "   -D         print timestamp before each output line\n" );
     fprintf(out, "   -e         show elapsed time on return packets\n" );

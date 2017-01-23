@@ -35,6 +35,6 @@ addons:
       name: "schweikert/fping"
       description: "Build submitted via Travis CI"
     notification_email: david@schweikert.ch
-    build_command_prepend: "./configure; make clean"
-    build_command:   "make -j 4"
+    #build_command_prepend: "ci/build-2-install.sh"
+    build_command:   "ci/build-2-install.sh"
     branch_pattern: coverity_scan

@@ -38,15 +38,6 @@ extern "C"
 #include "fping.h"
 #include "options.h"
 
-/* if compiling for Windows, use this separate set
-  (too difficult to ifdef all the autoconf defines) */
-#ifdef WIN32
-
-/*** Windows includes ***/
-
-
-#else
-
 /*** autoconf includes ***/
 
 
@@ -90,17 +81,9 @@ extern "C"
 #include <netdb.h>
 #include <ctype.h>
 
-/* RS6000 hasn't getopt.h */
-#ifdef HAVE_GETOPT_H
 #include <getopt.h>
-#endif /* HAVE_GETOPT_H */
 
-/* RS6000 has sys/select.h */
-#ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
-#endif /* HAVE_SYS_SELECT_H */
-
-#endif /* WIN32 */
 
 /*** externals ***/
 
@@ -436,7 +419,7 @@ int main( int argc, char **argv )
             break;
 
         case 'b':
-            if (!sscanf(optarg,"%i",&ping_data_size))
+            if (!sscanf(optarg,"%u",&ping_data_size))
                 usage(1);
 
             break;

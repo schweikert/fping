@@ -122,11 +122,7 @@ extern int h_errno;
 
 #define MAX_IP_PACKET   65536   /* (theoretical) max IP packet size */
 #define SIZE_IP_HDR     20
-#ifndef IPV6
-#define SIZE_ICMP_HDR   ICMP_MINLEN     /* from ip_icmp.h */
-#else
-#define SIZE_ICMP_HDR   sizeof(FPING_ICMPHDR)
-#endif
+#define SIZE_ICMP_HDR   8     /* from ip_icmp.h */
 #define MAX_PING_DATA   ( MAX_IP_PACKET - SIZE_IP_HDR - SIZE_ICMP_HDR )
 
 /* sized so as to be like traditional ping */
@@ -321,7 +317,6 @@ char *na_cat( char *name, struct in_addr ipaddr );
 void crash_and_burn( char *message );
 void errno_crash_and_burn( char *message );
 char *get_host_by_address( struct in_addr in );
-int recvfrom_wto( int s, char *buf, int len, struct sockaddr *saddr, socklen_t *saddr_len, long timo );
 void remove_job( HOST_ENTRY *h );
 int send_ping( int s, HOST_ENTRY *h );
 long timeval_diff( struct timeval *a, struct timeval *b );
@@ -1630,7 +1625,7 @@ int receive_packet(int socket,
     }
 
 #if HAVE_SO_TIMESTAMP
-    // ancilliary data
+    /* ancilliary data */
     struct cmsghdr *cmsg;
     for(cmsg = CMSG_FIRSTHDR(&recv_msghdr);
         cmsg != NULL;
@@ -1770,12 +1765,10 @@ int decode_icmp_ipv4(
     *id  = ntohs(icp->icmp_id);
     *seq = ntohs(icp->icmp_seq);
 
-    return 1; // success
+    return 1;
 }
 
 #else
-// IPV6
-
 int decode_icmp_ipv6(
                   struct sockaddr   *response_addr,
                   size_t            response_addr_len,
@@ -1787,7 +1780,7 @@ int decode_icmp_ipv6(
 {
     struct icmp6_hdr *icp;
 
-    if( reply_buf_len < sizeof(FPING_ICMPHDR) )
+    if( reply_buf_len < sizeof(struct icmp6_hdr) )
     {
         if( verbose_flag )
         {
@@ -1893,7 +1886,7 @@ int wait_for_reply(long wait_time)
     unsigned short id;
     unsigned short seq;
 
-    // Wait for the socket to become ready
+    /* Wait for the socket to become ready */
     if(wait_time) {
         struct timeval to;
         if(wait_time < 100000) {
@@ -1910,13 +1903,13 @@ int wait_for_reply(long wait_time)
         }
     }
 
-    // Receive packet
-    result = receive_packet(s,                            // socket
-                            &recv_time,                   // reply_timestamp
-                            (struct sockaddr *) &response_addr, // reply_src_addr
-                            sizeof(response_addr),        // reply_src_addr_len
-                            buffer,                       // reply_buf
-                            sizeof(buffer)                // reply_buf_len
+    /* Receive packet */
+    result = receive_packet(s,                            /* socket */
+                            &recv_time,                   /* reply_timestamp */
+                            (struct sockaddr *) &response_addr, /* reply_src_addr */
+                            sizeof(response_addr),        /* reply_src_addr_len */
+                            buffer,                       /* reply_buf */
+                            sizeof(buffer)                /* reply_buf_len */
                         );
 
     if(result <= 0) {
@@ -1925,7 +1918,7 @@ int wait_for_reply(long wait_time)
 
     gettimeofday( &current_time, &tz );
 
-    // Process ICMP packet and retrieve id/seq
+    /* Process ICMP packet and retrieve id/seq */
 #ifndef IPV6
     if(!decode_icmp_ipv4(
 #else
@@ -2138,11 +2131,11 @@ void add_name( char *name )
         return;
     }
 
-    // NOTE: we could/should loop with res on all addresses like this:
-    // for (res = res0; res; res = res->ai_next) {
-    // We don't do it yet, however, because is is an incompatible change
-    // (need to implement a separate option for this)
-
+    /* NOTE: we could/should loop with res on all addresses like this:
+     * for (res = res0; res; res = res->ai_next) {
+     * We don't do it yet, however, because is is an incompatible change
+     * (need to implement a separate option for this)
+     */
     for (res = res0; res; res = 0) {
         /* name_flag: addr -> name lookup requested) */
         if(!name_flag) {
@@ -2455,59 +2448,6 @@ char * sprint_tm( int t )
 
     return( buf );
 }
-
-/************************************************************
-  Function: recvfrom_wto
-*************************************************************
-  Description:
-
-  receive with timeout
-  returns length of data read or -1 if timeout
-  crash_and_burn on any other errrors
-************************************************************/
-
-int recvfrom_wto( int s, char *buf, int len, struct sockaddr *saddr, socklen_t *saddr_len, long timo )
-{
-    int nfound, n;
-    struct timeval to;
-    fd_set readset, writeset;
-
-select_again:
-    if(timo < 100000) {
-        to.tv_sec = 0;
-        to.tv_usec = timo * 10;
-    }
-    else {
-        to.tv_sec = timo / 100000 ;
-        to.tv_usec = (timo % 100000) * 10 ;
-    }
-
-    FD_ZERO( &readset );
-    FD_ZERO( &writeset );
-    FD_SET( s, &readset );
-
-    nfound = select( s + 1, &readset, &writeset, NULL, &to );
-    if(nfound < 0) {
-        if(errno == EINTR) {
-            /* interrupted system call: redo the select */
-            goto select_again;
-        }
-        else {
-            errno_crash_and_burn( "select" );
-        }
-    }
-
-    if( nfound == 0 )
-        return -1;      /* timeout */
-
-    // recvfrom(int socket, void *restrict buffer, size_t length, int flags, struct sockaddr *restrict address, socklen_t *restrict address_len);
-    n = recvfrom( s, buf, len, 0, saddr, saddr_len );
-    if( n < 0 )
-        errno_crash_and_burn( "recvfrom" );
-
-    return n;
-
-} /* recvfrom_wto() */
 
 /************************************************************
 

@@ -9,10 +9,8 @@
 
 #ifndef IPV6
 #define FPING_INADDR   struct in_addr
-#define FPING_ICMPHDR  struct icmp
 #else
 #define FPING_INADDR   struct in6_addr
-#define FPING_ICMPHDR  struct icmp6_hdr
 #endif
 
 /* fping.c */

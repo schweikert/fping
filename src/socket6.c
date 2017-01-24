@@ -88,12 +88,12 @@ void init_ping_buffer_ipv6(size_t ping_data_size)
         crash_and_burn( "can't malloc ping packet" );
 }
 
-void socket_set_src_addr_ipv6(int s, FPING_INADDR src_addr)
+void socket_set_src_addr_ipv6(int s, struct in6_addr *src_addr)
 {
     struct sockaddr_in6 sa;
     memset( &sa, 0, sizeof( sa ) );
     sa.sin6_family = AF_INET6;
-    sa.sin6_addr = src_addr;
+    sa.sin6_addr = *src_addr;
 
     if ( bind( s, (struct sockaddr *)&sa, sizeof( sa ) ) < 0 )
         errno_crash_and_burn( "cannot bind source address" );

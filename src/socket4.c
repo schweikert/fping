@@ -89,12 +89,12 @@ void init_ping_buffer_ipv4(size_t ping_data_size)
         crash_and_burn( "can't malloc ping packet" );
 }
 
-void socket_set_src_addr_ipv4(int s, FPING_INADDR src_addr)
+void socket_set_src_addr_ipv4(int s, struct in_addr *src_addr)
 {
     struct sockaddr_in sa;
     memset( &sa, 0, sizeof( sa ) );
     sa.sin_family = AF_INET;
-    sa.sin_addr = src_addr;
+    sa.sin_addr = *src_addr;
 
     if ( bind( s, (struct sockaddr *)&sa, sizeof( sa ) ) < 0 )
         errno_crash_and_burn( "cannot bind source address" );

@@ -108,7 +108,7 @@ extern int h_errno;
 #define SIZE_ICMP_HDR   8     /* from ip_icmp.h */
 #define MAX_PING_DATA   ( MAX_IP_PACKET - SIZE_IP_HDR - SIZE_ICMP_HDR )
 
-#define MAX_LOOP       100000
+#define MAX_GENERATE    100000  /* maximum number of hosts that -g can generate */
 
 /* sized so as to be like traditional ping */
 #define DEFAULT_PING_DATA_SIZE  56
@@ -234,7 +234,14 @@ HOST_ENTRY *ev_last;
 
 char *prog;
 int ident;                  /* our pid */
-int s;                      /* socket */
+#ifndef IPV6
+int socket4 = 0;
+int *allsocket[2] = { &socket4, NULL };
+#else
+int socket6 = 0;
+/* FIXME UNIFY */
+int *allsocket[2] = { &socket6, NULL };
+#endif
 unsigned int debugging = 0;
 
 /* times get *100 because all times are calculated in 10 usec units, not ms */
@@ -248,11 +255,11 @@ unsigned int count = 1;
 unsigned int trials;
 unsigned int report_interval = 0;
 unsigned int ttl = 0;
-int src_addr_present = 0;
-#ifndef IPV6
+int src_addr_set = 0;
 struct in_addr src_addr;
-#else
-struct in6_addr src_addr;
+#ifdef IPV6
+int src_addr6_set = 0;
+struct in6_addr src_addr6;
 #endif
 
 /* global stats */
@@ -349,7 +356,11 @@ int main( int argc, char **argv )
 
     prog = argv[0];
 
-    s = open_ping_socket(ping_data_size);
+#ifndef IPV6
+    socket4 = open_ping_socket_ipv4(ping_data_size);
+#else
+    socket6 = open_ping_socket_ipv6(ping_data_size);
+#endif
 
     if((uid = getuid())) {
         /* drop privileges */
@@ -372,8 +383,11 @@ int main( int argc, char **argv )
 #ifdef IP_MTU_DISCOVER
             {
                 int val = IP_PMTUDISC_DO;
-                if (setsockopt(s, IPPROTO_IP, IP_MTU_DISCOVER, &val, sizeof(val))) {
-                    perror("setsockopt IP_MTU_DISCOVER");
+                int *sp;
+                for(sp=allsocket[0]; *sp; sp++) {
+                    if (setsockopt(*sp, IPPROTO_IP, IP_MTU_DISCOVER, &val, sizeof(val))) {
+                        perror("setsockopt IP_MTU_DISCOVER");
+                    }
                 }
             }
 #else
@@ -524,19 +538,30 @@ int main( int argc, char **argv )
             break;
 
         case 'S':
-#ifndef IPV6
-            if( ! inet_pton( AF_INET, optarg, &src_addr ) )
-#else
-            if( ! inet_pton( AF_INET6, optarg, &src_addr ) )
+            if(inet_pton(AF_INET, optarg, &src_addr))
+            {
+                src_addr_set = 1;
+                break;
+            }
+#ifdef IPV6
+            if(inet_pton(AF_INET6, optarg, &src_addr6))
+            {
+                src_addr6_set = 1;
+                break;
+            }
 #endif
-                usage(1);
-            src_addr_present = 1;
+            usage(1);
             break;
 
         case 'I':
 #ifdef SO_BINDTODEVICE
-            if (setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, optarg, strlen(optarg))) {
-                perror("binding to specific interface (SO_BINTODEVICE)");
+            {
+                int *sp;
+                for(sp=allsocket[0]; *sp; sp++) {
+                    if (setsockopt(*sp, SOL_SOCKET, SO_BINDTODEVICE, optarg, strlen(optarg))) {
+                        perror("binding to specific interface (SO_BINTODEVICE)");
+                    }
+                }
             }
 #else
             printf( "%s: cant bind to a particular net interface since SO_BINDTODEVICE is not supported on your os.\n", argv[0] );
@@ -550,8 +575,11 @@ int main( int argc, char **argv )
 
         case 'O':
             if (sscanf(optarg,"%i",&tos)){
-                if ( setsockopt(s, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
-                    perror("setting type of service octet IP_TOS");
+                int *sp;
+                for(sp=allsocket[0]; *sp; sp++) {
+                    if ( setsockopt(*sp, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
+                        perror("setting type of service octet IP_TOS");
+                    }
                 }
             }
             else {
@@ -703,16 +731,22 @@ int main( int argc, char **argv )
 
     /* set the TTL, if the -H option was set (otherwise ttl will be = 0) */
     if(ttl > 0) {
-        if (setsockopt(s, IPPROTO_IP, IP_TTL,  &ttl, sizeof(ttl))) {
-            perror("setting time to live");
+        int *sp;
+        for(sp=allsocket[0]; *sp; sp++) {
+            if (setsockopt(*sp, IPPROTO_IP, IP_TTL,  &ttl, sizeof(ttl))) {
+                perror("setting time to live");
+            }
         }
     }
 
 #if HAVE_SO_TIMESTAMP
     {
         int opt = 1;
-        if (setsockopt(s, SOL_SOCKET, SO_TIMESTAMP,  &opt, sizeof(opt))) {
-            perror("setting SO_TIMESTAMP option");
+        int *sp;
+        for(sp=allsocket[0]; *sp; sp++) {
+            if (setsockopt(*sp, SOL_SOCKET, SO_TIMESTAMP,  &opt, sizeof(opt))) {
+                perror("setting SO_TIMESTAMP option");
+            }
         }
     }
 #endif
@@ -792,9 +826,15 @@ int main( int argc, char **argv )
         exit(num_noaddress ? 2 : 1);
     }
 
-    if(src_addr_present) {
-        socket_set_src_addr(s, src_addr);
+#ifndef IPV6
+    if(src_addr_set) {
+        socket_set_src_addr_ipv4(socket4, &src_addr);
     }
+#else
+    if(src_addr6_set) {
+        socket_set_src_addr_ipv6(socket6, &src_addr6);
+    }
+#endif
 
     /* allocate array to hold outstanding ping requests */
 
@@ -967,7 +1007,7 @@ void add_range(char *start, char *end)
     end_long = ntohl(((struct sockaddr_in *) addr_res->ai_addr)->sin_addr.s_addr);
     freeaddrinfo(addr_res);
 
-    if(end_long > start_long + MAX_LOOP) {
+    if(end_long > start_long + MAX_GENERATE) {
             fprintf(stderr, "Error: -g parameter generates too many addresses\n");
             exit(1);
     }
@@ -1007,7 +1047,11 @@ void main_loop()
 
                 /* Send the ping */
                 /*printf("Sending ping after %d ms\n", lt/100); */
-                send_ping(s, h);
+#ifndef IPV6
+                send_ping(socket4, h);
+#else
+                send_ping(socket6, h);
+#endif
 
                 /* Check what needs to be done next */
                 if(!loop_flag && !count_flag) {
@@ -1560,17 +1604,25 @@ int send_ping( int s, HOST_ENTRY *h )
     return(ret);
 }
 
-int socket_can_read(int socket, struct timeval *timeout)
+int socket_can_read(struct timeval *timeout)
 {
     int nfound;
     fd_set readset, writeset;
+    int s;
+
+/* FIXME UNIFY */
+#ifndef IPV6
+    s = socket4;
+#else
+    s = socket6;
+#endif
 
 select_again:
     FD_ZERO( &readset );
     FD_ZERO( &writeset );
     FD_SET( s, &readset );
 
-    nfound = select(socket + 1, &readset, &writeset, NULL, timeout);
+    nfound = select(s + 1, &readset, &writeset, NULL, timeout);
     if(nfound < 0) {
         if(errno == EINTR) {
             /* interrupted system call: redo the select */
@@ -1584,7 +1636,7 @@ select_again:
     if(nfound == 0)
         return 0;
     else
-        return 1;
+        return s;
 }
 
 int receive_packet(int socket,
@@ -1867,10 +1919,11 @@ int wait_for_reply(long wait_time)
     SEQMAP_VALUE *seqmap_value;
     unsigned short id;
     unsigned short seq;
+    struct timeval to;
+    int s = 0;
 
-    /* Wait for the socket to become ready */
+    /* Wait for a socket to become ready */
     if(wait_time) {
-        struct timeval to;
         if(wait_time < 100000) {
             to.tv_sec = 0;
             to.tv_usec = wait_time * 10;
@@ -1879,10 +1932,14 @@ int wait_for_reply(long wait_time)
             to.tv_sec = wait_time / 100000 ;
             to.tv_usec = (wait_time % 100000) * 10 ;
         }
-
-        if(!socket_can_read(s, &to)) {
-            return 0;   /* timeout */
-        }
+    }
+    else {
+        to.tv_sec = 0;
+        to.tv_usec = 0;
+    }
+    s = socket_can_read(&to);
+    if(s == 0) {
+        return 0;   /* timeout */
     }
 
     /* Receive packet */

@@ -116,6 +116,8 @@ extern int h_errno;
 #endif
 #define MAX_PING_DATA (MAX_IP_PACKET - SIZE_IP_HDR - SIZE_ICMP_HDR)
 
+#define MAX_LOOP       100000
+
 /* sized so as to be like traditional ping */
 #define DEFAULT_PING_DATA_SIZE 56
 
@@ -953,6 +955,7 @@ void add_range(char* start, char* end)
         exit(1);
     }
     if (addr_res->ai_family != AF_INET) {
+        freeaddrinfo(addr_res);
         fprintf(stderr, "Error: -g works only with IPv4 addresses\n");
         exit(1);
     }
@@ -968,10 +971,17 @@ void add_range(char* start, char* end)
         exit(1);
     }
     if (addr_res->ai_family != AF_INET) {
+        freeaddrinfo(addr_res);
         fprintf(stderr, "Error: -g works only with IPv4 addresses\n");
         exit(1);
     }
-    end_long = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
+    end_long = ntohl(((struct sockaddr_in *) addr_res->ai_addr)->sin_addr.s_addr);
+    freeaddrinfo(addr_res);
+
+    if(end_long - start_long > MAX_LOOP) {
+            fprintf(stderr, "Error: -g parameter generates too many addresses\n");
+            exit(1);
+    }
 
     /* generate */
     while (start_long <= end_long) {
@@ -2051,6 +2061,8 @@ void add_name(char* name)
             break;
         }
     }
+
+    freeaddrinfo(res0);
 }
 
 /************************************************************

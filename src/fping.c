@@ -108,6 +108,8 @@ extern int h_errno;
 #define SIZE_ICMP_HDR   8     /* from ip_icmp.h */
 #define MAX_PING_DATA   ( MAX_IP_PACKET - SIZE_IP_HDR - SIZE_ICMP_HDR )
 
+#define MAX_LOOP       100000
+
 /* sized so as to be like traditional ping */
 #define DEFAULT_PING_DATA_SIZE  56
 
@@ -942,6 +944,7 @@ void add_range(char *start, char *end)
         exit(1);
     }
     if(addr_res->ai_family != AF_INET) {
+        freeaddrinfo(addr_res);
         fprintf(stderr, "Error: -g works only with IPv4 addresses\n");
         exit(1);
     }
@@ -957,10 +960,17 @@ void add_range(char *start, char *end)
         exit(1);
     }
     if(addr_res->ai_family != AF_INET) {
+        freeaddrinfo(addr_res);
         fprintf(stderr, "Error: -g works only with IPv4 addresses\n");
         exit(1);
     }
     end_long = ntohl(((struct sockaddr_in *) addr_res->ai_addr)->sin_addr.s_addr);
+    freeaddrinfo(addr_res);
+
+    if(end_long - start_long > MAX_LOOP) {
+            fprintf(stderr, "Error: -g parameter generates too many addresses\n");
+            exit(1);
+    }
 
     /* generate */
     while(start_long <= end_long) {
@@ -2133,7 +2143,7 @@ void add_name( char *name )
                     print_warning("%s: %s\n", name, gai_strerror(ret_ga));
                 }
                 num_noaddress++;
-                return;
+                continue;
             }
             printname = namebuf;
         }
@@ -2148,7 +2158,7 @@ void add_name( char *name )
                     print_warning("%s: %s\n", name, gai_strerror(ret_ga));
                 }
                 num_noaddress++;
-                return;
+                continue;
             }
 
             if(name_flag) {
@@ -2163,11 +2173,10 @@ void add_name( char *name )
         else {
             add_addr(name, printname, res->ai_addr, res->ai_addrlen);
         }
-
-        return;
     }
-} /* add_name() */
 
+    freeaddrinfo(res0);
+}
 
 /************************************************************
 

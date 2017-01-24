@@ -967,19 +967,18 @@ void add_range(char *start, char *end)
     end_long = ntohl(((struct sockaddr_in *) addr_res->ai_addr)->sin_addr.s_addr);
     freeaddrinfo(addr_res);
 
-    if(end_long - start_long > MAX_LOOP) {
+    if(end_long > start_long + MAX_LOOP) {
             fprintf(stderr, "Error: -g parameter generates too many addresses\n");
             exit(1);
     }
 
     /* generate */
-    while(start_long <= end_long) {
+    for(; start_long <= end_long; start_long++) {
         struct in_addr in_addr_tmp;
         char buffer[20];
         in_addr_tmp.s_addr = htonl(start_long);
         inet_ntop(AF_INET, &in_addr_tmp, buffer, sizeof(buffer));
         add_name(buffer);
-        start_long++;
     }
 }
 

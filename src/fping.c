@@ -104,7 +104,7 @@ extern int h_errno;
 /*** Ping packet defines ***/
 
 #define MAX_IP_PACKET   65536   /* (theoretical) max IP packet size */
-#define SIZE_IP_HDR     20
+#define SIZE_IP_HDR     40
 #define SIZE_ICMP_HDR   8     /* from ip_icmp.h */
 #define MAX_PING_DATA   ( MAX_IP_PACKET - SIZE_IP_HDR - SIZE_ICMP_HDR )
 
@@ -1724,9 +1724,6 @@ int decode_icmp_ipv4(
                             icmp_unreach_str[icp->icmp_code], addr_ascii, h->host);
                 }
 
-                if( inet_addr( h->host ) == INADDR_NONE )
-                    print_warning(" (%s)", addr_ascii);
-
                 print_warning("\n" );
                 num_othericmprcvd++;
                 break;
@@ -1744,8 +1741,6 @@ int decode_icmp_ipv4(
                     print_warning("ICMP %d from %s for ICMP Echo sent to %s",
                             icp->icmp_type, addr_ascii, h->host );
                 }
-                if( inet_addr( h->host ) == INADDR_NONE )
-                    print_warning(" (%s)", addr_ascii );
                 print_warning( "\n" );
                 num_othericmprcvd++;
                 break;
@@ -1825,9 +1820,6 @@ int decode_icmp_ipv6(
                             icmp_unreach_str[icp->icmp6_code], addr_ascii, h->host);
                 }
 
-                if( inet_addr( h->host ) == INADDR_NONE )
-                    print_warning(" (%s)", addr_ascii);
-
                 print_warning("\n" );
                 num_othericmprcvd++;
                 break;
@@ -1845,8 +1837,6 @@ int decode_icmp_ipv6(
                     print_warning("ICMP %d from %s for ICMP Echo sent to %s",
                             icp->icmp6_type, addr_ascii, h->host );
                 }
-                if( inet_addr( h->host ) == INADDR_NONE )
-                    print_warning(" (%s)", addr_ascii );
                 print_warning( "\n" );
                 num_othericmprcvd++;
                 break;

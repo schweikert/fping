@@ -234,13 +234,18 @@ HOST_ENTRY *ev_last;
 
 char *prog;
 int ident;                  /* our pid */
-#ifndef IPV6
 int socket4 = 0;
+#ifndef IPV6
+int hints_ai_family = AF_INET;
+#else
+int hints_ai_family = AF_UNSPEC;
+#endif
+
+#ifndef IPV6
 int *allsocket[2] = { &socket4, NULL };
 #else
 int socket6 = 0;
-/* FIXME UNIFY */
-int *allsocket[2] = { &socket6, NULL };
+int *allsocket[3] = { &socket4, &socket6, NULL };
 #endif
 unsigned int debugging = 0;
 
@@ -310,7 +315,7 @@ void crash_and_burn( char *message );
 void errno_crash_and_burn( char *message );
 char *get_host_by_address( struct in_addr in );
 void remove_job( HOST_ENTRY *h );
-int send_ping( int s, HOST_ENTRY *h );
+int send_ping( HOST_ENTRY *h );
 long timeval_diff( struct timeval *a, struct timeval *b );
 void timeval_add(struct timeval *a, long t_10u);
 void usage( int );
@@ -356,9 +361,8 @@ int main( int argc, char **argv )
 
     prog = argv[0];
 
-#ifndef IPV6
     socket4 = open_ping_socket_ipv4(ping_data_size);
-#else
+#ifdef IPV6
     socket6 = open_ping_socket_ipv6(ping_data_size);
 #endif
 
@@ -869,7 +873,10 @@ int main( int argc, char **argv )
 
     }/* FOR */
 
-    init_ping_buffer(ping_data_size);
+    init_ping_buffer_ipv4(ping_data_size);
+#ifdef IPV6
+    init_ping_buffer_ipv6(ping_data_size);
+#endif
 
     signal( SIGINT, finish );
 
@@ -1046,12 +1053,7 @@ void main_loop()
                 h = ev_dequeue();
 
                 /* Send the ping */
-                /*printf("Sending ping after %d ms\n", lt/100); */
-#ifndef IPV6
-                send_ping(socket4, h);
-#else
-                send_ping(socket6, h);
-#endif
+                send_ping(h);
 
                 /* Check what needs to be done next */
                 if(!loop_flag && !count_flag) {
@@ -1552,7 +1554,7 @@ void print_global_stats( void )
 
 ************************************************************/
 
-int send_ping( int s, HOST_ENTRY *h )
+int send_ping( HOST_ENTRY *h )
 {
     int n;
     int myseq;
@@ -1566,7 +1568,17 @@ int send_ping( int s, HOST_ENTRY *h )
         printf( "sending [%d] to %s\n", h->num_sent, h->host );
 #endif /* DEBUG || _DEBUG */
 
-    n = socket_sendto_ping(s, (struct sockaddr *) &h->saddr, h->saddr_len, myseq, ident);
+    if(h->saddr.ss_family == AF_INET) {
+        n = socket_sendto_ping_ipv4(socket4, (struct sockaddr *) &h->saddr, h->saddr_len, myseq, ident);
+    }
+#ifdef IPV6
+    else if(h->saddr.ss_family == AF_INET6) {
+        n = socket_sendto_ping_ipv6(socket6, (struct sockaddr *) &h->saddr, h->saddr_len, myseq, ident);
+    }
+#endif
+    else {
+        return 0;
+    }
 
     if(
         (n < 0)
@@ -1608,21 +1620,23 @@ int socket_can_read(struct timeval *timeout)
 {
     int nfound;
     fd_set readset, writeset;
-    int s;
+    int socketmax;
 
-/* FIXME UNIFY */
 #ifndef IPV6
-    s = socket4;
+    socketmax = socket4;
 #else
-    s = socket6;
+    socketmax = socket4 > socket6 ? socket4 : socket6;
 #endif
 
 select_again:
     FD_ZERO( &readset );
     FD_ZERO( &writeset );
-    FD_SET( s, &readset );
+    FD_SET( socket4, &readset );
+#ifdef IPV6
+    FD_SET( socket6, &readset );
+#endif
 
-    nfound = select(s + 1, &readset, &writeset, NULL, timeout);
+    nfound = select(socketmax + 1, &readset, &writeset, NULL, timeout);
     if(nfound < 0) {
         if(errno == EINTR) {
             /* interrupted system call: redo the select */
@@ -1633,10 +1647,18 @@ select_again:
         }
     }
 
-    if(nfound == 0)
-        return 0;
-    else
-        return s;
+    if(nfound > 0) {
+        if(FD_ISSET(socket4, &readset)) {
+            return socket4;
+        }
+#ifdef IPV6
+        if(FD_ISSET(socket6, &readset)) {
+            return socket6;
+        }
+#endif
+    }
+
+    return 0;
 }
 
 int receive_packet(int socket,
@@ -1699,7 +1721,6 @@ int receive_packet(int socket,
     return recv_len;
 }
 
-#ifndef IPV6
 int decode_icmp_ipv4(
                   struct sockaddr   *response_addr,
                   size_t            response_addr_len,
@@ -1807,7 +1828,7 @@ int decode_icmp_ipv4(
     return 1;
 }
 
-#else
+#ifdef IPV6
 int decode_icmp_ipv6(
                   struct sockaddr   *response_addr,
                   size_t            response_addr_len,
@@ -1958,19 +1979,34 @@ int wait_for_reply(long wait_time)
     gettimeofday( &current_time, &tz );
 
     /* Process ICMP packet and retrieve id/seq */
-#ifndef IPV6
-    if(!decode_icmp_ipv4(
-#else
-    if(!decode_icmp_ipv6(
+    if(response_addr.ss_family == AF_INET) {
+        if(!decode_icmp_ipv4(
+            (struct sockaddr *) &response_addr,
+            sizeof(response_addr),
+            buffer,
+            sizeof(buffer),
+            &id,
+            &seq)
+        ) {
+            return 1;
+        }
+    }
+#ifdef IPV6
+    else if(response_addr.ss_family == AF_INET6) {
+        if(!decode_icmp_ipv6(
+            (struct sockaddr *) &response_addr,
+            sizeof(response_addr),
+            buffer,
+            sizeof(buffer),
+            &id,
+            &seq)
+        ) {
+            return 1;
+        }
+    }
 #endif
-        (struct sockaddr *) &response_addr,
-        sizeof(response_addr),
-        buffer,
-        sizeof(buffer),
-        &id,
-        &seq)
-    ) {
-        return(1);
+    else {
+        return 1;
     }
 
     if( id != ident ) {
@@ -2155,13 +2191,18 @@ void add_name( char *name )
     bzero(&hints, sizeof(struct addrinfo));
     hints.ai_flags = 0;
     hints.ai_socktype = SOCK_RAW;
-#ifndef IPV6
-    hints.ai_family = AF_INET;
-    hints.ai_protocol = IPPROTO_ICMP;
-#else
-    hints.ai_family = AF_INET6;
-    hints.ai_protocol = IPPROTO_ICMPV6;
+    hints.ai_family = hints_ai_family;
+    if(hints_ai_family == AF_INET) {
+        hints.ai_protocol = IPPROTO_ICMP;
+    }
+#ifdef IPV6
+    else if(hints_ai_family == AF_INET6) {
+        hints.ai_protocol = IPPROTO_ICMPV6;
+    }
 #endif
+    else {
+        hints.ai_protocol = 0;
+    }
     ret_ga = getaddrinfo(name, NULL, &hints, &res0);
     if (ret_ga) {
         if(!quiet_flag)

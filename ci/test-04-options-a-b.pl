@@ -19,7 +19,7 @@ $cmd->stderr_is_eq("");
 
 # fping -A
 {
-my $cmd = Test::Command->new(cmd => "fping -A localhost");
+my $cmd = Test::Command->new(cmd => "fping -4 -A localhost");
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("127.0.0.1 is alive\n");
 $cmd->stderr_is_eq("");

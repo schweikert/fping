@@ -236,17 +236,14 @@ char *prog;
 int ident;                  /* our pid */
 int socket4 = 0;
 #ifndef IPV6
-int hints_ai_family = AF_INET;
-#else
-int hints_ai_family = AF_UNSPEC;
-#endif
-
-#ifndef IPV6
 int *allsocket[2] = { &socket4, NULL };
+int hints_ai_family = AF_INET;
 #else
 int socket6 = 0;
 int *allsocket[3] = { &socket4, &socket6, NULL };
+int hints_ai_family = AF_UNSPEC;
 #endif
+
 unsigned int debugging = 0;
 
 /* times get *100 because all times are calculated in 10 usec units, not ms */
@@ -379,17 +376,25 @@ int main( int argc, char **argv )
 
     /* get command line options */
 
-    while( ( c = getopt( argc, argv, "ADMNRadeghlmnoqsuvzB:C:H:I:O:Q:S:T:b:c:f:i:p:r:t:" ) ) != EOF )
+    while( ( c = getopt( argc, argv, "46ADMNRadeghlmnoqsuvzB:C:H:I:O:Q:S:T:b:c:f:i:p:r:t:" ) ) != EOF )
     {
         switch( c )
         {
+        case '4':
+            hints_ai_family = AF_INET;
+            // FIXME: check that -4 and -6 not used together
+            break;
+        case '6':
+            hints_ai_family = AF_INET6;
+            // FIXME: check that -4 and -6 not used together
+            break;
         case 'M':
 #ifdef IP_MTU_DISCOVER
             {
                 int val = IP_PMTUDISC_DO;
-                int *sp;
-                for(sp=allsocket[0]; *sp; sp++) {
-                    if (setsockopt(*sp, IPPROTO_IP, IP_MTU_DISCOVER, &val, sizeof(val))) {
+                int **sp;
+                for(sp=&allsocket[0]; *sp; sp++) {
+                    if (setsockopt(**sp, IPPROTO_IP, IP_MTU_DISCOVER, &val, sizeof(val))) {
                         perror("setsockopt IP_MTU_DISCOVER");
                     }
                 }
@@ -560,9 +565,9 @@ int main( int argc, char **argv )
         case 'I':
 #ifdef SO_BINDTODEVICE
             {
-                int *sp;
-                for(sp=allsocket[0]; *sp; sp++) {
-                    if (setsockopt(*sp, SOL_SOCKET, SO_BINDTODEVICE, optarg, strlen(optarg))) {
+                int **sp;
+                for(sp=&allsocket[0]; *sp; sp++) {
+                    if (setsockopt(**sp, SOL_SOCKET, SO_BINDTODEVICE, optarg, strlen(optarg))) {
                         perror("binding to specific interface (SO_BINTODEVICE)");
                     }
                 }
@@ -579,9 +584,9 @@ int main( int argc, char **argv )
 
         case 'O':
             if (sscanf(optarg,"%i",&tos)){
-                int *sp;
-                for(sp=allsocket[0]; *sp; sp++) {
-                    if ( setsockopt(*sp, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
+                int **sp;
+                for(sp=&allsocket[0]; *sp; sp++) {
+                    if ( setsockopt(**sp, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
                         perror("setting type of service octet IP_TOS");
                     }
                 }
@@ -735,9 +740,9 @@ int main( int argc, char **argv )
 
     /* set the TTL, if the -H option was set (otherwise ttl will be = 0) */
     if(ttl > 0) {
-        int *sp;
-        for(sp=allsocket[0]; *sp; sp++) {
-            if (setsockopt(*sp, IPPROTO_IP, IP_TTL,  &ttl, sizeof(ttl))) {
+        int **sp;
+        for(sp=&allsocket[0]; *sp; sp++) {
+            if (setsockopt(**sp, IPPROTO_IP, IP_TTL,  &ttl, sizeof(ttl))) {
                 perror("setting time to live");
             }
         }
@@ -746,9 +751,9 @@ int main( int argc, char **argv )
 #if HAVE_SO_TIMESTAMP
     {
         int opt = 1;
-        int *sp;
-        for(sp=allsocket[0]; *sp; sp++) {
-            if (setsockopt(*sp, SOL_SOCKET, SO_TIMESTAMP,  &opt, sizeof(opt))) {
+        int **sp;
+        for(sp=&allsocket[0]; *sp; sp++) {
+            if (setsockopt(**sp, SOL_SOCKET, SO_TIMESTAMP,  &opt, sizeof(opt))) {
                 perror("setting SO_TIMESTAMP option");
             }
         }

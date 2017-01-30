@@ -41,12 +41,12 @@ $cmd->stdout_is_eq("google-public-dns-a.google.com (8.8.8.8) is alive\n");
 $cmd->stderr_is_eq("");
 }
 
-# fping6 -A -n
+# fping -A -n (IPv6)
 SKIP: {
     if(system("/sbin/ifconfig | grep inet6.*Scope:Global") != 0) {
         skip 'No IPv6 on this host', 3;
     }
-    my $cmd = Test::Command->new(cmd => "fping6 -n -A 2001:4860:4860::8888");
+    my $cmd = Test::Command->new(cmd => "fping -n -A 2001:4860:4860::8888");
     $cmd->exit_is_num(0);
     $cmd->stdout_is_eq("google-public-dns-a.google.com (2001:4860:4860::8888) is alive\n");
     $cmd->stderr_is_eq("");

@@ -4,6 +4,7 @@ Unreleased
   * (feature) New option '-6' to force IPv6
   * (feature) Support kernel-timestamping of received packets (#46)
   * (feature) Simplify restrictions: only -i >= 1 and -p >= 10 are enforced now
+  * (bugfix) Fix option -m to return all IPs of a hostname
   * (bugfix) Fix option -H (ttl) for IPv6
   * (bugfix) Fix option -M (don't fragment) for IPv6
   * (bugfix) Fix option -O (ToS) for IPv6

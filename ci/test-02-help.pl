@@ -28,7 +28,7 @@ Usage: fping [options] [targets...]
    -H n       Set the IP TTL value (Time To Live hops)
    -i n       interval between sending ping packets (in millisec) (default 25)
 ${I_HELP}   -l         loop sending pings forever
-   -m         ping multiple interfaces on target host
+   -m         use all IPs of provided hostnames (e.g. IPv4 and IPv6), use with -A
    -M         set the Don't Fragment flag
    -n         show targets by name (-d is equivalent)
    -N         output compatible for netdata (-l -Q are required)

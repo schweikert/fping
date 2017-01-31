@@ -134,7 +134,8 @@ Ctrl-C; statistics about responses for each target are then displayed.
 
 =item B<-m>
 
-Send pings to each of a target host's multiple interfaces.
+Send pings to each of a target host's multiple IP addresses (use of option '-A'
+is recommended).
 
 =item B<-M>
 

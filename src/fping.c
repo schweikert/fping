@@ -2260,7 +2260,7 @@ void add_name( char *name )
      * We don't do it yet, however, because is is an incompatible change
      * (need to implement a separate option for this)
      */
-    for (res = res0; res; res = 0) {
+    for (res = res0; res; res = res->ai_next) {
         /* name_flag: addr -> name lookup requested) */
         if(!name_flag) {
             printname = name;
@@ -2271,12 +2271,15 @@ void add_name( char *name )
                               sizeof(namebuf)/sizeof(char), NULL, 0, 0);
             if (ret) {
                 if(!quiet_flag) {
-                    print_warning("%s: %s\n", name, gai_strerror(ret_ga));
+                    ret = getnameinfo(res->ai_addr, res->ai_addrlen, namebuf,
+                            sizeof(namebuf)/sizeof(char), NULL, 0, 0);
+                    print_warning("%s: can't reverse-lookup (%s)\n", name, gai_strerror(ret_ga));
                 }
-                num_noaddress++;
-                continue;
+                printname = name;
             }
-            printname = namebuf;
+            else {
+                printname = namebuf;
+            }
         }
 
         /* addr_flag: name -> addr lookup requested */
@@ -2286,9 +2289,8 @@ void add_name( char *name )
                               sizeof(addrbuf)/sizeof(char), NULL, 0, NI_NUMERICHOST);
             if (ret) {
                 if(!quiet_flag) {
-                    print_warning("%s: %s\n", name, gai_strerror(ret_ga));
+                    print_warning("%s: can't forward-lookup address (%s)\n", name, gai_strerror(ret_ga));
                 }
-                num_noaddress++;
                 continue;
             }
 
@@ -2303,6 +2305,10 @@ void add_name( char *name )
         }
         else {
             add_addr(name, printname, res->ai_addr, res->ai_addrlen);
+        }
+
+        if(!multif_flag) {
+            break;
         }
     }
 
@@ -2747,7 +2753,7 @@ void usage(int is_error)
         fprintf(out, "   -I if      bind to a particular interface\n");
 #endif
     fprintf(out, "   -l         loop sending pings forever\n" );
-    fprintf(out, "   -m         ping multiple interfaces on target host\n" );
+    fprintf(out, "   -m         use all IPs of provided hostnames (e.g. IPv4 and IPv6), use with -A\n" );
     fprintf(out, "   -M         set the Don't Fragment flag\n" );
     fprintf(out, "   -n         show targets by name (-d is equivalent)\n" );
     fprintf(out, "   -N         output compatible for netdata (-l -Q are required)\n" );

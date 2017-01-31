@@ -104,16 +104,16 @@ unsigned short calcsum(unsigned short *buffer, int length)
 {
     unsigned long sum;
 
-    // initialize sum to zero and loop until length (in words) is 0
-    for (sum=0; length>1; length-=2) // sizeof() returns number of bytes, we're interested in number of words
-	sum += *buffer++;	// add 1 word of buffer to sum and proceed to the next
+    /* initialize sum to zero and loop until length (in words) is 0 */
+    for (sum=0; length>1; length-=2) /* sizeof() returns number of bytes, we're interested in number of words */
+	sum += *buffer++;	/* add 1 word of buffer to sum and proceed to the next */
 
-    // we may have an extra byte
+    /* we may have an extra byte */
     if (length==1)
 	sum += (char)*buffer;
 
-    sum = (sum >> 16) + (sum & 0xFFFF); // add high 16 to low 16
-    sum += (sum >> 16);			// add carry
+    sum = (sum >> 16) + (sum & 0xFFFF); /* add high 16 to low 16 */
+    sum += (sum >> 16);			/* add carry */
     return ~sum;
 }
 
@@ -131,7 +131,7 @@ int socket_sendto_ping_ipv4(int s, struct sockaddr *saddr, socklen_t saddr_len, 
     icp->icmp_id = htons(icmp_id_nr);
 
     if (random_data_flag) {
-        for (n = ((void*)&icp->icmp_data - (void *)icp); n < ping_pkt_size_ipv4; ++n) {
+        for (n = ((char*)&icp->icmp_data - (char *)icp); n < ping_pkt_size_ipv4; ++n) {
             ping_buffer_ipv4[n] = random() & 0xFF;
         }
     }

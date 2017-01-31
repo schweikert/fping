@@ -405,12 +405,14 @@ int main( int argc, char **argv )
                     perror("setsockopt IP_MTU_DISCOVER");
                 }
             }
+#ifdef IPV6
             if(socket6) {
                 int val = IPV6_PMTUDISC_DO;
                 if (setsockopt(socket6, IPPROTO_IPV6, IPV6_MTU_DISCOVER, &val, sizeof(val))) {
                     perror("setsockopt IPV6_MTU_DISCOVER");
                 }
             }
+#endif
 #else
             fprintf(stderr, "%s, -M option not supported on this platform\n", prog);
             exit(1);
@@ -1728,6 +1730,7 @@ int receive_packet(int socket,
         0
     };
     int timestamp_set = 0;
+    struct cmsghdr *cmsg;
 
     recv_len = recvmsg(socket, &recv_msghdr, 0);
     if(recv_len <= 0) {
@@ -1736,7 +1739,6 @@ int receive_packet(int socket,
 
 #if HAVE_SO_TIMESTAMP
     /* ancilliary data */
-    struct cmsghdr *cmsg;
     for(cmsg = CMSG_FIRSTHDR(&recv_msghdr);
         cmsg != NULL;
         cmsg = CMSG_NXTHDR(&recv_msghdr, cmsg))

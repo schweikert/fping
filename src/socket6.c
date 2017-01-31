@@ -116,7 +116,7 @@ int socket_sendto_ping_ipv6(int s, struct sockaddr *saddr, socklen_t saddr_len, 
         }
     }
 
-    icp->icmp6_cksum = 0;   // The IPv6 stack calculates the checksum for us...
+    icp->icmp6_cksum = 0;   /* The IPv6 stack calculates the checksum for us... */
 
     n = sendto(s, icp, ping_pkt_size_ipv6, 0, saddr, saddr_len);
 

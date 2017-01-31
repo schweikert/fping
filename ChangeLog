@@ -1,6 +1,7 @@
 Unreleased
   * (feature) Support kernel-timestamping of received packets (#46)
   * (feature) Simplify restrictions: only -i >= 1 and -p >= 10 are enforced now
+  * (bugfix) Fix option -m to return all IPs of a hostname
   * (bugfix) Fix compatibility issue with AIX (#69, @blentzgh)
   * (bugfix) Fix -q not suppressing some ICMP error messages (#83)
 

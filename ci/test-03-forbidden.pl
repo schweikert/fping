@@ -24,7 +24,7 @@ END
 my $cmd5 = Test::Command->new(cmd => "fping -H 300 127.0.0.1");
 $cmd5->exit_is_num(1);
 $cmd5->stdout_is_eq("");
-$cmd5->stderr_is_eq("ttl 300 out of range\n");
+$cmd5->stderr_is_eq("fping: ttl 300 out of range\n");
 
 # fping -a -u
 my $cmd6 = Test::Command->new(cmd => "fping -a -u 127.0.0.1");

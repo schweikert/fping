@@ -1,8 +1,6 @@
 man_MANS =
 
-if IPV4
 man_MANS += fping.8
-endif
 
 if IPV6
 man_MANS += fping6.8

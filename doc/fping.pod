@@ -29,6 +29,15 @@ addresses instead of IPv4.
 
 =over 5
 
+=item B<-4>
+
+Restrict name resolution and IPs to IPv4 addresses.
+
+=item B<-6>
+
+Restrict name resolution and IPs to IPv6 addresses. If the program name is
+'fping6' (via a sym-link, for example), then '-6' is implicitly added.
+
 =item B<-a>
 
 Show systems that are alive. 

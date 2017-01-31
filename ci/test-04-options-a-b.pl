@@ -1,13 +1,56 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 14;
+use Test::Command tests => 29;
 use Test::More;
 use Time::HiRes qw(gettimeofday tv_interval);
 
+#  -4         only use IPv4 addresses
+#  -6         only use IPv6 addresses
 #  -a         show targets that are alive
 #  -A         show targets by address
 #  -b n       amount of ping data to send, in bytes (default 56)
 #  -B f       set exponential backoff factor to f
+
+# fping -4 -6
+{
+my $cmd = Test::Command->new(cmd => "fping -4 -6 127.0.0.1");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_is_eq("fping: can't specify both -4 and -6\n");
+}
+
+# fping -4
+{
+my $cmd = Test::Command->new(cmd => "fping -4 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("127.0.0.1 is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+{
+my $cmd = Test::Command->new(cmd => "fping -4 ::1");
+$cmd->exit_is_num(2);
+$cmd->stdout_is_eq("");
+$cmd->stderr_is_eq("::1: Address family for hostname not supported\n");
+}
+
+# fping -6
+SKIP: {
+    if(system("/sbin/ifconfig | grep inet6") != 0) {
+        skip 'No IPv6 on this host', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -6 ::1");
+    $cmd->exit_is_num(0);
+    $cmd->stdout_is_eq("::1 is alive\n");
+    $cmd->stderr_is_eq("");
+}
+
+{
+my $cmd = Test::Command->new(cmd => "fping -6 127.0.0.1");
+$cmd->exit_is_num(2);
+$cmd->stdout_is_eq("");
+$cmd->stderr_is_eq("127.0.0.1: Address family for hostname not supported\n");
+}
 
 # fping -a
 {

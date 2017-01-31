@@ -236,11 +236,9 @@ char *prog;
 int ident;                  /* our pid */
 int socket4 = 0;
 #ifndef IPV6
-int *allsocket[2] = { &socket4, NULL };
 int hints_ai_family = AF_INET;
 #else
 int socket6 = 0;
-int *allsocket[3] = { &socket4, &socket6, NULL };
 int hints_ai_family = AF_UNSPEC;
 #endif
 
@@ -381,26 +379,40 @@ int main( int argc, char **argv )
         switch( c )
         {
         case '4':
+            if(hints_ai_family != AF_UNSPEC) {
+                fprintf(stderr, "%s: can't specify both -4 and -6\n", prog);
+                exit(1);
+            }
             hints_ai_family = AF_INET;
-            // FIXME: check that -4 and -6 not used together
             break;
         case '6':
+#ifdef IPV6
+            if(hints_ai_family != AF_UNSPEC) {
+                fprintf(stderr, "%s: can't specify both -4 and -6\n", prog);
+                exit(1);
+            }
             hints_ai_family = AF_INET6;
-            // FIXME: check that -4 and -6 not used together
+#else
+            fprintf(stderr, "%s: IPv6 not supported by this binary\n", prog);
+            exit(1);
+#endif
             break;
         case 'M':
 #ifdef IP_MTU_DISCOVER
-            {
+            if(socket4) {
                 int val = IP_PMTUDISC_DO;
-                int **sp;
-                for(sp=&allsocket[0]; *sp; sp++) {
-                    if (setsockopt(**sp, IPPROTO_IP, IP_MTU_DISCOVER, &val, sizeof(val))) {
-                        perror("setsockopt IP_MTU_DISCOVER");
-                    }
+                if (setsockopt(socket4, IPPROTO_IP, IP_MTU_DISCOVER, &val, sizeof(val))) {
+                    perror("setsockopt IP_MTU_DISCOVER");
+                }
+            }
+            if(socket6) {
+                int val = IPV6_PMTUDISC_DO;
+                if (setsockopt(socket6, IPPROTO_IPV6, IPV6_MTU_DISCOVER, &val, sizeof(val))) {
+                    perror("setsockopt IPV6_MTU_DISCOVER");
                 }
             }
 #else
-            fprintf(stderr, "-M option not supported on this platform\n");
+            fprintf(stderr, "%s, -M option not supported on this platform\n", prog);
             exit(1);
 #endif
             break;
@@ -564,14 +576,18 @@ int main( int argc, char **argv )
 
         case 'I':
 #ifdef SO_BINDTODEVICE
-            {
-                int **sp;
-                for(sp=&allsocket[0]; *sp; sp++) {
-                    if (setsockopt(**sp, SOL_SOCKET, SO_BINDTODEVICE, optarg, strlen(optarg))) {
-                        perror("binding to specific interface (SO_BINTODEVICE)");
-                    }
+            if(socket4) {
+                if (setsockopt(socket4, SOL_SOCKET, SO_BINDTODEVICE, optarg, strlen(optarg))) {
+                    perror("binding to specific interface (SO_BINTODEVICE)");
                 }
             }
+#ifdef IPV6
+            if(socket6) {
+                if (setsockopt(socket6, SOL_SOCKET, SO_BINDTODEVICE, optarg, strlen(optarg))) {
+                    perror("binding to specific interface (SO_BINTODEVICE), IPV6");
+                }
+            }
+#endif
 #else
             printf( "%s: cant bind to a particular net interface since SO_BINDTODEVICE is not supported on your os.\n", argv[0] );
             exit(3);;
@@ -584,12 +600,18 @@ int main( int argc, char **argv )
 
         case 'O':
             if (sscanf(optarg,"%i",&tos)){
-                int **sp;
-                for(sp=&allsocket[0]; *sp; sp++) {
-                    if ( setsockopt(**sp, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
+                if(socket4) {
+                    if ( setsockopt(socket4, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
                         perror("setting type of service octet IP_TOS");
                     }
                 }
+#ifdef IPV6
+                if(socket6) {
+                    if ( setsockopt(socket6, IPPROTO_IPV6, IPV6_TCLASS, &tos, sizeof(tos))) {
+                        perror("setting type of service octet IPV6_TCLASS");
+                    }
+                }
+#endif
             }
             else {
                 usage(1);
@@ -608,23 +630,28 @@ int main( int argc, char **argv )
         }/* SWITCH */
     }/* WHILE */
 
+    /* if we are called 'fping6', assume '-6' */
+    if(strstr(argv[0], "fping6")) {
+        hints_ai_family = AF_INET6;
+    }
+
     /* validate various option settings */
 
     if (ttl > 255) {
-        fprintf(stderr, "ttl %u out of range\n", ttl);
+        fprintf(stderr, "%s: ttl %u out of range\n", prog, ttl);
         exit(1);
     }
 
     if( unreachable_flag && alive_flag )
     {
-        fprintf( stderr, "%s: specify only one of a, u\n", argv[0] );
+        fprintf( stderr, "%s: specify only one of a, u\n", prog);
         exit(1);
 
     }/* IF */
 
     if( count_flag && loop_flag )
     {
-        fprintf( stderr, "%s: specify only one of c, l\n", argv[0] );
+        fprintf( stderr, "%s: specify only one of c, l\n", prog);
         exit(1);
 
     }/* IF */
@@ -740,23 +767,35 @@ int main( int argc, char **argv )
 
     /* set the TTL, if the -H option was set (otherwise ttl will be = 0) */
     if(ttl > 0) {
-        int **sp;
-        for(sp=&allsocket[0]; *sp; sp++) {
-            if (setsockopt(**sp, IPPROTO_IP, IP_TTL,  &ttl, sizeof(ttl))) {
+        if(socket4) {
+            if (setsockopt(socket4, IPPROTO_IP, IP_TTL,  &ttl, sizeof(ttl))) {
                 perror("setting time to live");
             }
         }
+#ifdef IPV6
+        if(socket6) {
+            if (setsockopt(socket6, IPPROTO_IPV6, IPV6_UNICAST_HOPS,  &ttl, sizeof(ttl))) {
+                perror("setting time to live");
+            }
+        }
+#endif
     }
 
 #if HAVE_SO_TIMESTAMP
     {
         int opt = 1;
-        int **sp;
-        for(sp=&allsocket[0]; *sp; sp++) {
-            if (setsockopt(**sp, SOL_SOCKET, SO_TIMESTAMP,  &opt, sizeof(opt))) {
+        if(socket4) {
+            if (setsockopt(socket4, SOL_SOCKET, SO_TIMESTAMP,  &opt, sizeof(opt))) {
                 perror("setting SO_TIMESTAMP option");
             }
         }
+#ifdef IPV6
+        if(socket6) {
+            if (setsockopt(socket6, SOL_SOCKET, SO_TIMESTAMP,  &opt, sizeof(opt))) {
+                perror("setting SO_TIMESTAMP option (IPv6)");
+            }
+        }
+#endif
     }
 #endif
 
@@ -937,18 +976,18 @@ void add_cidr(char *addr)
     addr_hints.ai_flags = AI_NUMERICHOST;
     ret = getaddrinfo(addr, NULL, &addr_hints, &addr_res);
     if(ret) {
-        fprintf(stderr, "Error: can't parse address %s: %s\n", addr, gai_strerror(ret));
+        fprintf(stderr, "%s, can't parse address %s: %s\n", prog, addr, gai_strerror(ret));
         exit(1);
     }
     if(addr_res->ai_family != AF_INET) {
-        fprintf(stderr, "Error: -g works only with IPv4 addresses\n");
+        fprintf(stderr, "%s: -g works only with IPv4 addresses\n", prog);
         exit(1);
     }
     net_addr = ntohl(((struct sockaddr_in *) addr_res->ai_addr)->sin_addr.s_addr);
 
     /* check mask */
     if(mask < 1 || mask > 32) {
-        fprintf(stderr, "Error: netmask must be between 1 and 32 (is: %s)\n", mask_str);
+        fprintf(stderr, "%s: netmask must be between 1 and 32 (is: %s)\n", prog, mask_str);
         exit(1);
     }
 
@@ -992,12 +1031,12 @@ void add_range(char *start, char *end)
     addr_hints.ai_flags = AI_NUMERICHOST;
     ret = getaddrinfo(start, NULL, &addr_hints, &addr_res);
     if(ret) {
-        fprintf(stderr, "Error: can't parse address %s: %s\n", start, gai_strerror(ret));
+        fprintf(stderr, "%s: can't parse address %s: %s\n", prog, start, gai_strerror(ret));
         exit(1);
     }
     if(addr_res->ai_family != AF_INET) {
         freeaddrinfo(addr_res);
-        fprintf(stderr, "Error: -g works only with IPv4 addresses\n");
+        fprintf(stderr, "%s: -g works only with IPv4 addresses\n", prog);
         exit(1);
     }
     start_long = ntohl(((struct sockaddr_in *) addr_res->ai_addr)->sin_addr.s_addr);
@@ -1008,19 +1047,19 @@ void add_range(char *start, char *end)
     addr_hints.ai_flags = AI_NUMERICHOST;
     ret = getaddrinfo(end, NULL, &addr_hints, &addr_res);
     if(ret) {
-        fprintf(stderr, "Error: can't parse address %s: %s\n", end, gai_strerror(ret));
+        fprintf(stderr, "%s: can't parse address %s: %s\n", prog, end, gai_strerror(ret));
         exit(1);
     }
     if(addr_res->ai_family != AF_INET) {
         freeaddrinfo(addr_res);
-        fprintf(stderr, "Error: -g works only with IPv4 addresses\n");
+        fprintf(stderr, "%s: -g works only with IPv4 addresses\n", prog);
         exit(1);
     }
     end_long = ntohl(((struct sockaddr_in *) addr_res->ai_addr)->sin_addr.s_addr);
     freeaddrinfo(addr_res);
 
     if(end_long > start_long + MAX_GENERATE) {
-            fprintf(stderr, "Error: -g parameter generates too many addresses\n");
+            fprintf(stderr, "%s: -g parameter generates too many addresses\n", prog);
             exit(1);
     }
 
@@ -2688,6 +2727,8 @@ void usage(int is_error)
     FILE *out = is_error ? stderr : stdout;
     fprintf(out, "\n" );
     fprintf(out, "Usage: %s [options] [targets...]\n", prog );
+    fprintf(out, "   -4         only use IPv4 addresses\n" );
+    fprintf(out, "   -6         only use IPv6 addresses\n" );
     fprintf(out, "   -a         show targets that are alive\n" );
     fprintf(out, "   -A         show targets by address\n" );
     fprintf(out, "   -b n       amount of ping data to send, in bytes (default %d)\n", DEFAULT_PING_DATA_SIZE);

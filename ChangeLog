@@ -7,7 +7,7 @@ Unreleased
     - compile fping with --disable-ipv6 (or use a wrapper, and call 'fping -4')
     - compile fping with --enable-ipv6 and rename it to fping6 (same as 'fping -6')
 
-  * (feature) Unified 'fping' and 'fping6' into one binary
+  * (feature) Unified 'fping' and 'fping6' into one binary (#80)
   * (feature) New option '-4' to force IPv4
   * (feature) New option '-6' to force IPv6
   * (feature) Support kernel-timestamping of received packets (#46)

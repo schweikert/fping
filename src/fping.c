@@ -393,7 +393,11 @@ int main( int argc, char **argv )
 #ifdef IP_MTU_DISCOVER
             {
                 int val = IP_PMTUDISC_DO;
+#ifndef IPV6
                 if (setsockopt(s, IPPROTO_IP, IP_MTU_DISCOVER, &val, sizeof(val))) {
+#else
+                if (setsockopt(s, IPPROTO_IPV6, IPV6_MTU_DISCOVER, &val, sizeof(val))) {
+#endif
                     perror("setsockopt IP_MTU_DISCOVER");
                 }
             }
@@ -571,7 +575,11 @@ int main( int argc, char **argv )
 
         case 'O':
             if (sscanf(optarg,"%i",&tos)){
+#ifndef IPV6
                 if ( setsockopt(s, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
+#else
+                if ( setsockopt(s, IPPROTO_IPV6, IPV6_TCLASS, &tos, sizeof(tos))) {
+#endif
                     perror("setting type of service octet IP_TOS");
                 }
             }
@@ -724,7 +732,11 @@ int main( int argc, char **argv )
 
     /* set the TTL, if the -H option was set (otherwise ttl will be = 0) */
     if(ttl > 0) {
+#ifndef IPV6
         if (setsockopt(s, IPPROTO_IP, IP_TTL,  &ttl, sizeof(ttl))) {
+#else
+        if (setsockopt(s, IPPROTO_IPV6, IPV6_UNICAST_HOPS,  &ttl, sizeof(ttl))) {
+#endif
             perror("setting time to live");
         }
     }

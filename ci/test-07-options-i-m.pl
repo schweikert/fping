@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 
 use Test::Command tests => 7;
+use Test::More;
 
 #  -i n       interval between sending ping packets (in millisec) (default 25)
 #  -l         loop sending pings forever
@@ -24,11 +25,14 @@ $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 84 bytes, 0\.\d+ ms \(0.\d+ avg, 0% l
 }
 
 # fping -M
-{
-my $cmd = Test::Command->new(cmd => "fping -M 127.0.0.1");
-$cmd->exit_is_num(0);
-$cmd->stdout_is_eq("127.0.0.1 is alive\n");
-$cmd->stderr_is_eq("");
+SKIP: {
+    if($^O eq 'darwin') {
+        skip '-M option not supported on macOS', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -M 127.0.0.1");
+    $cmd->exit_is_num(0);
+    $cmd->stdout_is_eq("127.0.0.1 is alive\n");
+    $cmd->stderr_is_eq("");
 }
 
 # fping -m -> test-14-internet-hosts

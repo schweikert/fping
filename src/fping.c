@@ -2026,9 +2026,7 @@ void add_name(char* name)
                 sizeof(namebuf) / sizeof(char), NULL, 0, 0);
             if (ret) {
                 if (!quiet_flag) {
-                    ret = getnameinfo(res->ai_addr, res->ai_addrlen, namebuf,
-                        sizeof(namebuf) / sizeof(char), NULL, 0, 0);
-                    print_warning("%s: can't reverse-lookup (%s)\n", name, gai_strerror(ret_ga));
+                    print_warning("%s: can't reverse-lookup (%s)\n", name, gai_strerror(ret));
                 }
                 printname = name;
             } else {
@@ -2043,7 +2041,7 @@ void add_name(char* name)
                 sizeof(addrbuf) / sizeof(char), NULL, 0, NI_NUMERICHOST);
             if (ret) {
                 if (!quiet_flag) {
-                    print_warning("%s: can't forward-lookup address (%s)\n", name, gai_strerror(ret_ga));
+                    print_warning("%s: can't forward-lookup address (%s)\n", name, gai_strerror(ret));
                 }
                 continue;
             }

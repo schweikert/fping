@@ -37,14 +37,6 @@ extern "C" {
 #include "fping.h"
 #include "options.h"
 
-/* if compiling for Windows, use this separate set
-  (too difficult to ifdef all the autoconf defines) */
-#ifdef WIN32
-
-/*** Windows includes ***/
-
-#else
-
 /*** autoconf includes ***/
 
 #include <errno.h>
@@ -97,8 +89,6 @@ extern "C" {
 #include <sys/select.h>
 #endif /* HAVE_SYS_SELECT_H */
 
-#endif /* WIN32 */
-
 /*** externals ***/
 
 extern char* optarg;
@@ -118,7 +108,7 @@ extern int h_errno;
 /*** Ping packet defines ***/
 
 #define MAX_IP_PACKET 65536 /* (theoretical) max IP packet size */
-#define SIZE_IP_HDR 20
+#define SIZE_IP_HDR 40
 #ifndef IPV6
 #define SIZE_ICMP_HDR ICMP_MINLEN /* from ip_icmp.h */
 #else

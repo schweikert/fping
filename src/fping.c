@@ -116,7 +116,7 @@ extern int h_errno;
 #endif
 #define MAX_PING_DATA (MAX_IP_PACKET - SIZE_IP_HDR - SIZE_ICMP_HDR)
 
-#define MAX_LOOP       100000
+#define MAX_GENERATE 100000 /* maximum number of hosts that -g can generate */
 
 /* sized so as to be like traditional ping */
 #define DEFAULT_PING_DATA_SIZE 56
@@ -978,7 +978,7 @@ void add_range(char* start, char* end)
     end_long = ntohl(((struct sockaddr_in *) addr_res->ai_addr)->sin_addr.s_addr);
     freeaddrinfo(addr_res);
 
-    if(end_long - start_long > MAX_LOOP) {
+    if(end_long - start_long > MAX_GENERATE) {
             fprintf(stderr, "Error: -g parameter generates too many addresses\n");
             exit(1);
     }

@@ -17,7 +17,7 @@ SKIP: {
     if(system("/sbin/ifconfig | grep inet6") != 0) {
         skip 'No IPv6 on this host', 3;
     }
-    my $cmd = Test::Command->new(cmd => "fping6 ::1");
+    my $cmd = Test::Command->new(cmd => "fping ::1");
     $cmd->exit_is_num(0);
     $cmd->stdout_is_eq("::1 is alive\n");
     $cmd->stderr_is_eq("");

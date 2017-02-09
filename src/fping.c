@@ -79,15 +79,9 @@ extern "C" {
 #include <ctype.h>
 #include <netdb.h>
 
-/* RS6000 hasn't getopt.h */
-#ifdef HAVE_GETOPT_H
 #include <getopt.h>
-#endif /* HAVE_GETOPT_H */
 
-/* RS6000 has sys/select.h */
-#ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
-#endif /* HAVE_SYS_SELECT_H */
 
 /*** externals ***/
 
@@ -109,11 +103,7 @@ extern int h_errno;
 
 #define MAX_IP_PACKET 65536 /* (theoretical) max IP packet size */
 #define SIZE_IP_HDR 40
-#ifndef IPV6
-#define SIZE_ICMP_HDR ICMP_MINLEN /* from ip_icmp.h */
-#else
-#define SIZE_ICMP_HDR sizeof(FPING_ICMPHDR)
-#endif
+#define SIZE_ICMP_HDR 8 /* from ip_icmp.h */
 #define MAX_PING_DATA (MAX_IP_PACKET - SIZE_IP_HDR - SIZE_ICMP_HDR)
 
 #define MAX_GENERATE 100000 /* maximum number of hosts that -g can generate */
@@ -239,7 +229,14 @@ HOST_ENTRY* ev_last;
 
 char* prog;
 int ident; /* our pid */
-int s; /* socket */
+int socket4 = 0;
+#ifndef IPV6
+int hints_ai_family = AF_INET;
+#else
+int socket6 = 0;
+int hints_ai_family = AF_UNSPEC;
+#endif
+
 unsigned int debugging = 0;
 
 /* times get *100 because all times are calculated in 10 usec units, not ms */
@@ -253,11 +250,11 @@ unsigned int count = 1;
 unsigned int trials;
 unsigned int report_interval = 0;
 unsigned int ttl = 0;
-int src_addr_present = 0;
-#ifndef IPV6
+int src_addr_set = 0;
 struct in_addr src_addr;
-#else
-struct in6_addr src_addr;
+#ifdef IPV6
+int src_addr6_set = 0;
+struct in6_addr src_addr6;
 #endif
 
 /* global stats */
@@ -307,9 +304,8 @@ char* na_cat(char* name, struct in_addr ipaddr);
 void crash_and_burn(char* message);
 void errno_crash_and_burn(char* message);
 char* get_host_by_address(struct in_addr in);
-int recvfrom_wto(int s, char* buf, int len, struct sockaddr* saddr, socklen_t* saddr_len, long timo);
 void remove_job(HOST_ENTRY* h);
-int send_ping(int s, HOST_ENTRY* h);
+int send_ping(HOST_ENTRY* h);
 long timeval_diff(struct timeval* a, struct timeval* b);
 void timeval_add(struct timeval* a, long t_10u);
 void usage(int);
@@ -320,7 +316,6 @@ void print_netdata(void);
 void print_global_stats(void);
 void main_loop();
 void finish();
-int handle_random_icmp(FPING_ICMPHDR* p, struct sockaddr* addr, socklen_t addr_len);
 char* sprint_tm(int t);
 void ev_enqueue(HOST_ENTRY* h);
 HOST_ENTRY* ev_dequeue();
@@ -356,7 +351,10 @@ int main(int argc, char** argv)
 
     prog = argv[0];
 
-    s = open_ping_socket(ping_data_size);
+    socket4 = open_ping_socket_ipv4(ping_data_size);
+#ifdef IPV6
+    socket6 = open_ping_socket_ipv6(ping_data_size);
+#endif
 
     if ((uid = getuid())) {
         /* drop privileges */
@@ -371,25 +369,48 @@ int main(int argc, char** argv)
 
     /* get command line options */
 
-    while ((c = getopt(argc, argv, "ADMNRadeghlmnoqsuvzB:C:H:I:O:Q:S:T:b:c:f:i:p:r:t:")) != EOF) {
+    while ((c = getopt(argc, argv, "46ADMNRadeghlmnoqsuvzB:C:H:I:O:Q:S:T:b:c:f:i:p:r:t:")) != EOF) {
         switch (c) {
-        case 'M':
-#ifdef IP_MTU_DISCOVER
-        {
-            int val = IP_PMTUDISC_DO;
-#ifndef IPV6
-            if (setsockopt(s, IPPROTO_IP, IP_MTU_DISCOVER, &val, sizeof(val))) {
-#else
-            if (setsockopt(s, IPPROTO_IPV6, IPV6_MTU_DISCOVER, &val, sizeof(val))) {
-#endif
-                perror("setsockopt IP_MTU_DISCOVER");
+        case '4':
+            if (hints_ai_family != AF_UNSPEC) {
+                fprintf(stderr, "%s: can't specify both -4 and -6\n", prog);
+                exit(1);
             }
-        }
+            hints_ai_family = AF_INET;
+            break;
+        case '6':
+#ifdef IPV6
+            if (hints_ai_family != AF_UNSPEC) {
+                fprintf(stderr, "%s: can't specify both -4 and -6\n", prog);
+                exit(1);
+            }
+            hints_ai_family = AF_INET6;
 #else
-            fprintf(stderr, "-M option not supported on this platform\n");
+            fprintf(stderr, "%s: IPv6 not supported by this binary\n", prog);
             exit(1);
 #endif
-        break;
+            break;
+        case 'M':
+#ifdef IP_MTU_DISCOVER
+            if (socket4) {
+                int val = IP_PMTUDISC_DO;
+                if (setsockopt(socket4, IPPROTO_IP, IP_MTU_DISCOVER, &val, sizeof(val))) {
+                    perror("setsockopt IP_MTU_DISCOVER");
+                }
+            }
+#ifdef IPV6
+            if (socket6) {
+                int val = IPV6_PMTUDISC_DO;
+                if (setsockopt(socket6, IPPROTO_IPV6, IPV6_MTU_DISCOVER, &val, sizeof(val))) {
+                    perror("setsockopt IPV6_MTU_DISCOVER");
+                }
+            }
+#endif
+#else
+            fprintf(stderr, "%s, -M option not supported on this platform\n", prog);
+            exit(1);
+#endif
+            break;
 
         case 't':
             if (!(timeout = (unsigned int)atoi(optarg) * 100))
@@ -533,20 +554,33 @@ int main(int argc, char** argv)
             break;
 
         case 'S':
-#ifndef IPV6
-            if (!inet_pton(AF_INET, optarg, &src_addr))
-#else
-            if (!inet_pton(AF_INET6, optarg, &src_addr))
+            if (inet_pton(AF_INET, optarg, &src_addr)) {
+                src_addr_set = 1;
+                break;
+            }
+#ifdef IPV6
+            if (inet_pton(AF_INET6, optarg, &src_addr6)) {
+                src_addr6_set = 1;
+                break;
+            }
 #endif
-                usage(1);
-            src_addr_present = 1;
+            usage(1);
             break;
 
         case 'I':
 #ifdef SO_BINDTODEVICE
-            if (setsockopt(s, SOL_SOCKET, SO_BINDTODEVICE, optarg, strlen(optarg))) {
-                perror("binding to specific interface (SO_BINTODEVICE)");
+            if (socket4) {
+                if (setsockopt(socket4, SOL_SOCKET, SO_BINDTODEVICE, optarg, strlen(optarg))) {
+                    perror("binding to specific interface (SO_BINTODEVICE)");
+                }
             }
+#ifdef IPV6
+            if (socket6) {
+                if (setsockopt(socket6, SOL_SOCKET, SO_BINDTODEVICE, optarg, strlen(optarg))) {
+                    perror("binding to specific interface (SO_BINTODEVICE), IPV6");
+                }
+            }
+#endif
 #else
             printf("%s: cant bind to a particular net interface since SO_BINDTODEVICE is not supported on your os.\n", argv[0]);
             exit(3);
@@ -560,13 +594,18 @@ int main(int argc, char** argv)
 
         case 'O':
             if (sscanf(optarg, "%i", &tos)) {
-#ifndef IPV6
-                if (setsockopt(s, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
-#else
-                if (setsockopt(s, IPPROTO_IPV6, IPV6_TCLASS, &tos, sizeof(tos))) {
-#endif
-                    perror("setting type of service octet IP_TOS");
+                if (socket4) {
+                    if (setsockopt(socket4, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
+                        perror("setting type of service octet IP_TOS");
+                    }
                 }
+#ifdef IPV6
+                if (socket6) {
+                    if (setsockopt(socket6, IPPROTO_IPV6, IPV6_TCLASS, &tos, sizeof(tos))) {
+                        perror("setting type of service octet IPV6_TCLASS");
+                    }
+                }
+#endif
             } else {
                 usage(1);
             }
@@ -580,24 +619,29 @@ int main(int argc, char** argv)
             fprintf(stderr, "see 'fping -h' for usage information\n");
             exit(1);
             break;
+
         }
+    }
+
+    /* if we are called 'fping6', assume '-6' */
+    if (strstr(argv[0], "fping6")) {
+        hints_ai_family = AF_INET6;
     }
 
     /* validate various option settings */
 
     if (ttl > 255) {
-        fprintf(stderr, "ttl %u out of range\n", ttl);
+        fprintf(stderr, "%s: ttl %u out of range\n", prog, ttl);
         exit(1);
     }
 
     if (unreachable_flag && alive_flag) {
-        fprintf(stderr, "%s: specify only one of a, u\n", argv[0]);
+        fprintf(stderr, "%s: specify only one of a, u\n", prog);
         exit(1);
-
     }
 
     if (count_flag && loop_flag) {
-        fprintf(stderr, "%s: specify only one of c, l\n", argv[0]);
+        fprintf(stderr, "%s: specify only one of c, l\n", prog);
         exit(1);
     }
 
@@ -714,21 +758,35 @@ int main(int argc, char** argv)
 
     /* set the TTL, if the -H option was set (otherwise ttl will be = 0) */
     if (ttl > 0) {
-#ifndef IPV6
-        if (setsockopt(s, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl))) {
-#else
-        if (setsockopt(s, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &ttl, sizeof(ttl))) {
-#endif
-            perror("setting time to live");
+        if (socket4) {
+            if (setsockopt(socket4, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl))) {
+                perror("setting time to live");
+            }
         }
+#ifdef IPV6
+        if (socket6) {
+            if (setsockopt(socket6, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &ttl, sizeof(ttl))) {
+                perror("setting time to live");
+            }
+        }
+#endif
     }
 
 #if HAVE_SO_TIMESTAMP
     {
         int opt = 1;
-        if (setsockopt(s, SOL_SOCKET, SO_TIMESTAMP, &opt, sizeof(opt))) {
-            perror("setting SO_TIMESTAMP option");
+        if (socket4) {
+            if (setsockopt(socket4, SOL_SOCKET, SO_TIMESTAMP, &opt, sizeof(opt))) {
+                perror("setting SO_TIMESTAMP option");
+            }
         }
+#ifdef IPV6
+        if (socket6) {
+            if (setsockopt(socket6, SOL_SOCKET, SO_TIMESTAMP, &opt, sizeof(opt))) {
+                perror("setting SO_TIMESTAMP option (IPv6)");
+            }
+        }
+#endif
     }
 #endif
 
@@ -798,9 +856,15 @@ int main(int argc, char** argv)
         exit(num_noaddress ? 2 : 1);
     }
 
-    if (src_addr_present) {
-        socket_set_src_addr(s, src_addr);
+#ifndef IPV6
+    if (src_addr_set) {
+        socket_set_src_addr_ipv4(socket4, &src_addr);
     }
+#else
+    if (src_addr6_set) {
+        socket_set_src_addr_ipv6(socket6, &src_addr6);
+    }
+#endif
 
     /* allocate array to hold outstanding ping requests */
 
@@ -832,7 +896,10 @@ int main(int argc, char** argv)
         cursor = cursor->ev_next;
     }
 
-    init_ping_buffer(ping_data_size);
+    init_ping_buffer_ipv4(ping_data_size);
+#ifdef IPV6
+    init_ping_buffer_ipv6(ping_data_size);
+#endif
 
     signal(SIGINT, finish);
 
@@ -888,18 +955,18 @@ void add_cidr(char* addr)
     addr_hints.ai_flags = AI_NUMERICHOST;
     ret = getaddrinfo(addr, NULL, &addr_hints, &addr_res);
     if (ret) {
-        fprintf(stderr, "Error: can't parse address %s: %s\n", addr, gai_strerror(ret));
+        fprintf(stderr, "%s, can't parse address %s: %s\n", prog, addr, gai_strerror(ret));
         exit(1);
     }
     if (addr_res->ai_family != AF_INET) {
-        fprintf(stderr, "Error: -g works only with IPv4 addresses\n");
+        fprintf(stderr, "%s: -g works only with IPv4 addresses\n", prog);
         exit(1);
     }
     net_addr = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
 
     /* check mask */
     if (mask < 1 || mask > 32) {
-        fprintf(stderr, "Error: netmask must be between 1 and 32 (is: %s)\n", mask_str);
+        fprintf(stderr, "%s: netmask must be between 1 and 32 (is: %s)\n", prog, mask_str);
         exit(1);
     }
 
@@ -942,12 +1009,12 @@ void add_range(char* start, char* end)
     addr_hints.ai_flags = AI_NUMERICHOST;
     ret = getaddrinfo(start, NULL, &addr_hints, &addr_res);
     if (ret) {
-        fprintf(stderr, "Error: can't parse address %s: %s\n", start, gai_strerror(ret));
+        fprintf(stderr, "%s: can't parse address %s: %s\n", prog, start, gai_strerror(ret));
         exit(1);
     }
     if (addr_res->ai_family != AF_INET) {
         freeaddrinfo(addr_res);
-        fprintf(stderr, "Error: -g works only with IPv4 addresses\n");
+        fprintf(stderr, "%s: -g works only with IPv4 addresses\n", prog);
         exit(1);
     }
     start_long = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
@@ -958,15 +1025,15 @@ void add_range(char* start, char* end)
     addr_hints.ai_flags = AI_NUMERICHOST;
     ret = getaddrinfo(end, NULL, &addr_hints, &addr_res);
     if (ret) {
-        fprintf(stderr, "Error: can't parse address %s: %s\n", end, gai_strerror(ret));
+        fprintf(stderr, "%s: can't parse address %s: %s\n", prog, end, gai_strerror(ret));
         exit(1);
     }
     if (addr_res->ai_family != AF_INET) {
         freeaddrinfo(addr_res);
-        fprintf(stderr, "Error: -g works only with IPv4 addresses\n");
+        fprintf(stderr, "%s: -g works only with IPv4 addresses\n", prog);
         exit(1);
     }
-    end_long = ntohl(((struct sockaddr_in *) addr_res->ai_addr)->sin_addr.s_addr);
+    end_long = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
     freeaddrinfo(addr_res);
 
     if (end_long > start_long + MAX_GENERATE) {
@@ -1005,8 +1072,7 @@ void main_loop()
                 h = ev_dequeue();
 
                 /* Send the ping */
-                /*printf("Sending ping after %d ms\n", lt/100); */
-                send_ping(s, h);
+                send_ping(h);
 
                 /* Check what needs to be done next */
                 if (!loop_flag && !count_flag) {
@@ -1055,7 +1121,7 @@ void main_loop()
             }
         }
 
-        wait_for_reply:
+    wait_for_reply:
 
         /* When can we expect the next event? */
         if (ev_first) {
@@ -1177,7 +1243,6 @@ void finish()
         exit(1);
 
     exit(0);
-
 }
 
 /************************************************************
@@ -1477,7 +1542,7 @@ void print_global_stats(void)
 
 ************************************************************/
 
-int send_ping(int s, HOST_ENTRY* h)
+int send_ping(HOST_ENTRY* h)
 {
     int n;
     int myseq;
@@ -1491,7 +1556,17 @@ int send_ping(int s, HOST_ENTRY* h)
         printf("sending [%d] to %s\n", h->num_sent, h->host);
 #endif /* DEBUG || _DEBUG */
 
-    n = socket_sendto_ping(s, (struct sockaddr*)&h->saddr, h->saddr_len, myseq, ident);
+    if (h->saddr.ss_family == AF_INET) {
+        n = socket_sendto_ping_ipv4(socket4, (struct sockaddr*)&h->saddr, h->saddr_len, myseq, ident);
+    }
+#ifdef IPV6
+    else if (h->saddr.ss_family == AF_INET6) {
+        n = socket_sendto_ping_ipv6(socket6, (struct sockaddr*)&h->saddr, h->saddr_len, myseq, ident);
+    }
+#endif
+    else {
+        return 0;
+    }
 
     if (
         (n < 0)
@@ -1528,17 +1603,27 @@ int send_ping(int s, HOST_ENTRY* h)
     return (ret);
 }
 
-int wait_on_socket(int socket, struct timeval* timeout)
+int socket_can_read(struct timeval* timeout)
 {
     int nfound;
     fd_set readset, writeset;
+    int socketmax;
+
+#ifndef IPV6
+    socketmax = socket4;
+#else
+    socketmax = socket4 > socket6 ? socket4 : socket6;
+#endif
 
 select_again:
     FD_ZERO(&readset);
     FD_ZERO(&writeset);
-    FD_SET(s, &readset);
+    FD_SET(socket4, &readset);
+#ifdef IPV6
+    FD_SET(socket6, &readset);
+#endif
 
-    nfound = select(socket + 1, &readset, &writeset, NULL, timeout);
+    nfound = select(socketmax + 1, &readset, &writeset, NULL, timeout);
     if (nfound < 0) {
         if (errno == EINTR) {
             /* interrupted system call: redo the select */
@@ -1548,14 +1633,21 @@ select_again:
         }
     }
 
-    if (nfound == 0)
-        return 0;
-    else
-        return 1;
+    if (nfound > 0) {
+        if (FD_ISSET(socket4, &readset)) {
+            return socket4;
+        }
+#ifdef IPV6
+        if (FD_ISSET(socket6, &readset)) {
+            return socket6;
+        }
+#endif
+    }
+
+    return 0;
 }
 
-int receive_reply(int socket,
-    struct timeval* timeout,
+int receive_packet(int socket,
     struct timeval* reply_timestamp,
     struct sockaddr* reply_src_addr,
     size_t reply_src_addr_len,
@@ -1563,99 +1655,42 @@ int receive_reply(int socket,
     size_t reply_buf_len)
 {
     int recv_len;
+    static unsigned char msg_control[40];
+    struct iovec msg_iov = {
+        reply_buf,
+        reply_buf_len
+    };
+    struct msghdr recv_msghdr = {
+        reply_src_addr,
+        reply_src_addr_len,
+        &msg_iov,
+        1,
+        &msg_control,
+        sizeof(msg_control),
+        0
+    };
+    int timestamp_set = 0;
+    struct cmsghdr* cmsg;
 
-    /* Wait for input on the socket */
-    if (timeout && !wait_on_socket(socket, timeout)) {
-        return 0; /* timeout */
+    recv_len = recvmsg(socket, &recv_msghdr, 0);
+    if (recv_len <= 0) {
+        return 0;
     }
-
-    /* Receive data */
-    {
-        static unsigned char msg_control[40];
-        struct iovec msg_iov = {
-            reply_buf,
-            reply_buf_len
-        };
-        struct msghdr recv_msghdr = {
-            reply_src_addr,
-            reply_src_addr_len,
-            &msg_iov,
-            1,
-            &msg_control,
-            sizeof(msg_control),
-            0
-        };
-        int timestamp_set = 0;
-
-        recv_len = recvmsg(socket, &recv_msghdr, 0);
-        if (recv_len <= 0) {
-            return 0;
-        }
 
 #if HAVE_SO_TIMESTAMP
-        /* ancilliary data */
-        struct cmsghdr* cmsg;
-        for (cmsg = CMSG_FIRSTHDR(&recv_msghdr);
-             cmsg != NULL;
-             cmsg = CMSG_NXTHDR(&recv_msghdr, cmsg)) {
-            if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_TIMESTAMP) {
-                memcpy(reply_timestamp, CMSG_DATA(cmsg), sizeof(*reply_timestamp));
-                timestamp_set = 1;
-            }
-        }
-#endif
-
-        if (!timestamp_set) {
-            gettimeofday(reply_timestamp, NULL);
+    /* ancilliary data */
+    for (cmsg = CMSG_FIRSTHDR(&recv_msghdr);
+         cmsg != NULL;
+         cmsg = CMSG_NXTHDR(&recv_msghdr, cmsg)) {
+        if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_TIMESTAMP) {
+            memcpy(reply_timestamp, CMSG_DATA(cmsg), sizeof(*reply_timestamp));
+            timestamp_set = 1;
         }
     }
-
-    return recv_len;
-}
-
-int wait_for_reply(long wait_time)
-{
-    int result;
-    static char buffer[4096];
-    struct sockaddr_storage response_addr;
-    int hlen = 0;
-    FPING_ICMPHDR* icp;
-    int n, avg;
-    HOST_ENTRY* h;
-    long this_reply;
-    int this_count;
-    struct timeval* sent_time;
-    struct timeval recv_time;
-    SEQMAP_VALUE* seqmap_value;
-#ifndef IPV6
-    struct ip* ip;
 #endif
 
-    /* receive packet */
-    {
-        struct timeval to;
-        if (wait_time) {
-            if (wait_time < 100000) {
-                to.tv_sec = 0;
-                to.tv_usec = wait_time * 10;
-            } else {
-                to.tv_sec = wait_time / 100000;
-                to.tv_usec = (wait_time % 100000) * 10;
-            }
-        }
-
-        result = receive_reply(s, /* socket */
-            wait_time ? &to : NULL, /* timeout */
-            &recv_time, /* reply_timestamp */
-            (struct sockaddr*)&response_addr, /* reply_src_addr */
-            sizeof(response_addr), /* reply_src_addr_len */
-            buffer, /* reply_buf */
-            sizeof(buffer) /* reply_buf_len */
-            );
-
-        if (result <= 0) {
-            return 0;
-        }
+    if (!timestamp_set) {
+        gettimeofday(reply_timestamp, NULL);
     }
 
 #if defined(DEBUG) || defined(_DEBUG)
@@ -1665,8 +1700,21 @@ int wait_for_reply(long wait_time)
     }
 #endif
 
-#ifndef IPV6
-    ip = (struct ip*)buffer;
+    return recv_len;
+}
+
+int decode_icmp_ipv4(
+    struct sockaddr* response_addr,
+    size_t response_addr_len,
+    char* reply_buf,
+    size_t reply_buf_len,
+    unsigned short* id,
+    unsigned short* seq)
+{
+    struct ip* ip = (struct ip*)reply_buf;
+    struct icmp* icp;
+    int hlen = 0;
+
 #if defined(__alpha__) && __STDC__ && !defined(__GLIBC__)
     /* The alpha headers are decidedly broken.
      * Using an ANSI compiler, it provides ip_vhl instead of ip_hl and
@@ -1675,47 +1723,263 @@ int wait_for_reply(long wait_time)
     hlen = (ip->ip_vhl & 0x0F) << 2;
 #else
     hlen = ip->ip_hl << 2;
-#endif /* defined(__alpha__) && __STDC__ */
-    if (result < hlen + ICMP_MINLEN)
-#else
-    if (result < sizeof(FPING_ICMPHDR))
 #endif
-    {
+
+    if (reply_buf_len < hlen + ICMP_MINLEN) {
+        /* too short */
         if (verbose_flag) {
             char buf[INET6_ADDRSTRLEN];
             getnameinfo((struct sockaddr*)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
-            printf("received packet too short for ICMP (%d bytes from %s)\n", result, buf);
+            printf("received packet too short for ICMP (%d bytes from %s)\n", (int)reply_buf_len, buf);
         }
-        return (1); /* too short */
+        return 0;
+    }
+
+    icp = (struct icmp*)(reply_buf + hlen);
+
+    if (icp->icmp_type != ICMP_ECHOREPLY) {
+        /* Handle other ICMP packets */
+        struct icmp* sent_icmp;
+        SEQMAP_VALUE* seqmap_value;
+        char addr_ascii[INET6_ADDRSTRLEN];
+        HOST_ENTRY* h;
+
+        /* reply icmp packet (hlen + ICMP_MINLEN) followed by "sent packet" (ip + icmp headers) */
+        if (reply_buf_len < hlen + ICMP_MINLEN + sizeof(struct ip) + ICMP_MINLEN) {
+            /* discard ICMP message if we can't tell that it was caused by us (i.e. if the "sent packet" is not included). */
+            return 0;
+        }
+
+        sent_icmp = (struct icmp*)(reply_buf + hlen + ICMP_MINLEN + sizeof(struct ip));
+
+        if (sent_icmp->icmp_type != ICMP_ECHO || ntohs(sent_icmp->icmp_id) != ident) {
+            /* not caused by us */
+            return 0;
+        }
+
+        seqmap_value = seqmap_fetch(ntohs(sent_icmp->icmp_seq), &current_time);
+        if (seqmap_value == NULL) {
+            return 0;
+        }
+
+        getnameinfo(response_addr, response_addr_len, addr_ascii, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+
+        switch (icp->icmp_type) {
+        case ICMP_UNREACH:
+            h = table[seqmap_value->host_nr];
+            if (icp->icmp_code > ICMP_UNREACH_MAXTYPE) {
+                print_warning("ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
+                    addr_ascii, h->host);
+            } else {
+                print_warning("%s from %s for ICMP Echo sent to %s",
+                    icmp_unreach_str[icp->icmp_code], addr_ascii, h->host);
+            }
+
+            print_warning("\n");
+            num_othericmprcvd++;
+            break;
+
+        case ICMP_SOURCEQUENCH:
+        case ICMP_REDIRECT:
+        case ICMP_TIMXCEED:
+        case ICMP_PARAMPROB:
+            h = table[seqmap_value->host_nr];
+            if (icp->icmp_type <= ICMP_TYPE_STR_MAX) {
+                print_warning("%s from %s for ICMP Echo sent to %s",
+                    icmp_type_str[icp->icmp_type], addr_ascii, h->host);
+            } else {
+                print_warning("ICMP %d from %s for ICMP Echo sent to %s",
+                    icp->icmp_type, addr_ascii, h->host);
+            }
+            print_warning("\n");
+            num_othericmprcvd++;
+            break;
+        }
+
+        return 0;
+    }
+
+    *id = ntohs(icp->icmp_id);
+    *seq = ntohs(icp->icmp_seq);
+
+    return 1;
+}
+
+#ifdef IPV6
+int decode_icmp_ipv6(
+    struct sockaddr* response_addr,
+    size_t response_addr_len,
+    char* reply_buf,
+    size_t reply_buf_len,
+    unsigned short* id,
+    unsigned short* seq)
+{
+    struct icmp6_hdr* icp;
+
+    if (reply_buf_len < sizeof(struct icmp6_hdr)) {
+        if (verbose_flag) {
+            char buf[INET6_ADDRSTRLEN];
+            getnameinfo((struct sockaddr*)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+            printf("received packet too short for ICMP (%d bytes from %s)\n", (int)reply_buf_len, buf);
+        }
+        return 0; /* too short */
+    }
+
+    icp = (struct icmp6_hdr*)reply_buf;
+
+    if (icp->icmp6_type != ICMP6_ECHO_REPLY) {
+        /* Handle other ICMP packets */
+        struct icmp6_hdr* sent_icmp;
+        SEQMAP_VALUE* seqmap_value;
+        char addr_ascii[INET6_ADDRSTRLEN];
+        HOST_ENTRY* h;
+
+        /* reply icmp packet (ICMP_MINLEN) followed by "sent packet" (ip + icmp headers) */
+        if (reply_buf_len < ICMP_MINLEN + sizeof(struct ip) + ICMP_MINLEN) {
+            /* discard ICMP message if we can't tell that it was caused by us (i.e. if the "sent packet" is not included). */
+            return 0;
+        }
+
+        sent_icmp = (struct icmp6_hdr*)(reply_buf + sizeof(struct icmp6_hdr) + sizeof(struct ip));
+
+        if (sent_icmp->icmp6_type != ICMP_ECHO || ntohs(sent_icmp->icmp6_id) != ident) {
+            /* not caused by us */
+            return 0;
+        }
+
+        seqmap_value = seqmap_fetch(ntohs(sent_icmp->icmp6_seq), &current_time);
+        if (seqmap_value == NULL) {
+            return 0;
+        }
+
+        getnameinfo(response_addr, response_addr_len, addr_ascii, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+
+        switch (icp->icmp6_type) {
+        case ICMP_UNREACH:
+            h = table[seqmap_value->host_nr];
+            if (icp->icmp6_code > ICMP_UNREACH_MAXTYPE) {
+                print_warning("ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
+                    addr_ascii, h->host);
+            } else {
+                print_warning("%s from %s for ICMP Echo sent to %s",
+                    icmp_unreach_str[icp->icmp6_code], addr_ascii, h->host);
+            }
+
+            print_warning("\n");
+            num_othericmprcvd++;
+            break;
+
+        case ICMP_SOURCEQUENCH:
+        case ICMP_REDIRECT:
+        case ICMP_TIMXCEED:
+        case ICMP_PARAMPROB:
+            h = table[seqmap_value->host_nr];
+            if (icp->icmp6_type <= ICMP_TYPE_STR_MAX) {
+                print_warning("%s from %s for ICMP Echo sent to %s",
+                    icmp_type_str[icp->icmp6_type], addr_ascii, h->host);
+            } else {
+                print_warning("ICMP %d from %s for ICMP Echo sent to %s",
+                    icp->icmp6_type, addr_ascii, h->host);
+            }
+            print_warning("\n");
+            num_othericmprcvd++;
+            break;
+        }
+
+        return 0;
+    }
+
+    *id = ntohs(icp->icmp6_id);
+    *seq = ntohs(icp->icmp6_seq);
+
+    return 1;
+}
+#endif
+
+int wait_for_reply(long wait_time)
+{
+    int result;
+    static char buffer[4096];
+    struct sockaddr_storage response_addr;
+    int n, avg;
+    HOST_ENTRY* h;
+    long this_reply;
+    int this_count;
+    struct timeval* sent_time;
+    struct timeval recv_time;
+    SEQMAP_VALUE* seqmap_value;
+    unsigned short id;
+    unsigned short seq;
+    struct timeval to;
+    int s = 0;
+
+    /* Wait for a socket to become ready */
+    if (wait_time) {
+        if (wait_time < 100000) {
+            to.tv_sec = 0;
+            to.tv_usec = wait_time * 10;
+        } else {
+            to.tv_sec = wait_time / 100000;
+            to.tv_usec = (wait_time % 100000) * 10;
+        }
+    } else {
+        to.tv_sec = 0;
+        to.tv_usec = 0;
+    }
+    s = socket_can_read(&to);
+    if (s == 0) {
+        return 0; /* timeout */
+    }
+
+    /* Receive packet */
+    result = receive_packet(s, /* socket */
+        &recv_time, /* reply_timestamp */
+        (struct sockaddr*)&response_addr, /* reply_src_addr */
+        sizeof(response_addr), /* reply_src_addr_len */
+        buffer, /* reply_buf */
+        sizeof(buffer) /* reply_buf_len */
+        );
+
+    if (result <= 0) {
+        return 0;
     }
 
     gettimeofday(&current_time, &tz);
 
-    icp = (FPING_ICMPHDR*)(buffer + hlen);
-#ifndef IPV6
-    if (icp->icmp_type != ICMP_ECHOREPLY)
-#else
-    if (icp->icmp6_type != ICMP6_ECHO_REPLY)
+    /* Process ICMP packet and retrieve id/seq */
+    if (response_addr.ss_family == AF_INET) {
+        if (!decode_icmp_ipv4(
+                (struct sockaddr*)&response_addr,
+                sizeof(response_addr),
+                buffer,
+                sizeof(buffer),
+                &id,
+                &seq)) {
+            return 1;
+        }
+    }
+#ifdef IPV6
+    else if (response_addr.ss_family == AF_INET6) {
+        if (!decode_icmp_ipv6(
+                (struct sockaddr*)&response_addr,
+                sizeof(response_addr),
+                buffer,
+                sizeof(buffer),
+                &id,
+                &seq)) {
+            return 1;
+        }
+    }
 #endif
-    {
-        /* handle some problem */
-        if (handle_random_icmp(icp, (struct sockaddr*)&response_addr, sizeof(response_addr)))
-            num_othericmprcvd++;
+    else {
         return 1;
     }
 
-#ifndef IPV6
-    if (ntohs(icp->icmp_id) != ident)
-#else
-    if (ntohs(icp->icmp6_id) != ident)
-#endif
+    if (id != ident) {
         return 1; /* packet received, but not the one we are looking for! */
+    }
 
-#ifndef IPV6
-    seqmap_value = seqmap_fetch(ntohs(icp->icmp_seq), &current_time);
-#else
-    seqmap_value = seqmap_fetch(ntohs(icp->icmp6_seq), &current_time);
-#endif
+    seqmap_value = seqmap_fetch(seq, &current_time);
     if (seqmap_value == NULL) {
         return 1;
     }
@@ -1857,107 +2121,6 @@ int wait_for_reply(long wait_time)
 
 /************************************************************
 
-  Function: handle_random_icmp
-
-************************************************************/
-
-int handle_random_icmp(FPING_ICMPHDR* p, struct sockaddr* addr, socklen_t addr_len)
-{
-    FPING_ICMPHDR* sent_icmp;
-    unsigned char* c;
-    HOST_ENTRY* h;
-    SEQMAP_VALUE* seqmap_value;
-    char addr_ascii[INET6_ADDRSTRLEN];
-    unsigned short icmp_type;
-    unsigned short icmp_code;
-    unsigned short sent_icmp_type;
-    unsigned short sent_icmp_seq;
-    unsigned short sent_icmp_id;
-
-    getnameinfo((struct sockaddr*)addr, addr_len, addr_ascii, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
-
-    c = (unsigned char*)p;
-
-    sent_icmp = (FPING_ICMPHDR*)(c + 28);
-#ifndef IPV6
-    icmp_type = p->icmp_type;
-    icmp_code = p->icmp_code;
-    sent_icmp_type = sent_icmp->icmp_type;
-    sent_icmp_seq = sent_icmp->icmp_seq;
-    sent_icmp_id = sent_icmp->icmp_id;
-#else
-    icmp_type = p->icmp6_type;
-    icmp_code = p->icmp6_code;
-    sent_icmp_type = sent_icmp->icmp6_type;
-    sent_icmp_seq = sent_icmp->icmp6_seq;
-    sent_icmp_id = sent_icmp->icmp6_id;
-#endif
-
-    switch (icmp_type) {
-    case ICMP_UNREACH:
-        seqmap_value = seqmap_fetch(ntohs(sent_icmp_seq), &current_time);
-
-        if ((sent_icmp_type == ICMP_ECHO) && (ntohs(sent_icmp_id) == ident) && (seqmap_value != NULL)) {
-            /* this is a response to a ping we sent */
-            h = table[ntohs(sent_icmp_seq) % num_hosts];
-
-            if (icmp_code > ICMP_UNREACH_MAXTYPE) {
-                print_warning("ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
-                    addr_ascii, h->host);
-            } else {
-                print_warning("%s from %s for ICMP Echo sent to %s",
-                    icmp_unreach_str[icmp_code], addr_ascii, h->host);
-            }
-
-            if (inet_addr(h->host) == INADDR_NONE)
-                print_warning(" (%s)", addr_ascii);
-
-            print_warning("\n");
-        }
-        return 1;
-
-    case ICMP_SOURCEQUENCH:
-    case ICMP_REDIRECT:
-    case ICMP_TIMXCEED:
-    case ICMP_PARAMPROB:
-        seqmap_value = seqmap_fetch(ntohs(sent_icmp_seq), &current_time);
-
-        if ((sent_icmp_type == ICMP_ECHO) && (ntohs(sent_icmp_id) == ident) && (seqmap_value != NULL)) {
-            /* this is a response to a ping we sent */
-            h = table[ntohs(sent_icmp_seq) % num_hosts];
-            if (icmp_type <= ICMP_TYPE_STR_MAX) {
-                print_warning("%s from %s for ICMP Echo sent to %s",
-                    icmp_type_str[icmp_type], addr_ascii, h->host);
-            } else {
-                print_warning("ICMP %d from %s for ICMP Echo sent to %s",
-                    icmp_type, addr_ascii, h->host);
-            }
-
-            if (inet_addr(h->host) == INADDR_NONE)
-                print_warning(" (%s)", addr_ascii);
-
-            print_warning("\n");
-
-        }
-
-        return 2;
-
-    /* no way to tell whether any of these are sent due to our ping */
-    /* or not (shouldn't be, of course), so just discard            */
-    case ICMP_TSTAMP:
-    case ICMP_TSTAMPREPLY:
-    case ICMP_IREQ:
-    case ICMP_IREQREPLY:
-    case ICMP_MASKREQ:
-    case ICMP_MASKREPLY:
-    default:
-        return 0;
-
-    }
-}
-
-/************************************************************
-
   Function: add_name
 
 *************************************************************
@@ -1984,13 +2147,18 @@ void add_name(char* name)
     bzero(&hints, sizeof(struct addrinfo));
     hints.ai_flags = 0;
     hints.ai_socktype = SOCK_RAW;
-#ifndef IPV6
-    hints.ai_family = AF_INET;
-    hints.ai_protocol = IPPROTO_ICMP;
-#else
-    hints.ai_family = AF_INET6;
-    hints.ai_protocol = IPPROTO_ICMPV6;
+    hints.ai_family = hints_ai_family;
+    if (hints_ai_family == AF_INET) {
+        hints.ai_protocol = IPPROTO_ICMP;
+    }
+#ifdef IPV6
+    else if (hints_ai_family == AF_INET6) {
+        hints.ai_protocol = IPPROTO_ICMPV6;
+    }
 #endif
+    else {
+        hints.ai_protocol = 0;
+    }
     ret_ga = getaddrinfo(name, NULL, &hints, &res0);
     if (ret_ga) {
         if (!quiet_flag)
@@ -2107,7 +2275,6 @@ void add_addr(char* name, char* host, struct sockaddr* ipaddr, socklen_t ipaddr_
             i[n] = RESP_UNUSED;
 
         p->resp_times = i;
-
     }
 
 #if defined(DEBUG) || defined(_DEBUG)
@@ -2121,7 +2288,6 @@ void add_addr(char* name, char* host, struct sockaddr* ipaddr, socklen_t ipaddr_
             i[n] = RESP_UNUSED;
 
         p->sent_times = i;
-
     }
 #endif /* DEBUG || _DEBUG */
 
@@ -2302,56 +2468,6 @@ char* sprint_tm(int t)
 }
 
 /************************************************************
-  Function: recvfrom_wto
-*************************************************************
-  Description:
-
-  receive with timeout
-  returns length of data read or -1 if timeout
-  crash_and_burn on any other errrors
-************************************************************/
-
-int recvfrom_wto(int s, char* buf, int len, struct sockaddr* saddr, socklen_t* saddr_len, long timo)
-{
-    int nfound, n;
-    struct timeval to;
-    fd_set readset, writeset;
-
-select_again:
-    if (timo < 100000) {
-        to.tv_sec = 0;
-        to.tv_usec = timo * 10;
-    } else {
-        to.tv_sec = timo / 100000;
-        to.tv_usec = (timo % 100000) * 10;
-    }
-
-    FD_ZERO(&readset);
-    FD_ZERO(&writeset);
-    FD_SET(s, &readset);
-
-    nfound = select(s + 1, &readset, &writeset, NULL, &to);
-    if (nfound < 0) {
-        if (errno == EINTR) {
-            /* interrupted system call: redo the select */
-            goto select_again;
-        } else {
-            errno_crash_and_burn("select");
-        }
-    }
-
-    if (nfound == 0)
-        return -1; /* timeout */
-
-    /* recvfrom(int socket, void *restrict buffer, size_t length, int flags, struct sockaddr *restrict address, socklen_t *restrict address_len); */
-    n = recvfrom(s, buf, len, 0, saddr, saddr_len);
-    if (n < 0)
-        errno_crash_and_burn("recvfrom");
-
-    return n;
-}
-
-/************************************************************
 
   Function: addr_cmp
 
@@ -2495,6 +2611,8 @@ void usage(int is_error)
     FILE* out = is_error ? stderr : stdout;
     fprintf(out, "\n");
     fprintf(out, "Usage: %s [options] [targets...]\n", prog);
+    fprintf(out, "   -4         only use IPv4 addresses\n");
+    fprintf(out, "   -6         only use IPv6 addresses\n");
     fprintf(out, "   -a         show targets that are alive\n");
     fprintf(out, "   -A         show targets by address\n");
     fprintf(out, "   -b n       amount of ping data to send, in bytes (default %d)\n", DEFAULT_PING_DATA_SIZE);

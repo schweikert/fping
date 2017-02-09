@@ -44,8 +44,8 @@
 #include <string.h>
 #include <sys/socket.h>
 
-char* ping_buffer = 0;
-size_t ping_pkt_size;
+char* ping_buffer_ipv4 = 0;
+size_t ping_pkt_size_ipv4;
 
 int open_ping_socket_ipv4()
 {
@@ -83,18 +83,18 @@ int open_ping_socket_ipv4()
 void init_ping_buffer_ipv4(size_t ping_data_size)
 {
     /* allocate ping buffer */
-    ping_pkt_size = ping_data_size + ICMP_MINLEN;
-    ping_buffer = (char*)calloc(1, ping_pkt_size);
-    if (!ping_buffer)
+    ping_pkt_size_ipv4 = ping_data_size + ICMP_MINLEN;
+    ping_buffer_ipv4 = (char*)calloc(1, ping_pkt_size_ipv4);
+    if (!ping_buffer_ipv4)
         crash_and_burn("can't malloc ping packet");
 }
 
-void socket_set_src_addr_ipv4(int s, FPING_INADDR src_addr)
+void socket_set_src_addr_ipv4(int s, struct in_addr* src_addr)
 {
     struct sockaddr_in sa;
     memset(&sa, 0, sizeof(sa));
     sa.sin_family = AF_INET;
-    sa.sin_addr = src_addr;
+    sa.sin_addr = *src_addr;
 
     if (bind(s, (struct sockaddr*)&sa, sizeof(sa)) < 0)
         errno_crash_and_burn("cannot bind source address");
@@ -122,7 +122,7 @@ int socket_sendto_ping_ipv4(int s, struct sockaddr* saddr, socklen_t saddr_len, 
     struct icmp* icp;
     int n;
 
-    icp = (struct icmp*)ping_buffer;
+    icp = (struct icmp*)ping_buffer_ipv4;
 
     icp->icmp_type = ICMP_ECHO;
     icp->icmp_code = 0;
@@ -131,14 +131,14 @@ int socket_sendto_ping_ipv4(int s, struct sockaddr* saddr, socklen_t saddr_len, 
     icp->icmp_id = htons(icmp_id_nr);
 
     if (random_data_flag) {
-        for (n = ((void*)&icp->icmp_data - (void*)icp); n < ping_pkt_size; ++n) {
-            ping_buffer[n] = random() & 0xFF;
+        for (n = ((char*)&icp->icmp_data - (char*)icp); n < ping_pkt_size_ipv4; ++n) {
+            ping_buffer_ipv4[n] = random() & 0xFF;
         }
     }
 
-    icp->icmp_cksum = calcsum((unsigned short*)icp, ping_pkt_size);
+    icp->icmp_cksum = calcsum((unsigned short*)icp, ping_pkt_size_ipv4);
 
-    n = sendto(s, icp, ping_pkt_size, 0, saddr, saddr_len);
+    n = sendto(s, icp, ping_pkt_size_ipv4, 0, saddr, saddr_len);
 
     return n;
 }

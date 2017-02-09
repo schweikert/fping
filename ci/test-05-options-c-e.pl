@@ -9,7 +9,7 @@ use Test::Command tests => 12;
 
 # fping -c n
 {
-my $cmd = Test::Command->new(cmd => "fping -c 2 -p 100 localhost 127.0.0.1");
+my $cmd = Test::Command->new(cmd => "fping -4 -c 2 -p 100 localhost 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr{localhost : \[0\], 84 bytes, 0\.\d+ ms \(0\.\d+ avg, 0% loss\)
 127\.0\.0\.1 : \[0\], 84 bytes, 0\.\d+ ms \(0.\d+ avg, 0% loss\)
@@ -24,7 +24,7 @@ $cmd->stderr_like(qr{localhost : xmt/rcv/%loss = 2/2/0%, min/avg/max = 0\.\d+/0\
 
 # fping -C n
 {
-my $cmd = Test::Command->new(cmd => "fping -C 2 -p 100 localhost 127.0.0.1");
+my $cmd = Test::Command->new(cmd => "fping -4 -C 2 -p 100 localhost 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr{localhost : \[0\], 84 bytes, 0\.\d+ ms \(0\.\d+ avg, 0% loss\)
 127\.0\.0\.1 : \[0\], 84 bytes, 0\.\d+ ms \(0.\d+ avg, 0% loss\)

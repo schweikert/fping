@@ -66,7 +66,7 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping -g 127.0.0.2/33");
 $cmd->exit_is_num(1);
 $cmd->stdout_is_eq("");
-$cmd->stderr_is_eq("Error: netmask must be between 1 and 32 (is: 33)\n");
+$cmd->stderr_is_eq("fping: netmask must be between 1 and 32 (is: 33)\n");
 }
 
 # fping -H

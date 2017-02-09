@@ -43,8 +43,8 @@
 
 #include <netinet/icmp6.h>
 
-char* ping_buffer = 0;
-size_t ping_pkt_size;
+char* ping_buffer_ipv6 = 0;
+size_t ping_pkt_size_ipv6;
 
 int open_ping_socket_ipv6()
 {
@@ -82,18 +82,18 @@ int open_ping_socket_ipv6()
 void init_ping_buffer_ipv6(size_t ping_data_size)
 {
     /* allocate ping buffer */
-    ping_pkt_size = ping_data_size + sizeof(struct icmp6_hdr);
-    ping_buffer = (char*)calloc(1, ping_pkt_size);
-    if (!ping_buffer)
+    ping_pkt_size_ipv6 = ping_data_size + sizeof(struct icmp6_hdr);
+    ping_buffer_ipv6 = (char*)calloc(1, ping_pkt_size_ipv6);
+    if (!ping_buffer_ipv6)
         crash_and_burn("can't malloc ping packet");
 }
 
-void socket_set_src_addr_ipv6(int s, FPING_INADDR src_addr)
+void socket_set_src_addr_ipv6(int s, struct in6_addr* src_addr)
 {
     struct sockaddr_in6 sa;
     memset(&sa, 0, sizeof(sa));
     sa.sin6_family = AF_INET6;
-    sa.sin6_addr = src_addr;
+    sa.sin6_addr = *src_addr;
 
     if (bind(s, (struct sockaddr*)&sa, sizeof(sa)) < 0)
         errno_crash_and_burn("cannot bind source address");
@@ -104,21 +104,21 @@ int socket_sendto_ping_ipv6(int s, struct sockaddr* saddr, socklen_t saddr_len, 
     struct icmp6_hdr* icp;
     int n;
 
-    icp = (struct icmp6_hdr*)ping_buffer;
+    icp = (struct icmp6_hdr*)ping_buffer_ipv6;
     icp->icmp6_type = ICMP6_ECHO_REQUEST;
     icp->icmp6_code = 0;
     icp->icmp6_seq = htons(icmp_seq_nr);
     icp->icmp6_id = htons(icmp_id_nr);
 
     if (random_data_flag) {
-        for (n = sizeof(struct icmp6_hdr); n < ping_pkt_size; ++n) {
-            ping_buffer[n] = random() & 0xFF;
+        for (n = sizeof(struct icmp6_hdr); n < ping_pkt_size_ipv6; ++n) {
+            ping_buffer_ipv6[n] = random() & 0xFF;
         }
     }
 
     icp->icmp6_cksum = 0; /* The IPv6 stack calculates the checksum for us... */
 
-    n = sendto(s, icp, ping_pkt_size, 0, saddr, saddr_len);
+    n = sendto(s, icp, ping_pkt_size_ipv6, 0, saddr, saddr_len);
 
     return n;
 }

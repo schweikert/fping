@@ -1,3 +1,24 @@
+Unreleased
+  * INCOMPATIBILITY WARNING:
+    fping and fping6 are now unified into one binary. This means that, for
+    example, doing 'fping www.google.com' is going to ping the IPv6 IP of
+    www.google.com on IPv6-enabled hosts.
+
+    If you need exact compatibility with old versions, you can configure,
+    compile, and install fping twice: once for ipv4 and once for ipv6:
+    - ./configure --disable-ipv6; make clean install
+    - ./configure --disable-ipv4 --program-suffix=6; make clean install
+
+    Or, alternatively, you could write two wrappers 'fping' and 'fping6',
+    that set respectively the options '-4' and '-6' when calling the original
+    fping binary.
+
+  * Version 4.0
+  * (feature) Unified 'fping' and 'fping6' into one binary (#80)
+  * (feature) --enable-ipv6 is now default
+  * (feature) New option '-4' to force IPv4
+  * (feature) New option '-6' to force IPv6
+
 2017-02-09  David Schweikert  <david@schweikert.ch>
   * Version 3.16
   * (feature) Support kernel-timestamping of received packets (#46)

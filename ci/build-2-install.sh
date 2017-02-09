@@ -13,7 +13,6 @@ autoreconf -i
 make CFLAGS="-g -fprofile-arcs -ftest-coverage"
 ## setcap currently doesn't work anymore on travis-ci
 #sudo setcap cap_net_raw+ep src/fping
-#sudo setcap cap_net_raw+ep src/fping6
 ## setcap debugging:
 #pwd
 #df -k .
@@ -26,6 +25,4 @@ make CFLAGS="-g -fprofile-arcs -ftest-coverage"
 
 # use setuid, since setcap is not available
 sudo chown root src/fping
-sudo chown root src/fping6
 sudo chmod u+s  src/fping
-sudo chmod u+s  src/fping6

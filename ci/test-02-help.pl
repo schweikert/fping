@@ -11,6 +11,8 @@ $cmd1->exit_is_num(0);
 $cmd1->stdout_is_eq(<<END);
 
 Usage: fping [options] [targets...]
+   -4         only use IPv4 addresses
+   -6         only use IPv6 addresses
    -a         show targets that are alive
    -A         show targets by address
    -b n       amount of ping data to send, in bytes (default 56)

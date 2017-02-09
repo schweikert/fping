@@ -72,9 +72,12 @@ $cmd->stderr_is_eq("");
 }
 
 # fping -M
-{
-my $cmd = Test::Command->new(cmd => "fping -r 0 -b 10000 -M 8.8.8.8");
-$cmd->exit_is_num(1);
-$cmd->stdout_is_eq("8.8.8.8 is unreachable\n");
-$cmd->stderr_is_eq("8.8.8.8: error while sending ping: Message too long\n");
+SKIP: {
+    if($^O eq 'darwin') {
+        skip '-M option not supported on macOS', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -r 0 -b 10000 -M 8.8.8.8");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("8.8.8.8 is unreachable\n");
+    $cmd->stderr_is_eq("8.8.8.8: error while sending ping: Message too long\n");
 }

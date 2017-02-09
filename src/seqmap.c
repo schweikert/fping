@@ -1,4 +1,4 @@
-/* 
+/*
  * fping: fast-ping, file-ping, favorite-ping, funky-ping
  *
  *   Ping a list of target hosts in a round robin fashion.
@@ -22,8 +22,8 @@
  * duplicated in all such forms and that any documentation,
  * advertising materials, and other materials related to such
  * distribution and use acknowledge that the software was developed
- * by Stanford University.  The name of the University may not be used 
- * to endorse or promote products derived from this software without 
+ * by Stanford University.  The name of the University may not be used
+ * to endorse or promote products derived from this software without
  * specific prior written permission.
  * THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
@@ -36,11 +36,11 @@
  */
 
 #include "seqmap.h"
-#include "options.h"
 #include "limits.h"
+#include "options.h"
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 /* description of the data structure used:
  *
@@ -51,26 +51,26 @@
  * - when entering a value, we check that the current entry is expired
  */
 
-static SEQMAP_VALUE *seqmap_map = NULL;
+static SEQMAP_VALUE* seqmap_map = NULL;
 static unsigned int seqmap_next_id = 0;
 
-#define SEQMAP_TIMEOUT_IN_S       10
+#define SEQMAP_TIMEOUT_IN_S 10
 #define SEQMAP_UNASSIGNED_HOST_NR UINT_MAX
 
 void seqmap_init()
 {
     seqmap_map = calloc(SEQMAP_MAXSEQ, sizeof(SEQMAP_VALUE));
-    if(seqmap_map == NULL) {
+    if (seqmap_map == NULL) {
         perror("malloc error (can't allocate seqmap_map)");
     }
 }
 
-unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, struct timeval *now)
+unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, struct timeval* now)
 {
     unsigned int current_id;
-    SEQMAP_VALUE *next_value;
+    SEQMAP_VALUE* next_value;
 
-    if(!seqmap_map) {
+    if (!seqmap_map) {
         fprintf(stderr, "fping internal error: seqmap not initialized.\n");
         exit(4);
     }
@@ -78,7 +78,7 @@ unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, struct ti
     /* check if expired (note that unused seqmap values will have fields set to
      * 0, so will be seen as expired */
     next_value = &seqmap_map[seqmap_next_id];
-    if(next_value->ping_ts.tv_sec != 0 && (now->tv_sec - next_value->ping_ts.tv_sec) < SEQMAP_TIMEOUT_IN_S) {
+    if (next_value->ping_ts.tv_sec != 0 && (now->tv_sec - next_value->ping_ts.tv_sec) < SEQMAP_TIMEOUT_IN_S) {
         fprintf(stderr, "fping error: not enough sequence numbers available! (expire_timeout=%d, host_nr=%d, ping_count=%d, seqmap_next_id=%d)\n",
             SEQMAP_TIMEOUT_IN_S, host_nr, ping_count, seqmap_next_id);
         exit(4);
@@ -97,18 +97,18 @@ unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, struct ti
     return current_id;
 }
 
-SEQMAP_VALUE *seqmap_fetch(unsigned int id, struct timeval *now)
+SEQMAP_VALUE* seqmap_fetch(unsigned int id, struct timeval* now)
 {
-    SEQMAP_VALUE *value;
+    SEQMAP_VALUE* value;
 
-    if(id > SEQMAP_MAXSEQ) {
+    if (id > SEQMAP_MAXSEQ) {
         return NULL;
     }
 
     value = &seqmap_map[id];
 
     /* verify that value is not expired */
-    if(now->tv_sec - value->ping_ts.tv_sec >= SEQMAP_TIMEOUT_IN_S) {
+    if (now->tv_sec - value->ping_ts.tv_sec >= SEQMAP_TIMEOUT_IN_S) {
         return NULL;
     }
 

@@ -31,7 +31,7 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping -4 ::1");
 $cmd->exit_is_num(2);
 $cmd->stdout_is_eq("");
-$cmd->stderr_is_eq("::1: Address family for hostname not supported\n");
+$cmd->stderr_like(qr{^::1:.*(not supported|not known)});
 }
 
 # fping -6
@@ -49,7 +49,7 @@ SKIP: {
 my $cmd = Test::Command->new(cmd => "fping -6 127.0.0.1");
 $cmd->exit_is_num(2);
 $cmd->stdout_is_eq("");
-$cmd->stderr_is_eq("127.0.0.1: Address family for hostname not supported\n");
+$cmd->stderr_like(qr{127\.0\.0\.1:.*(not supported|not known)});
 }
 
 # fping -a

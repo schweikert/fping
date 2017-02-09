@@ -9,7 +9,7 @@ if(!gethostbyname("www.google.com")) {
     exit 0;
 }
 
-plan tests => 21;
+plan tests => 18;
 
 my $re_num = qr{\d+(?:\.\d+)?};
 
@@ -53,15 +53,15 @@ SKIP: {
 }
 
 # fping -m
-SKIP: {
-    if(system("/sbin/ifconfig | grep inet6.*Scope:Global") != 0) {
-        skip 'No IPv6 on this host', 3;
-    }
-    my $cmd = Test::Command->new(cmd => "fping -A -m google-public-dns-a.google.com");
-    $cmd->exit_is_num(0);
-    $cmd->stdout_is_eq("2001:4860:4860::8888 is alive\n8.8.8.8 is alive\n");
-    $cmd->stderr_is_eq("");
-}
+#SKIP: {
+#    if(system("/sbin/ifconfig | grep inet6.*Scope:Global") != 0) {
+#        skip 'No IPv6 on this host', 3;
+#    }
+#    my $cmd = Test::Command->new(cmd => "fping -A -m google-public-dns-a.google.com");
+#    $cmd->exit_is_num(0);
+#    $cmd->stdout_is_eq("2001:4860:4860::8888 is alive\n8.8.8.8 is alive\n");
+#    $cmd->stderr_is_eq("");
+#}
 
 # fping -n
 {

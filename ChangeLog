@@ -1,6 +1,6 @@
 Unreleased
   * INCOMPATIBILITY WARNING:
-    fping and fping6 are now unified into one binary. This means that, for
+    fping and fping6 are now unified into one binary. It means that, for
     example, doing 'fping www.google.com' is going to ping the IPv6 IP of
     www.google.com on IPv6-enabled hosts.
 

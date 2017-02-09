@@ -1,4 +1,4 @@
-Unreleased
+2017-02-09
   * Version 3.16
   * (feature) Support kernel-timestamping of received packets (#46)
   * (feature) Simplify restrictions: only -i >= 1 and -p >= 10 are enforced now

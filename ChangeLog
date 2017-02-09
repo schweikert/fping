@@ -18,9 +18,10 @@ Unreleased
   * (feature) --enable-ipv6 is now default
   * (feature) New option '-4' to force IPv4
   * (feature) New option '-6' to force IPv6
-  * A C99 compiler is now required
-  * Option parsing with optparse (https://github.com/skeeto/optparse)
-    Thanks Christopher Wellons!
+  * (bugfix)  Fix compatibility issue with GNU Hurd
+  * (other)   A C99 compiler is now required
+  * (other)   Option parsing with optparse (https://github.com/skeeto/optparse)
+              Thanks Christopher Wellons!
 
 2017-02-09  David Schweikert  <david@schweikert.ch>
   * Version 3.16

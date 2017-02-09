@@ -597,7 +597,7 @@ int main(int argc, char** argv)
                         perror("setting type of service octet IP_TOS");
                     }
                 }
-#ifdef IPV6
+#if defined(IPV6) && defined(IPV6_TCLASS)
                 if (socket6) {
                     if (setsockopt(socket6, IPPROTO_IPV6, IPV6_TCLASS, &tos, sizeof(tos))) {
                         perror("setting type of service octet IPV6_TCLASS");

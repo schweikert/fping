@@ -36,8 +36,7 @@ extern "C" {
 
 #include "fping.h"
 #include "options.h"
-
-/*** autoconf includes ***/
+#include "optparse.h"
 
 #include <errno.h>
 #include <signal.h>
@@ -78,8 +77,6 @@ extern "C" {
 #include <arpa/inet.h>
 #include <ctype.h>
 #include <netdb.h>
-
-#include <getopt.h>
 
 #include <sys/select.h>
 
@@ -348,8 +345,7 @@ int main(int argc, char** argv)
     uid_t uid;
     int tos = 0;
     HOST_ENTRY* cursor;
-
-    prog = argv[0];
+    struct optparse optparse_state;
 
     socket4 = open_ping_socket_ipv4(ping_data_size);
 #ifdef IPV6
@@ -362,6 +358,8 @@ int main(int argc, char** argv)
             perror("cannot setuid");
     }
 
+    prog = argv[0];
+    optparse_init(&optparse_state, argv);
     ident = getpid() & 0xFFFF;
     verbose_flag = 1;
     backoff_flag = 1;
@@ -369,7 +367,7 @@ int main(int argc, char** argv)
 
     /* get command line options */
 
-    while ((c = getopt(argc, argv, "46ADMNRadeghlmnoqsuvzB:C:H:I:O:Q:S:T:b:c:f:i:p:r:t:")) != EOF) {
+    while ((c = optparse(&optparse_state, "46ADMNRadeghlmnoqsuvzB:C:H:I:O:Q:S:T:b:c:f:i:p:r:t:")) != EOF) {
         switch (c) {
         case '4':
             if (hints_ai_family != AF_UNSPEC) {
@@ -413,37 +411,37 @@ int main(int argc, char** argv)
             break;
 
         case 't':
-            if (!(timeout = (unsigned int)atoi(optarg) * 100))
+            if (!(timeout = (unsigned int)atoi(optparse_state.optarg) * 100))
                 usage(1);
 
             break;
 
         case 'r':
-            if (!sscanf(optarg, "%u", &retry))
+            if (!sscanf(optparse_state.optarg, "%u", &retry))
                 usage(1);
             break;
 
         case 'i':
-            if (!sscanf(optarg, "%u", &interval))
+            if (!sscanf(optparse_state.optarg, "%u", &interval))
                 usage(1);
             interval *= 100;
             break;
 
         case 'p':
-            if (!(perhost_interval = (unsigned int)atoi(optarg) * 100))
+            if (!(perhost_interval = (unsigned int)atoi(optparse_state.optarg) * 100))
                 usage(1);
 
             break;
 
         case 'c':
-            if (!(count = (unsigned int)atoi(optarg)))
+            if (!(count = (unsigned int)atoi(optparse_state.optarg)))
                 usage(1);
 
             count_flag = 1;
             break;
 
         case 'C':
-            if (!(count = (unsigned int)atoi(optarg)))
+            if (!(count = (unsigned int)atoi(optparse_state.optarg)))
                 usage(1);
 
             count_flag = 1;
@@ -451,7 +449,7 @@ int main(int argc, char** argv)
             break;
 
         case 'b':
-            if (!sscanf(optarg, "%u", &ping_data_size))
+            if (!sscanf(optparse_state.optarg, "%u", &ping_data_size))
                 usage(1);
 
             break;
@@ -468,7 +466,7 @@ int main(int argc, char** argv)
         case 'Q':
             verbose_flag = 0;
             quiet_flag = 1;
-            if (!(report_interval = (unsigned int)atoi(optarg) * 100000))
+            if (!(report_interval = (unsigned int)atoi(optparse_state.optarg) * 100000))
                 usage(1);
 
             break;
@@ -495,7 +493,7 @@ int main(int argc, char** argv)
             break;
 
         case 'B':
-            if (!(backoff = atof(optarg)))
+            if (!(backoff = atof(optparse_state.optarg)))
                 usage(1);
 
             break;
@@ -526,25 +524,25 @@ int main(int argc, char** argv)
             break;
 
         case 'H':
-            if (!(ttl = (u_int)atoi(optarg)))
+            if (!(ttl = (u_int)atoi(optparse_state.optarg)))
                 usage(1);
             break;
 
 #if defined(DEBUG) || defined(_DEBUG)
         case 'z':
-            if (!(debugging = (unsigned int)atoi(optarg)))
+            if (!(debugging = (unsigned int)atoi(optparse_state.optarg)))
                 usage(1);
 
             break;
 #endif /* DEBUG || _DEBUG */
 
         case 'v':
-            printf("%s: Version %s\n", argv[0], VERSION);
-            printf("%s: comments to %s\n", argv[0], EMAIL);
+            printf("%s: Version %s\n", prog, VERSION);
+            printf("%s: comments to %s\n", prog, EMAIL);
             exit(0);
 
         case 'f':
-            filename = optarg;
+            filename = optparse_state.optarg;
             break;
 
         case 'g':
@@ -554,12 +552,12 @@ int main(int argc, char** argv)
             break;
 
         case 'S':
-            if (inet_pton(AF_INET, optarg, &src_addr)) {
+            if (inet_pton(AF_INET, optparse_state.optarg, &src_addr)) {
                 src_addr_set = 1;
                 break;
             }
 #ifdef IPV6
-            if (inet_pton(AF_INET6, optarg, &src_addr6)) {
+            if (inet_pton(AF_INET6, optparse_state.optarg, &src_addr6)) {
                 src_addr6_set = 1;
                 break;
             }
@@ -570,19 +568,19 @@ int main(int argc, char** argv)
         case 'I':
 #ifdef SO_BINDTODEVICE
             if (socket4) {
-                if (setsockopt(socket4, SOL_SOCKET, SO_BINDTODEVICE, optarg, strlen(optarg))) {
+                if (setsockopt(socket4, SOL_SOCKET, SO_BINDTODEVICE, optparse_state.optarg, strlen(optparse_state.optarg))) {
                     perror("binding to specific interface (SO_BINTODEVICE)");
                 }
             }
 #ifdef IPV6
             if (socket6) {
-                if (setsockopt(socket6, SOL_SOCKET, SO_BINDTODEVICE, optarg, strlen(optarg))) {
+                if (setsockopt(socket6, SOL_SOCKET, SO_BINDTODEVICE, optparse_state.optarg, strlen(optparse_state.optarg))) {
                     perror("binding to specific interface (SO_BINTODEVICE), IPV6");
                 }
             }
 #endif
 #else
-            printf("%s: cant bind to a particular net interface since SO_BINDTODEVICE is not supported on your os.\n", argv[0]);
+            printf("%s: cant bind to a particular net interface since SO_BINDTODEVICE is not supported on your os.\n", prog);
             exit(3);
             ;
 #endif
@@ -593,7 +591,7 @@ int main(int argc, char** argv)
             break;
 
         case 'O':
-            if (sscanf(optarg, "%i", &tos)) {
+            if (sscanf(optparse_state.optarg, "%i", &tos)) {
                 if (socket4) {
                     if (setsockopt(socket4, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
                         perror("setting type of service octet IP_TOS");
@@ -615,16 +613,16 @@ int main(int argc, char** argv)
             outage_flag = 1;
             break;
 
-        default:
+        case '?':
+            fprintf(stderr, "%s: %s\n", argv[0], optparse_state.errmsg);
             fprintf(stderr, "see 'fping -h' for usage information\n");
             exit(1);
             break;
-
         }
     }
 
     /* if we are called 'fping6', assume '-6' */
-    if (strstr(argv[0], "fping6")) {
+    if (strstr(prog, "fping6")) {
         hints_ai_family = AF_INET6;
     }
 
@@ -793,8 +791,8 @@ int main(int argc, char** argv)
     /* handle host names supplied on command line or in a file */
     /* if the generate_flag is on, then generate the IP list */
 
-    argv = &argv[optind];
-    argc -= optind;
+    argv = &argv[optparse_state.optind];
+    argc -= optparse_state.optind;
 
     /* cover allowable conditions */
 

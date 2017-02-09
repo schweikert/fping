@@ -10,9 +10,9 @@ set -e
 #    exit 0
 #fi
 
-# do this only for the master branch
-if [ "$TRAVIS_BRANCH" != "master" ]; then
-    echo "skipped upload branch $TRAVIS_BRANCH isn't master"
+# do this only for the master and version3 branch
+if [ "$TRAVIS_BRANCH" != "master" -a "$TRAVIS_BRANCH" != "version3" ]; then
+    echo "skipped upload branch $TRAVIS_BRANCH isn't master/version3"
     exit 0
 fi
 

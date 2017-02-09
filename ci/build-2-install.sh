@@ -11,7 +11,7 @@ fi
 autoreconf -i
 ./configure --enable-ipv4 --enable-ipv6 --prefix=/opt/fping
 make CFLAGS="-g -fprofile-arcs -ftest-coverage"
-## setcap currently doesn't worn anymore on travis-ci
+## setcap currently doesn't work anymore on travis-ci
 #sudo setcap cap_net_raw+ep src/fping
 #sudo setcap cap_net_raw+ep src/fping6
 ## setcap debugging:

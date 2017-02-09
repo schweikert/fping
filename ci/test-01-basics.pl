@@ -13,7 +13,7 @@ use Test::More;
 
 # ping ::1
 SKIP: {
-    system("/sbin/ifconfig >&2");
+    #system("/sbin/ifconfig >&2");
     if(system("/sbin/ifconfig | grep inet6") != 0) {
         skip 'No IPv6 on this host', 3;
     }

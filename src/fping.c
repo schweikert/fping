@@ -430,7 +430,7 @@ int main(int argc, char** argv)
             break;
 
         case 'b':
-            if (!sscanf(optarg, "%i", &ping_data_size))
+            if (!sscanf(optarg, "%u", &ping_data_size))
                 usage(1);
 
             break;
@@ -580,7 +580,6 @@ int main(int argc, char** argv)
             fprintf(stderr, "see 'fping -h' for usage information\n");
             exit(1);
             break;
-
         }
     }
 
@@ -600,7 +599,6 @@ int main(int argc, char** argv)
     if (count_flag && loop_flag) {
         fprintf(stderr, "%s: specify only one of c, l\n", argv[0]);
         exit(1);
-
     }
 
     if ((interval < MIN_INTERVAL * 100 || perhost_interval < MIN_PERHOST_INTERVAL * 100)
@@ -615,14 +613,12 @@ int main(int argc, char** argv)
         fprintf(stderr, "%s: data size %u not valid, must be lower than %u\n",
             prog, ping_data_size, (unsigned int)MAX_PING_DATA);
         exit(1);
-
     }
 
     if ((backoff > MAX_BACKOFF_FACTOR) || (backoff < MIN_BACKOFF_FACTOR)) {
         fprintf(stderr, "%s: backoff factor %.1f not valid, must be between %.1f and %.1f\n",
             prog, backoff, MIN_BACKOFF_FACTOR, MAX_BACKOFF_FACTOR);
         exit(1);
-
     }
 
     if (alive_flag || unreachable_flag)
@@ -633,7 +629,6 @@ int main(int argc, char** argv)
             per_recv_flag = 1;
 
         alive_flag = unreachable_flag = verbose_flag = 0;
-
     }
 
     if (loop_flag) {
@@ -641,7 +636,6 @@ int main(int argc, char** argv)
             per_recv_flag = 1;
 
         alive_flag = unreachable_flag = verbose_flag = 0;
-
     }
 
     trials = (count > retry + 1) ? count : retry + 1;
@@ -656,13 +650,11 @@ int main(int argc, char** argv)
     if (debugging & DBG_RANDOM_LOSE_FEW) {
         randomly_lose_flag = 1;
         lose_factor = 1; /* ie, 1/4 */
-
     }
 
     if (debugging & DBG_RANDOM_LOSE_MANY) {
         randomly_lose_flag = 1;
         lose_factor = 5; /* ie, 3/4 */
-
     }
 
     if (debugging & DBG_PRINT_PER_SYSTEM)
@@ -717,7 +709,6 @@ int main(int argc, char** argv)
             fprintf(stderr, "  outage_flag set\n");
         if (netdata_flag)
             fprintf(stderr, "  netdata_flag set\n");
-
     }
 #endif /* DEBUG || _DEBUG */
 
@@ -978,19 +969,18 @@ void add_range(char* start, char* end)
     end_long = ntohl(((struct sockaddr_in *) addr_res->ai_addr)->sin_addr.s_addr);
     freeaddrinfo(addr_res);
 
-    if(end_long - start_long > MAX_GENERATE) {
-            fprintf(stderr, "Error: -g parameter generates too many addresses\n");
-            exit(1);
+    if (end_long > start_long + MAX_GENERATE) {
+        fprintf(stderr, "%s: -g parameter generates too many addresses\n", prog);
+        exit(1);
     }
 
     /* generate */
-    while (start_long <= end_long) {
+    for (; start_long <= end_long; start_long++) {
         struct in_addr in_addr_tmp;
         char buffer[20];
         in_addr_tmp.s_addr = htonl(start_long);
         inet_ntop(AF_INET, &in_addr_tmp, buffer, sizeof(buffer));
         add_name(buffer);
-        start_long++;
     }
 }
 
@@ -1065,7 +1055,7 @@ void main_loop()
             }
         }
 
-    wait_for_reply:
+        wait_for_reply:
 
         /* When can we expect the next event? */
         if (ev_first) {
@@ -1823,7 +1813,6 @@ int wait_for_reply(long wait_time)
             }
 
             printf("\n");
-
         }
     }
 
@@ -1864,7 +1853,6 @@ int wait_for_reply(long wait_time)
 
     fflush(stdout);
     return num_jobs;
-
 }
 
 /************************************************************

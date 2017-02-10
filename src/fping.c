@@ -375,7 +375,7 @@ int main(int argc, char** argv)
         { "size",      'b', OPTPARSE_REQUIRED },
         { "backoff",   'B', OPTPARSE_REQUIRED },
         { "count",     'c', OPTPARSE_REQUIRED },
-        { "scount",    'C', OPTPARSE_REQUIRED },
+        { "vcount",    'C', OPTPARSE_REQUIRED },
         { NULL,        'd', OPTPARSE_NONE }, // same as '--names'
         { "timestamp", 'D', OPTPARSE_NONE },
         { "elapsed",   'e', OPTPARSE_NONE },
@@ -389,21 +389,22 @@ int main(int argc, char** argv)
         { "all",       'm', OPTPARSE_NONE },
         { "dontfrag",  'M', OPTPARSE_NONE },
         { "names",     'n', OPTPARSE_NONE },
-        { "rdns",      'N', OPTPARSE_NONE }, // FIXME: similar to --names, but do name->IP->name if a name is provided
-        { "outage",    'o', OPTPARSE_NONE }, // FIXME: document in POD
+        { "netdata",   'N', OPTPARSE_NONE },
+        { "outage",    'o', OPTPARSE_NONE },
         { "tos",       'O', OPTPARSE_REQUIRED },
         { "period",    'p', OPTPARSE_REQUIRED },
         { "quiet",     'q', OPTPARSE_NONE },
         { "squiet",    'Q', OPTPARSE_REQUIRED },
         { "retry",     'r', OPTPARSE_REQUIRED },
-        { "random",    'R', OPTPARSE_NONE }, // FIXME: document in POD
+        { "random",    'R', OPTPARSE_NONE },
         { "stats",     's', OPTPARSE_NONE },
         { "src",       'S', OPTPARSE_REQUIRED },
         { "timeout",   't', OPTPARSE_REQUIRED },
         { NULL,        'T', OPTPARSE_REQUIRED },
         { "unreach",   'u', OPTPARSE_NONE },
         { "version",   'v', OPTPARSE_NONE },
-        { 0 }
+        { "rdns",      'X', OPTPARSE_NONE }, // FIXME: similar to --names, but do name->IP->name if a name is provided
+        { 0, 0, 0 }
     };
 
     //while ((c = optparse(&optparse_state, "46ADMNRadeghlmnoqsuvzB:C:H:I:O:Q:S:T:b:c:f:i:p:r:t:")) != EOF) {
@@ -2663,47 +2664,47 @@ void ev_remove(HOST_ENTRY* h)
 void usage(int is_error)
 {
     FILE* out = is_error ? stderr : stdout;
-    fprintf(out, "\n");
     fprintf(out, "Usage: %s [options] [targets...]\n", prog);
-    fprintf(out, "   -4         only use IPv4 addresses\n");
-    fprintf(out, "   -6         only use IPv6 addresses\n");
-    fprintf(out, "   -a         show targets that are alive\n");
-    fprintf(out, "   -A         show targets by address\n");
-    fprintf(out, "   -b n       amount of ping data to send, in bytes (default %d)\n", DEFAULT_PING_DATA_SIZE);
-    fprintf(out, "   -B f       set exponential backoff factor to f\n");
-    fprintf(out, "   -c n       count of pings to send to each target (default %d)\n", count);
-    fprintf(out, "   -C n       same as -c, report results in verbose format\n");
-    fprintf(out, "   -D         print timestamp before each output line\n");
-    fprintf(out, "   -e         show elapsed time on return packets\n");
-    fprintf(out, "   -f file    read list of targets from a file ( - means stdin) (only if no -g specified)\n");
-    fprintf(out, "   -g         generate target list (only if no -f specified)\n");
-    fprintf(out, "                (specify the start and end IP in the target list, or supply a IP netmask)\n");
-    fprintf(out, "                (ex. %s -g 192.168.1.0 192.168.1.255 or %s -g 192.168.1.0/24)\n", prog, prog);
-    fprintf(out, "   -H n       Set the IP TTL value (Time To Live hops)\n");
-    fprintf(out, "   -i n       interval between sending ping packets (in millisec) (default %d)\n", interval / 100);
-#ifdef SO_BINDTODEVICE
-    fprintf(out, "   -I if      bind to a particular interface\n");
-#endif
-    fprintf(out, "   -l         loop sending pings forever\n");
-    fprintf(out, "   -m         use all IPs of provided hostnames (e.g. IPv4 and IPv6), use with -A\n");
-    fprintf(out, "   -M         set the Don't Fragment flag\n");
-    fprintf(out, "   -n         show targets by name (-d is equivalent)\n");
-    fprintf(out, "   -N         output compatible for netdata (-l -Q are required)\n");
-    fprintf(out, "   -o         show the accumulated outage time (lost packets * packet interval)\n");
-    fprintf(out, "   -O n       set the type of service (tos) flag on the ICMP packets\n");
-    fprintf(out, "   -p n       interval between ping packets to one target (in millisec)\n");
-    fprintf(out, "                (in looping and counting modes, default %d)\n", perhost_interval / 100);
-    fprintf(out, "   -q         quiet (don't show per-target/per-ping results)\n");
-    fprintf(out, "   -Q n       same as -q, but show summary every n seconds\n");
-    fprintf(out, "   -r n       number of retries (default %d)\n", DEFAULT_RETRY);
-    fprintf(out, "   -R         random packet data (to foil link data compression)\n");
-    fprintf(out, "   -s         print final stats\n");
-    fprintf(out, "   -S addr    set source address\n");
-    fprintf(out, "   -t n       individual target initial timeout (in millisec) (default %d)\n", timeout / 100);
-    fprintf(out, "   -T n       ignored (for compatibility with fping 2.4)\n");
-    fprintf(out, "   -u         show targets that are unreachable\n");
-    fprintf(out, "   -v         show version\n");
-    fprintf(out, "   targets    list of targets to check (if no -f specified)\n");
     fprintf(out, "\n");
+    fprintf(out, "Probing options:\n");
+    fprintf(out, "   -4                 only ping IPv4 addresses\n");
+    fprintf(out, "   -6                 only ping IPv6 addresses\n");
+    fprintf(out, "   -b, --size=BYTES   amount of ping data to send, in bytes (default %d)\n", DEFAULT_PING_DATA_SIZE);
+    fprintf(out, "   -B, --backoff=N    set exponential backoff factor to N\n");
+    fprintf(out, "   -c, --count=N      count of pings to send to each target (default %d)\n", count);
+    fprintf(out, "   -f, --file=FILE    read list of targets from a file ( - means stdin)\n");
+    fprintf(out, "   -g, --generate     generate target list (only if no -f specified)\n");
+    fprintf(out, "                      (specify the start and end IP in the target list, or use a CIDR address)\n");
+    fprintf(out, "                      (ex. %s -g 192.168.1.0 192.168.1.255 or %s -g 192.168.1.0/24)\n", prog, prog);
+    fprintf(out, "   -H, --ttl=N        set the IP TTL value (Time To Live hops)\n");
+#ifdef SO_BINDTODEVICE
+    fprintf(out, "   -I, --iface=IFACE  bind to a particular interface\n");
+#endif
+    fprintf(out, "   -l, --loop         loop sending pings forever\n");
+    fprintf(out, "   -m, --all          use all IPs of provided hostnames (e.g. IPv4 and IPv6), use with -A\n");
+    fprintf(out, "   -M, --dontfrag     set the Don't Fragment flag\n");
+    fprintf(out, "   -O, --tos=N        set the type of service (tos) flag on the ICMP packets\n");
+    fprintf(out, "   -p, --period=MSEC  interval between ping packets to one target (in millisec)\n");
+    fprintf(out, "                      (in looping and counting modes, default %d)\n", perhost_interval / 100);
+    fprintf(out, "   -r, --retry=N      number of retries (default %d)\n", DEFAULT_RETRY);
+    fprintf(out, "   -R, --random       random packet data (to foil link data compression)\n");
+    fprintf(out, "   -S, --src=IP       set source address\n");
+    fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (in millisec) (default %d)\n", timeout / 100);
+    fprintf(out, "\n");
+    fprintf(out, "Output options:\n");
+    fprintf(out, "   -a, --alive        show targets that are alive\n");
+    fprintf(out, "   -A, --addr         show targets by address\n");
+    fprintf(out, "   -C, --vcount=N     same as -c, report results in verbose format\n");
+    fprintf(out, "   -D, --timestamp    print timestamp before each output line\n");
+    fprintf(out, "   -e, --elapsed      show elapsed time on return packets\n");
+    fprintf(out, "   -i, --interval=MSEC  interval between sending ping packets (in ms) (default %d)\n", interval / 100);
+    fprintf(out, "   -n, --name         show targets by name (-d is equivalent)\n");
+    fprintf(out, "   -N, --netdata      output compatible for netdata (-l -Q are required)\n");
+    fprintf(out, "   -o, --outage       show the accumulated outage time (lost packets * packet interval)\n");
+    fprintf(out, "   -q, --quiet        quiet (don't show per-target/per-ping results)\n");
+    fprintf(out, "   -Q, --squiet=SECS  same as -q, but show summary every n seconds\n");
+    fprintf(out, "   -s, --stats        print final stats\n");
+    fprintf(out, "   -u, --unreach      show targets that are unreachable\n");
+    fprintf(out, "   -v, --version      show version\n");
     exit(is_error);
 }

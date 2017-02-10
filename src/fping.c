@@ -1578,20 +1578,19 @@ int receive_reply(int socket,
     /* Receive data */
     {
         static unsigned char msg_control[40];
-        struct iovec msg_iov = {
-            reply_buf,
-            reply_buf_len
-        };
-        struct msghdr recv_msghdr = {
-            reply_src_addr,
-            reply_src_addr_len,
-            &msg_iov,
-            1,
-            &msg_control,
-            sizeof(msg_control),
-            0
-        };
+        struct iovec msg_iov;
+        struct msghdr recv_msghdr;
         int timestamp_set = 0;
+
+        msg_iov.iov_base           = reply_buf;
+        msg_iov.iov_len            = reply_buf_len;
+	recv_msghdr.msg_name       = reply_src_addr;
+	recv_msghdr.msg_namelen    = reply_src_addr_len;
+	recv_msghdr.msg_iov        = &msg_iov;
+	recv_msghdr.msg_iovlen     = 1;
+	recv_msghdr.msg_control    = &msg_control;
+	recv_msghdr.msg_controllen = sizeof(msg_control);
+	recv_msghdr.msg_flags      = 0;
 
         recv_len = recvmsg(socket, &recv_msghdr, 0);
         if (recv_len <= 0) {

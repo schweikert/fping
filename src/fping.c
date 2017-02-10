@@ -604,7 +604,8 @@ int main(int argc, char** argv)
                     }
                 }
 #endif
-            } else {
+            }
+            else {
                 usage(1);
             }
             break;
@@ -810,7 +811,6 @@ int main(int argc, char** argv)
         while (*argv) {
             add_name(*argv);
             ++argv;
-
         }
     }
     else if (filename) {
@@ -837,16 +837,20 @@ int main(int argc, char** argv)
         }
 
         fclose(ping_file);
-    } else if (*argv && generate_flag) {
+    }
+    else if (*argv && generate_flag) {
         if (argc == 1) {
             /* one target: we expect a cidr range (n.n.n.n/m) */
             add_cidr(argv[0]);
-        } else if (argc == 2) {
+        }
+        else if (argc == 2) {
             add_range(argv[0], argv[1]);
-        } else {
+        }
+        else {
             usage(1);
         }
-    } else {
+    }
+    else {
         usage(1);
     }
 
@@ -888,7 +892,6 @@ int main(int argc, char** argv)
 
             buf[n] = '\0';
             cursor->pad = buf;
-
         }
 
         cursor = cursor->ev_next;
@@ -1125,7 +1128,8 @@ void main_loop()
         if (ev_first) {
             if (ev_first->ev_time.tv_sec == 0) {
                 wait_time = 0;
-            } else {
+            }
+            else {
                 wait_time = timeval_diff(&ev_first->ev_time, &current_time);
                 if (wait_time < 0)
                     wait_time = 0;
@@ -1137,7 +1141,8 @@ void main_loop()
                     lt = timeval_diff(&current_time, &last_send_time);
                     if (lt < interval) {
                         wait_time = interval - lt;
-                    } else {
+                    }
+                    else {
                         wait_time = 0;
                     }
                 }
@@ -1148,7 +1153,8 @@ void main_loop()
                 fprintf(stderr, "next event in %d ms (%s)\n", wait_time / 100, ev_first->host);
             }
 #endif
-        } else {
+        }
+        else {
             wait_time = interval;
         }
 
@@ -1220,7 +1226,6 @@ void finish()
                     printf(" is unreachable");
 
                 printf("\n");
-
             }
         }
     }
@@ -1280,7 +1285,8 @@ void print_per_system_stats(void)
             }
 
             fprintf(stderr, "\n");
-        } else {
+        }
+        else {
             if (h->num_recv <= h->num_sent) {
                 fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
                     h->num_sent, h->num_recv, h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
@@ -1290,8 +1296,8 @@ void print_per_system_stats(void)
                     outage_ms = (h->num_sent - h->num_recv) * perhost_interval / 100;
                     fprintf(stderr, ", outage(ms) = %d", outage_ms);
                 }
-
-            } else {
+            }
+            else {
                 fprintf(stderr, " xmt/rcv/%%return = %d/%d/%d%%",
                     h->num_sent, h->num_recv,
                     ((h->num_recv * 100) / h->num_sent));
@@ -1397,12 +1403,10 @@ void print_netdata(void)
             printf("SET min = %d\n", h->min_reply_i);
             printf("SET avg = %d\n", avg);
             printf("SET max = %d\n", h->max_reply_i);
-
         }
         printf("END\n");
 
         h->num_sent_i = h->num_recv_i = h->max_reply_i = h->min_reply_i = h->total_time_i = 0;
-
     }
 
     sent_charts = 1;
@@ -1459,7 +1463,8 @@ void print_per_system_splits(void)
                 outage_ms_i = (h->num_sent_i - h->num_recv_i) * perhost_interval / 100;
                 fprintf(stderr, ", outage(ms) = %d", outage_ms_i);
             }
-        } else {
+        }
+        else {
             fprintf(stderr, " xmt/rcv/%%return = %d/%d/%d%%",
                 h->num_sent_i, h->num_recv_i, h->num_sent_i > 0 ? ((h->num_recv_i * 100) / h->num_sent_i) : 0);
         }
@@ -1509,7 +1514,6 @@ void print_global_stats(void)
         max_reply = 0;
         total_replies = 1;
         sum_replies = 0;
-
     }
 
     fprintf(stderr, " %s ms (min round trip time)\n", sprint_tm(min_reply));
@@ -1519,7 +1523,6 @@ void print_global_stats(void)
     fprintf(stderr, " %12.3f sec (elapsed real time)\n",
         timeval_diff(&end_time, &start_time) / 100000.0);
     fprintf(stderr, "\n");
-
 }
 
 /************************************************************
@@ -1580,7 +1583,8 @@ int send_ping(HOST_ENTRY* h)
             h->resp_times[h->num_sent] = RESP_ERROR;
 
         ret = 0;
-    } else {
+    }
+    else {
         /* mark this trial as outstanding */
         if (!loop_flag)
             h->resp_times[h->num_sent] = RESP_WAITING;
@@ -1626,7 +1630,8 @@ select_again:
         if (errno == EINTR) {
             /* interrupted system call: redo the select */
             goto select_again;
-        } else {
+        }
+        else {
             perror("select");
         }
     }
@@ -1768,7 +1773,8 @@ int decode_icmp_ipv4(
             if (icp->icmp_code > ICMP_UNREACH_MAXTYPE) {
                 print_warning("ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
                     addr_ascii, h->host);
-            } else {
+            }
+            else {
                 print_warning("%s from %s for ICMP Echo sent to %s",
                     icmp_unreach_str[icp->icmp_code], addr_ascii, h->host);
             }
@@ -1785,7 +1791,8 @@ int decode_icmp_ipv4(
             if (icp->icmp_type <= ICMP_TYPE_STR_MAX) {
                 print_warning("%s from %s for ICMP Echo sent to %s",
                     icmp_type_str[icp->icmp_type], addr_ascii, h->host);
-            } else {
+            }
+            else {
                 print_warning("ICMP %d from %s for ICMP Echo sent to %s",
                     icp->icmp_type, addr_ascii, h->host);
             }
@@ -1858,7 +1865,8 @@ int decode_icmp_ipv6(
             if (icp->icmp6_code > ICMP_UNREACH_MAXTYPE) {
                 print_warning("ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
                     addr_ascii, h->host);
-            } else {
+            }
+            else {
                 print_warning("%s from %s for ICMP Echo sent to %s",
                     icmp_unreach_str[icp->icmp6_code], addr_ascii, h->host);
             }
@@ -1875,7 +1883,8 @@ int decode_icmp_ipv6(
             if (icp->icmp6_type <= ICMP_TYPE_STR_MAX) {
                 print_warning("%s from %s for ICMP Echo sent to %s",
                     icmp_type_str[icp->icmp6_type], addr_ascii, h->host);
-            } else {
+            }
+            else {
                 print_warning("ICMP %d from %s for ICMP Echo sent to %s",
                     icp->icmp6_type, addr_ascii, h->host);
             }
@@ -1916,11 +1925,13 @@ int wait_for_reply(long wait_time)
         if (wait_time < 100000) {
             to.tv_sec = 0;
             to.tv_usec = wait_time * 10;
-        } else {
+        }
+        else {
             to.tv_sec = wait_time / 100000;
             to.tv_usec = (wait_time % 100000) * 10;
         }
-    } else {
+    }
+    else {
         to.tv_sec = 0;
         to.tv_usec = 0;
     }
@@ -1998,7 +2009,8 @@ int wait_for_reply(long wait_time)
 
         if (h->discard_next_recv_i) {
             h->discard_next_recv_i = 0;
-        } else {
+        }
+        else {
             h->num_recv_i++;
             if (!h->max_reply_i || this_reply > h->max_reply_i)
                 h->max_reply_i = this_reply;
@@ -2042,18 +2054,15 @@ int wait_for_reply(long wait_time)
                         fprintf(stderr, " [<- %s]", buf);
                     }
                     fprintf(stderr, "\n");
-
                 }
             }
             else
                 h->resp_times[this_count] = this_reply;
-
         }
         else {
             /* count is out of bounds?? */
             fprintf(stderr, "%s : duplicate for [%d], %d bytes, %s ms\n",
                 h->host, this_count, result, sprint_tm(this_reply));
-
         }
     }
 
@@ -2092,8 +2101,8 @@ int wait_for_reply(long wait_time)
         if (h->num_recv <= h->num_sent) {
             printf("%d%% loss)",
                 ((h->num_sent - h->num_recv) * 100) / h->num_sent);
-
-        } else {
+        }
+        else {
             printf("%d%% return)",
                 (h->num_recv_total * 100) / h->num_sent);
         }
@@ -2105,7 +2114,6 @@ int wait_for_reply(long wait_time)
         }
 
         printf("\n");
-
     }
 
     /* remove this job, if we are done */
@@ -2174,7 +2182,8 @@ void add_name(char* name)
         /* name_flag: addr -> name lookup requested) */
         if (!name_flag) {
             printname = name;
-        } else {
+        }
+        else {
             int ret;
             ret = getnameinfo(res->ai_addr, res->ai_addrlen, namebuf,
                 sizeof(namebuf) / sizeof(char), NULL, 0, 0);
@@ -2183,7 +2192,8 @@ void add_name(char* name)
                     print_warning("%s: can't reverse-lookup (%s)\n", name, gai_strerror(ret));
                 }
                 printname = name;
-            } else {
+            }
+            else {
                 printname = namebuf;
             }
         }
@@ -2204,10 +2214,12 @@ void add_name(char* name)
                 char nameaddrbuf[512];
                 snprintf(nameaddrbuf, sizeof(nameaddrbuf) / sizeof(char), "%s (%s)", printname, addrbuf);
                 add_addr(name, nameaddrbuf, res->ai_addr, res->ai_addrlen);
-            } else {
+            }
+            else {
                 add_addr(name, addrbuf, res->ai_addr, res->ai_addrlen);
             }
-        } else {
+        }
+        else {
             add_addr(name, printname, res->ai_addr, res->ai_addrlen);
         }
 
@@ -2402,9 +2414,11 @@ long timeval_diff(struct timeval* a, struct timeval* b)
     long sec_diff = a->tv_sec - b->tv_sec;
     if (sec_diff == 0) {
         return (a->tv_usec - b->tv_usec) / 10;
-    } else if (sec_diff < 100) {
+    }
+    else if (sec_diff < 100) {
         return (sec_diff * 1000000 + a->tv_usec - b->tv_usec) / 10;
-    } else {
+    }
+    else {
         /* For such large differences, we don't really care about the microseconds... */
         return sec_diff * 100000;
     }
@@ -2446,19 +2460,24 @@ char* sprint_tm(int t)
     if (t < 0) {
         /* negative (unexpected) */
         sprintf(buf, "%.2g", (double)t / 100);
-    } else if (t < 100) {
+    }
+    else if (t < 100) {
         /* <= 0.99 ms */
         sprintf(buf, "0.%02d", t);
-    } else if (t < 1000) {
+    }
+    else if (t < 1000) {
         /* 1.00 - 9.99 ms */
         sprintf(buf, "%d.%02d", t / 100, t % 100);
-    } else if (t < 10000) {
+    }
+    else if (t < 10000) {
         /* 10.0 - 99.9 ms */
         sprintf(buf, "%d.%d", t / 100, (t % 100) / 10);
-    } else if (t < 100000000) {
+    }
+    else if (t < 100000000) {
         /* 100 - 1'000'000 ms */
         sprintf(buf, "%d", t / 100);
-    } else {
+    }
+    else {
         sprintf(buf, "%.2e", (double)(t / 100));
     }
 
@@ -2474,10 +2493,12 @@ int addr_cmp(struct sockaddr* a, struct sockaddr* b)
 {
     if (a->sa_family != b->sa_family) {
         return a->sa_family - b->sa_family;
-    } else {
+    }
+    else {
         if (a->sa_family == AF_INET) {
             return ((struct sockaddr_in*)a)->sin_addr.s_addr - ((struct sockaddr_in*)b)->sin_addr.s_addr;
-        } else if (a->sa_family == AF_INET6) {
+        }
+        else if (a->sa_family == AF_INET6) {
             return memcmp(&((struct sockaddr_in6*)a)->sin6_addr,
                 &((struct sockaddr_in6*)b)->sin6_addr,
                 sizeof(((struct sockaddr_in6*)a)->sin6_addr));
@@ -2542,7 +2563,8 @@ void ev_enqueue(HOST_ENTRY* h)
             i->ev_prev = h;
             if (i_prev != NULL) {
                 i_prev->ev_next = h;
-            } else {
+            }
+            else {
                 ev_first = h;
             }
             return;

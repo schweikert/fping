@@ -4,6 +4,7 @@
 src/*.gcno
 src/*.gcda
 src/*.gcov
+src/tags
 .deps
 Makefile
 Makefile.in

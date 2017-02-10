@@ -858,11 +858,10 @@ int main(int argc, char** argv)
         exit(num_noaddress ? 2 : 1);
     }
 
-#ifndef IPV6
     if (src_addr_set) {
         socket_set_src_addr_ipv4(socket4, &src_addr);
     }
-#else
+#ifdef IPV6
     if (src_addr6_set) {
         socket_set_src_addr_ipv6(socket6, &src_addr6);
     }

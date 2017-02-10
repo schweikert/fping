@@ -2674,7 +2674,7 @@ void usage(int is_error)
     fprintf(out, "   -c, --count=N      count of pings to send to each target (default %d)\n", count);
     fprintf(out, "   -f, --file=FILE    read list of targets from a file ( - means stdin)\n");
     fprintf(out, "   -g, --generate     generate target list (only if no -f specified)\n");
-    fprintf(out, "                      (specify the start and end IP in the target list, or use a CIDR address)\n");
+    fprintf(out, "                      (give start and end IP in the target list, or a CIDR address)\n");
     fprintf(out, "                      (ex. %s -g 192.168.1.0 192.168.1.255 or %s -g 192.168.1.0/24)\n", prog, prog);
     fprintf(out, "   -H, --ttl=N        set the IP TTL value (Time To Live hops)\n");
 #ifdef SO_BINDTODEVICE

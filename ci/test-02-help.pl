@@ -19,7 +19,7 @@ Probing options:
    -c, --count=N      count of pings to send to each target (default 1)
    -f, --file=FILE    read list of targets from a file ( - means stdin)
    -g, --generate     generate target list (only if no -f specified)
-                      (specify the start and end IP in the target list, or use a CIDR address)
+                      (give start and end IP in the target list, or a CIDR address)
                       (ex. fping -g 192.168.1.0 192.168.1.255 or fping -g 192.168.1.0/24)
    -H, --ttl=N        set the IP TTL value (Time To Live hops)
 $I_HELP   -l, --loop         loop sending pings forever

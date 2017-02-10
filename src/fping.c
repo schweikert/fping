@@ -367,7 +367,47 @@ int main(int argc, char** argv)
 
     /* get command line options */
 
-    while ((c = optparse(&optparse_state, "46ADMNRadeghlmnoqsuvzB:C:H:I:O:Q:S:T:b:c:f:i:p:r:t:")) != EOF) {
+    struct optparse_long longopts[] = {
+        { NULL,        '4', OPTPARSE_NONE },
+        { NULL,        '6', OPTPARSE_NONE },
+        { "alive",     'a', OPTPARSE_NONE },
+        { "addr",      'A', OPTPARSE_NONE },
+        { "size",      'b', OPTPARSE_REQUIRED },
+        { "backoff",   'B', OPTPARSE_REQUIRED },
+        { "count",     'c', OPTPARSE_REQUIRED },
+        { "scount",    'C', OPTPARSE_REQUIRED },
+        { NULL,        'd', OPTPARSE_NONE }, // same as '--names'
+        { "timestamp", 'D', OPTPARSE_NONE },
+        { "elapsed",   'e', OPTPARSE_NONE },
+        { "file",      'f', OPTPARSE_REQUIRED },
+        { "generate",  'g', OPTPARSE_NONE },
+        { "help",      'h', OPTPARSE_NONE },
+        { "ttl",       'H', OPTPARSE_REQUIRED },
+        { "interval",  'i', OPTPARSE_REQUIRED },
+        { "iface",     'I', OPTPARSE_REQUIRED },
+        { "loop",      'l', OPTPARSE_NONE },
+        { "all",       'm', OPTPARSE_NONE },
+        { "dontfrag",  'M', OPTPARSE_NONE },
+        { "names",     'n', OPTPARSE_NONE },
+        { "rdns",      'N', OPTPARSE_NONE }, // FIXME: similar to --names, but do name->IP->name if a name is provided
+        { "outage",    'o', OPTPARSE_NONE }, // FIXME: document in POD
+        { "tos",       'O', OPTPARSE_REQUIRED },
+        { "period",    'p', OPTPARSE_REQUIRED },
+        { "quiet",     'q', OPTPARSE_NONE },
+        { "squiet",    'Q', OPTPARSE_REQUIRED },
+        { "retry",     'r', OPTPARSE_REQUIRED },
+        { "random",    'R', OPTPARSE_NONE }, // FIXME: document in POD
+        { "stats",     's', OPTPARSE_NONE },
+        { "src",       'S', OPTPARSE_REQUIRED },
+        { "timeout",   't', OPTPARSE_REQUIRED },
+        { NULL,        'T', OPTPARSE_REQUIRED },
+        { "unreach",   'u', OPTPARSE_NONE },
+        { "version",   'v', OPTPARSE_NONE },
+        { 0 }
+    };
+
+    //while ((c = optparse(&optparse_state, "46ADMNRadeghlmnoqsuvzB:C:H:I:O:Q:S:T:b:c:f:i:p:r:t:")) != EOF) {
+    while ((c = optparse_long(&optparse_state, longopts, NULL)) != EOF) {
         switch (c) {
         case '4':
             if (hints_ai_family != AF_UNSPEC) {

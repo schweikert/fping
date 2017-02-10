@@ -9,7 +9,7 @@ if(!gethostbyname("www.google.com")) {
     exit 0;
 }
 
-plan tests => 21;
+plan tests => 27;
 
 my $re_num = qr{\d+(?:\.\d+)?};
 
@@ -38,6 +38,22 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping -4 -A -n google-public-dns-a.google.com");
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("google-public-dns-a.google.com (8.8.8.8) is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping -4 --addr --rdns
+{
+my $cmd = Test::Command->new(cmd => "fping -4 --addr --rdns www.google.com");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{^\S+\.1e100\.net \(\d+\.\d+\.\d+\.\d+\) is alive\n$});
+$cmd->stderr_is_eq("");
+}
+
+# fping -4 --addr --name
+{
+my $cmd = Test::Command->new(cmd => "fping -4 --addr --name www.google.com");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{^www\.google\.com \(\d+\.\d+\.\d+\.\d+\) is alive\n$});
 $cmd->stderr_is_eq("");
 }
 

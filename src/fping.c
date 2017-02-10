@@ -281,7 +281,7 @@ struct timezone tz;
 int generate_flag = 0; /* flag for IP list generation */
 int verbose_flag, quiet_flag, stats_flag, unreachable_flag, alive_flag;
 int elapsed_flag, version_flag, count_flag, loop_flag, netdata_flag;
-int per_recv_flag, report_all_rtts_flag, name_flag, addr_flag, backoff_flag;
+int per_recv_flag, report_all_rtts_flag, name_flag, addr_flag, backoff_flag, rdns_flag;
 int multif_flag;
 int outage_flag = 0;
 int timestamp_flag = 0;
@@ -368,42 +368,42 @@ int main(int argc, char** argv)
     /* get command line options */
 
     struct optparse_long longopts[] = {
-        { NULL,        '4', OPTPARSE_NONE },
-        { NULL,        '6', OPTPARSE_NONE },
-        { "alive",     'a', OPTPARSE_NONE },
-        { "addr",      'A', OPTPARSE_NONE },
-        { "size",      'b', OPTPARSE_REQUIRED },
-        { "backoff",   'B', OPTPARSE_REQUIRED },
-        { "count",     'c', OPTPARSE_REQUIRED },
-        { "vcount",    'C', OPTPARSE_REQUIRED },
-        { NULL,        'd', OPTPARSE_NONE }, // same as '--names'
+        { NULL, '4', OPTPARSE_NONE },
+        { NULL, '6', OPTPARSE_NONE },
+        { "alive", 'a', OPTPARSE_NONE },
+        { "addr", 'A', OPTPARSE_NONE },
+        { "size", 'b', OPTPARSE_REQUIRED },
+        { "backoff", 'B', OPTPARSE_REQUIRED },
+        { "count", 'c', OPTPARSE_REQUIRED },
+        { "vcount", 'C', OPTPARSE_REQUIRED },
+        { NULL, 'd', OPTPARSE_NONE }, // same as '--name'
         { "timestamp", 'D', OPTPARSE_NONE },
-        { "elapsed",   'e', OPTPARSE_NONE },
-        { "file",      'f', OPTPARSE_REQUIRED },
-        { "generate",  'g', OPTPARSE_NONE },
-        { "help",      'h', OPTPARSE_NONE },
-        { "ttl",       'H', OPTPARSE_REQUIRED },
-        { "interval",  'i', OPTPARSE_REQUIRED },
-        { "iface",     'I', OPTPARSE_REQUIRED },
-        { "loop",      'l', OPTPARSE_NONE },
-        { "all",       'm', OPTPARSE_NONE },
-        { "dontfrag",  'M', OPTPARSE_NONE },
-        { "names",     'n', OPTPARSE_NONE },
-        { "netdata",   'N', OPTPARSE_NONE },
-        { "outage",    'o', OPTPARSE_NONE },
-        { "tos",       'O', OPTPARSE_REQUIRED },
-        { "period",    'p', OPTPARSE_REQUIRED },
-        { "quiet",     'q', OPTPARSE_NONE },
-        { "squiet",    'Q', OPTPARSE_REQUIRED },
-        { "retry",     'r', OPTPARSE_REQUIRED },
-        { "random",    'R', OPTPARSE_NONE },
-        { "stats",     's', OPTPARSE_NONE },
-        { "src",       'S', OPTPARSE_REQUIRED },
-        { "timeout",   't', OPTPARSE_REQUIRED },
-        { NULL,        'T', OPTPARSE_REQUIRED },
-        { "unreach",   'u', OPTPARSE_NONE },
-        { "version",   'v', OPTPARSE_NONE },
-        { "rdns",      'X', OPTPARSE_NONE }, // FIXME: similar to --names, but do name->IP->name if a name is provided
+        { "elapsed", 'e', OPTPARSE_NONE },
+        { "file", 'f', OPTPARSE_REQUIRED },
+        { "generate", 'g', OPTPARSE_NONE },
+        { "help", 'h', OPTPARSE_NONE },
+        { "ttl", 'H', OPTPARSE_REQUIRED },
+        { "interval", 'i', OPTPARSE_REQUIRED },
+        { "iface", 'I', OPTPARSE_REQUIRED },
+        { "loop", 'l', OPTPARSE_NONE },
+        { "all", 'm', OPTPARSE_NONE },
+        { "dontfrag", 'M', OPTPARSE_NONE },
+        { "name", 'n', OPTPARSE_NONE },
+        { "netdata", 'N', OPTPARSE_NONE },
+        { "outage", 'o', OPTPARSE_NONE },
+        { "tos", 'O', OPTPARSE_REQUIRED },
+        { "period", 'p', OPTPARSE_REQUIRED },
+        { "quiet", 'q', OPTPARSE_NONE },
+        { "squiet", 'Q', OPTPARSE_REQUIRED },
+        { "retry", 'r', OPTPARSE_REQUIRED },
+        { "random", 'R', OPTPARSE_NONE },
+        { "stats", 's', OPTPARSE_NONE },
+        { "src", 'S', OPTPARSE_REQUIRED },
+        { "timeout", 't', OPTPARSE_REQUIRED },
+        { NULL, 'T', OPTPARSE_REQUIRED },
+        { "unreach", 'u', OPTPARSE_NONE },
+        { "version", 'v', OPTPARSE_NONE },
+        { "rdns", 'X', OPTPARSE_NONE }, // FIXME: similar to --name, but do name->IP->name if a name is provided
         { 0, 0, 0 }
     };
 
@@ -527,6 +527,10 @@ int main(int argc, char** argv)
         case 'd':
         case 'n':
             name_flag = 1;
+            break;
+
+        case 'X':
+            rdns_flag = 1;
             break;
 
         case 'A':
@@ -2215,22 +2219,27 @@ void add_name(char* name)
      */
     for (res = res0; res; res = res->ai_next) {
         /* name_flag: addr -> name lookup requested) */
-        if (!name_flag) {
-            printname = name;
-        }
-        else {
-            int ret;
-            ret = getnameinfo(res->ai_addr, res->ai_addrlen, namebuf,
-                sizeof(namebuf) / sizeof(char), NULL, 0, 0);
-            if (ret) {
-                if (!quiet_flag) {
-                    print_warning("%s: can't reverse-lookup (%s)\n", name, gai_strerror(ret));
+        if (name_flag || rdns_flag) {
+            int do_rdns = rdns_flag ? 1 : 0;
+            if (name_flag) {
+                /* Was it a numerical address? Only then do a rdns-query */
+                struct addrinfo* nres;
+                hints.ai_flags = AI_NUMERICHOST;
+                if (getaddrinfo(name, NULL, &hints, &nres) == 0) {
+                    do_rdns = 1;
+                    freeaddrinfo(nres);
                 }
-                printname = name;
             }
-            else {
+
+            if (do_rdns && getnameinfo(res->ai_addr, res->ai_addrlen, namebuf, sizeof(namebuf) / sizeof(char), NULL, 0, 0) == 0) {
                 printname = namebuf;
             }
+            else {
+                printname = name;
+            }
+        }
+        else {
+            printname = name;
         }
 
         /* addr_flag: name -> addr lookup requested */
@@ -2245,7 +2254,7 @@ void add_name(char* name)
                 continue;
             }
 
-            if (name_flag) {
+            if (name_flag || rdns_flag) {
                 char nameaddrbuf[512];
                 snprintf(nameaddrbuf, sizeof(nameaddrbuf) / sizeof(char), "%s (%s)", printname, addrbuf);
                 add_addr(name, nameaddrbuf, res->ai_addr, res->ai_addrlen);

@@ -15,9 +15,14 @@ Unreleased
 
   * Version 4.0
   * (feature) Unified 'fping' and 'fping6' into one binary (#80)
+  * (feature) Long option names for all options
   * (feature) --enable-ipv6 is now default
-  * (feature) New option '-4' to force IPv4
-  * (feature) New option '-6' to force IPv6
+  * (feature) New option -4 to force IPv4
+  * (feature) New option -6 to force IPv6
+  * (feature) Keep original name if a hostname is given with -n/--name
+  * (feature) New option -X/--rdns, similar to -n/--name, but which always
+              does a rdns-lookup, even for names (name->IP->name), as '-n'
+	      was doing until now
   * (bugfix)  Fix compatibility issue with GNU Hurd
   * (other)   A C99 compiler is now required
   * (other)   Option parsing with optparse (https://github.com/skeeto/optparse)

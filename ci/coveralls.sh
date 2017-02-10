@@ -10,4 +10,4 @@ ls -l
 
 gcov *.o
 cd ..
-coveralls --exclude ci --exclude src/optparse.c -no-gcov
+coveralls --exclude ci --exclude src/optparse.c --no-gcov

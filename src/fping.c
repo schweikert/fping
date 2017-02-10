@@ -622,11 +622,6 @@ int main(int argc, char** argv)
         }
     }
 
-    /* if we are called 'fping6', assume '-6' */
-    if (strstr(prog, "fping6")) {
-        hints_ai_family = AF_INET6;
-    }
-
     /* validate various option settings */
 
     if (ttl > 255) {

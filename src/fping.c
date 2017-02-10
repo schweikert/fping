@@ -562,11 +562,17 @@ int main(int argc, char** argv)
             if (sscanf(optarg, "%i", &tos)) {
 #ifndef IPV6
                 if (setsockopt(s, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
-#else
-                if (setsockopt(s, IPPROTO_IPV6, IPV6_TCLASS, &tos, sizeof(tos))) {
-#endif
                     perror("setting type of service octet IP_TOS");
                 }
+#else
+#ifdef IPV6_TCLASS
+                if (setsockopt(s, IPPROTO_IPV6, IPV6_TCLASS, &tos, sizeof(tos))) {
+                    perror("setting type of service octet IPV6_TCLASS");
+                }
+#else
+                fprintf(stderr, "%s: -O (set TOS) for IPv6 not supported on this platform\n", prog);
+#endif
+#endif
             } else {
                 usage(1);
             }

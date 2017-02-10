@@ -1,3 +1,6 @@
+Unreleased (version 3 branch)
+  * Fix compatibility issue with GNU Hurd
+
 2017-02-09  David Schweikert  <david@schweikert.ch>
   * Version 3.16
   * (feature) Support kernel-timestamping of received packets (#46)

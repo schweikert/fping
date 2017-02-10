@@ -80,7 +80,7 @@ AH_BOTTOM([
 ])
 
 dnl Checks for header files.
-AC_CHECK_HEADERS(unistd.h sys/file.h stdlib.h sys/select.h)
+AC_CHECK_HEADERS(unistd.h sys/file.h stdlib.h sys/select.h getopt.h)
 
 AC_CONFIG_FILES([Makefile
                  doc/Makefile

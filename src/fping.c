@@ -1593,14 +1593,16 @@ int receive_reply(int socket,
         }
 
 #if HAVE_SO_TIMESTAMP
-        /* ancilliary data */
-        struct cmsghdr* cmsg;
-        for (cmsg = CMSG_FIRSTHDR(&recv_msghdr);
-             cmsg != NULL;
-             cmsg = CMSG_NXTHDR(&recv_msghdr, cmsg)) {
-            if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_TIMESTAMP) {
-                memcpy(reply_timestamp, CMSG_DATA(cmsg), sizeof(*reply_timestamp));
-                timestamp_set = 1;
+        {
+            /* ancilliary data */
+            struct cmsghdr* cmsg;
+            for (cmsg = CMSG_FIRSTHDR(&recv_msghdr);
+                 cmsg != NULL;
+                 cmsg = CMSG_NXTHDR(&recv_msghdr, cmsg)) {
+                if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_TIMESTAMP) {
+                    memcpy(reply_timestamp, CMSG_DATA(cmsg), sizeof(*reply_timestamp));
+                    timestamp_set = 1;
+                }
             }
         }
 #endif

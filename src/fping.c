@@ -368,15 +368,15 @@ int main(int argc, char** argv)
     /* get command line options */
 
     struct optparse_long longopts[] = {
-        { NULL, '4', OPTPARSE_NONE },
-        { NULL, '6', OPTPARSE_NONE },
+        { "ipv4", '4', OPTPARSE_NONE },
+        { "ipv6", '6', OPTPARSE_NONE },
         { "alive", 'a', OPTPARSE_NONE },
         { "addr", 'A', OPTPARSE_NONE },
         { "size", 'b', OPTPARSE_REQUIRED },
         { "backoff", 'B', OPTPARSE_REQUIRED },
         { "count", 'c', OPTPARSE_REQUIRED },
         { "vcount", 'C', OPTPARSE_REQUIRED },
-        { NULL, 'd', OPTPARSE_NONE }, // same as '--name'
+        { "rdns", 'd', OPTPARSE_NONE },
         { "timestamp", 'D', OPTPARSE_NONE },
         { "elapsed", 'e', OPTPARSE_NONE },
         { "file", 'f', OPTPARSE_REQUIRED },
@@ -403,7 +403,6 @@ int main(int argc, char** argv)
         { NULL, 'T', OPTPARSE_REQUIRED },
         { "unreach", 'u', OPTPARSE_NONE },
         { "version", 'v', OPTPARSE_NONE },
-        { "rdns", 'X', OPTPARSE_NONE }, // FIXME: similar to --name, but do name->IP->name if a name is provided
         { 0, 0, 0 }
     };
 
@@ -524,13 +523,20 @@ int main(int argc, char** argv)
             netdata_flag = 1;
             break;
 
-        case 'd':
         case 'n':
             name_flag = 1;
+            if(rdns_flag) {
+                fprintf(stderr, "%s: use either one of -d or -n\n", prog);
+                exit(1);
+            }
             break;
 
-        case 'X':
+        case 'd':
             rdns_flag = 1;
+            if(name_flag) {
+                fprintf(stderr, "%s: use either one of -d or -n\n", prog);
+                exit(1);
+            }
             break;
 
         case 'A':
@@ -2676,8 +2682,8 @@ void usage(int is_error)
     fprintf(out, "Usage: %s [options] [targets...]\n", prog);
     fprintf(out, "\n");
     fprintf(out, "Probing options:\n");
-    fprintf(out, "   -4                 only ping IPv4 addresses\n");
-    fprintf(out, "   -6                 only ping IPv6 addresses\n");
+    fprintf(out, "   -4, --ipv4         only ping IPv4 addresses\n");
+    fprintf(out, "   -6, --ipv6         only ping IPv6 addresses\n");
     fprintf(out, "   -b, --size=BYTES   amount of ping data to send, in bytes (default %d)\n", DEFAULT_PING_DATA_SIZE);
     fprintf(out, "   -B, --backoff=N    set exponential backoff factor to N\n");
     fprintf(out, "   -c, --count=N      count of pings to send to each target (default %d)\n", count);

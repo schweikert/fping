@@ -1,28 +1,37 @@
-Unreleased
-  * INCOMPATIBILITY WARNING:
-    fping and fping6 are now unified into one binary. It means that, for
-    example, doing 'fping www.google.com' is going to ping the IPv6 IP of
-    www.google.com on IPv6-enabled hosts.
+2017-02-13  David Schweikert  <david@schweikert.ch>
+  * Version 4.0-rc1
 
-    If you need exact compatibility with old versions, you can configure,
-    compile, and install fping twice: once for ipv4 and once for ipv6:
+  * INCOMPATIBILITY WARNING 1:
+    fping and fping6 are now unified into one binary. It means that, for
+    example, doing 'fping google.com' is going to ping the IPv6 IP of
+    google.com on IPv6-enabled hosts.
+
+    If you need exact compatibility with old versions, you can configure
+    and install fping twice: once for ipv4, and once for ipv6:
     - ./configure --disable-ipv6; make clean install
     - ./configure --disable-ipv4 --program-suffix=6; make clean install
 
-    Or, alternatively, you could write two wrappers 'fping' and 'fping6',
-    that set respectively the options '-4' and '-6' when calling the original
-    fping binary.
+  * INCOMPATIBILITY WARNING 2:
+    Option -n / --name is now doing a reverse-DNS lookups on host addresses,
+    only they are given as IP address, but not for hostnames. For example, if
+    you write 'fping -n google.com', fping would previously do a forward-DNS
+    lookup on google.com, and then a reverse-DNS lookup on the resolved IP
+    address. Now, it is just going to keep the name 'google.com'. That same
+    behavior can be achieved with the option -d / --rdns (which was previously
+    an alias for -n).
 
-  * Version 4.0
+                     fping<4.0              fping>=4.0
+    fping -n NAME    NAME->IP->IPNAME       NAME
+    fping -d NAME    NAME->IP->IPNAME       NAME->IP->IPNAME
+
   * (feature) Unified 'fping' and 'fping6' into one binary (#80)
   * (feature) Long option names for all options
   * (feature) --enable-ipv6 is now default
   * (feature) New option -4 to force IPv4
   * (feature) New option -6 to force IPv6
   * (feature) Keep original name if a hostname is given with -n/--name
-  * (feature) New option -X/--rdns, similar to -n/--name, but which always
-              does a rdns-lookup, even for names (name->IP->name), as '-n'
-	      was doing until now
+  * (feature) Option -d/--rdns now always does a rdns-lookup, even for names
+              (name->IP->name), as '-n' was doing until now
   * (bugfix)  Fix compatibility issue with GNU Hurd
   * (other)   A C99 compiler is now required
   * (other)   Option parsing with optparse (https://github.com/skeeto/optparse)

@@ -72,8 +72,8 @@ requests have been sent (or when interrupted).
 Similar to B<-c>, but the per-target statistics are displayed in a format
 designed for automated response-time statistics gathering. For example:
 
-    $ fping -C 5 -q somehost
-    somehost : 91.7 37.0 29.2 - 36.8
+ $ fping -C 5 -q somehost
+ somehost : 91.7 37.0 29.2 - 36.8
 
 shows the response time in milliseconds for each of the five requests, with the
 C<-> indicating that no response was received to the fourth request.
@@ -99,7 +99,7 @@ Show elapsed (round-trip) time of packets.
 Read list of targets from a file.  This option can only be used by the root
 user. Regular users should pipe in the file via stdin:
 
-    $ fping < targets_file
+ $ fping < targets_file
 
 =item B<-g>, B<--generate> I<addr/mask>
 
@@ -109,11 +109,11 @@ a network with netmask is given, the network and broadcast addresses will be
 excluded. ex. To ping the network 192.168.1.0/24, the specified command line
 could look like either:
 
-    $ fping -g 192.168.1.0/24
+ $ fping -g 192.168.1.0/24
 
 or
 
-    $ fping -g 192.168.1.1 192.168.1.254
+ $ fping -g 192.168.1.1 192.168.1.254
 
 =item B<-h>, B<--help>
 
@@ -224,7 +224,7 @@ Print B<fping> version information.
 Generate 20 pings to two hosts in ca. 1 second (i.e. one ping every 50 ms to
 each host), and report every ping RTT at the end:
 
-    $ fping --quiet --interval=1 --vcount=20 --period=50 127.0.0.1 127.0.0.2
+ $ fping --quiet --interval=1 --vcount=20 --period=50 127.0.0.1 127.0.0.2
 
 =head1 AUTHORS
 

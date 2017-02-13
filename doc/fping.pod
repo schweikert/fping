@@ -164,7 +164,7 @@ Calculate "outage time" based on the number of lost pings and the interval used 
 Set the typ of service flag (TOS). I<N> can be either decimal or hexadecimal
 (0xh) format.
 
-=item B<-p>, B<--period>=<MSEC>
+=item B<-p>, B<--period>=I<MSEC>
 
 In looping or counting modes (B<-l>, B<-c>, or B<-C>), this parameter sets
 the time in milliseconds that B<fping> waits between successive packets to

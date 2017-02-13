@@ -79,6 +79,14 @@ SKIP: {
     $cmd->stderr_is_eq("");
 }
 
+# fping -m -A
+{
+my $cmd = Test::Command->new(cmd => "fping -4 -A -m www.github.com");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{\d+\.\d+\.\d+\.\d+\n is alive\n\d+\.\d+\.\d+\.\d+ is alive\n});
+$cmd->stderr_is_eq("");
+}
+
 # fping -n
 {
 my $cmd = Test::Command->new(cmd => "fping -n 8.8.8.8");

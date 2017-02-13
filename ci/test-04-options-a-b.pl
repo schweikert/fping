@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 29;
+use Test::Command tests => 32;
 use Test::More;
 use Time::HiRes qw(gettimeofday tv_interval);
 
@@ -14,6 +14,14 @@ use Time::HiRes qw(gettimeofday tv_interval);
 # fping -4 -6
 {
 my $cmd = Test::Command->new(cmd => "fping -4 -6 127.0.0.1");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_is_eq("fping: can't specify both -4 and -6\n");
+}
+
+# fping -6 -4
+{
+my $cmd = Test::Command->new(cmd => "fping -6 -4 127.0.0.1");
 $cmd->exit_is_num(1);
 $cmd->stdout_is_eq("");
 $cmd->stderr_is_eq("fping: can't specify both -4 and -6\n");

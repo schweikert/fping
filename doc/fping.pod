@@ -4,7 +4,7 @@ fping - send ICMP ECHO_REQUEST packets to network hosts
 
 =head1 SYNOPSIS
 
-B<fping> [ I<options> ] [ I<systems...> ] 
+B<fping> [ I<options> ] [ I<systems...> ]
 
 =head1 DESCRIPTION
 
@@ -35,7 +35,7 @@ Restrict name resolution and IPs to IPv6 addresses.
 
 =item B<-a>, B<--alive>
 
-Show systems that are alive. 
+Show systems that are alive.
 
 =item B<-A>, B<--addr>
 
@@ -50,7 +50,7 @@ timestamp).  The reported received data size includes the IP header (normally
 20 bytes) and ICMP header (8 bytes), so the minimum total size is 40 bytes.
 Default is 56, as in B<ping>. Maximum is the theoretical maximum IP datagram
 size (64K), though most systems limit this to a smaller, system-dependent
-number. 
+number.
 
 =item B<-B>, B<--backoff>=I<N>
 
@@ -58,25 +58,25 @@ Backoff factor. In the default mode, B<fping> sends several requests to a
 target before giving up, waiting longer for a reply on each successive request.
 This parameter is the value by which the wait time (B<-t>) is multiplied on each
 successive request; it must be entered as a floating-point number (x.y). The
-default is 1.5. 
+default is 1.5.
 
 =item B<-c>, B<--count>=I<N>
 
 Number of request packets to send to each target.  In this mode, a line is
 displayed for each received response (this can suppressed with B<-q> or B<-Q>).
 Also, statistics about responses for each target are displayed when all
-requests have been sent (or when interrupted). 
+requests have been sent (or when interrupted).
 
 =item B<-C>, B<--vcount>=I<N>
 
 Similar to B<-c>, but the per-target statistics are displayed in a format
-designed for automated response-time statistics gathering. For example: 
+designed for automated response-time statistics gathering. For example:
 
- % fping -C 5 -q somehost 
- somehost : 91.7 37.0 29.2 - 36.8 
+    $ fping -C 5 -q somehost
+    somehost : 91.7 37.0 29.2 - 36.8
 
 shows the response time in milliseconds for each of the five requests, with the
-C<-> indicating that no response was received to the fourth request. 
+C<-> indicating that no response was received to the fourth request.
 
 =item B<-d>, B<--rdns>
 
@@ -92,14 +92,14 @@ modes (B<-l>, B<-c>, or B<-C>).
 
 =item B<-e>, B<--elapsed>
 
-Show elapsed (round-trip) time of packets. 
+Show elapsed (round-trip) time of packets.
 
 =item B<-f>, B<--file>
 
 Read list of targets from a file.  This option can only be used by the root
-user. Regular users should pipe in the file via stdin: 
+user. Regular users should pipe in the file via stdin:
 
- % fping < targets_file 
+    $ fping < targets_file
 
 =item B<-g>, B<--generate> I<addr/mask>
 
@@ -109,25 +109,33 @@ a network with netmask is given, the network and broadcast addresses will be
 excluded. ex. To ping the network 192.168.1.0/24, the specified command line
 could look like either:
 
- fping -g 192.168.1.0/24 
+    $ fping -g 192.168.1.0/24
 
-or 
+or
 
- fping -g 192.168.1.1 192.168.1.254 
+    $ fping -g 192.168.1.1 192.168.1.254
 
 =item B<-h>, B<--help>
 
 Print usage message.
+
+=item B<-H>, B<--ttl>=I<N>
+
+Set the IP TTL field (time to live hops).
 
 =item B<-i>, B<--interval>=I<MSEC>
 
 The minimum amount of time (in milliseconds) between sending a ping packet
 to any target (default is 25, minimum is 1).
 
+=item B<-I>, B<--iface>=I<IFACE>
+
+Set the interface (requires SO_BINDTODEVICE support).
+
 =item B<-l>, B<--loop>
 
 Loop sending packets to each target indefinitely. Can be interrupted with
-Ctrl-C; statistics about responses for each target are then displayed. 
+Ctrl-C; statistics about responses for each target are then displayed.
 
 =item B<-m>, B<--all>
 
@@ -141,7 +149,7 @@ Set the "Don't Fragment" bit in the IP header (used to determine/test the MTU).
 =item B<-n>, B<--name>
 
 If targets are specified as IP addresses, do a reverse-DNS lookup on them
-to 
+to
 
 =item B<-N>, B<--netdata>
 
@@ -154,7 +162,7 @@ Calculate "outage time" based on the number of lost pings and the interval used 
 =item B<-O>, B<--tos>=I<N>
 
 Set the typ of service flag (TOS). I<N> can be either decimal or hexadecimal
-(0xh) format. 
+(0xh) format.
 
 =item B<-p>, B<--period>=<MSEC>
 
@@ -174,7 +182,7 @@ Like B<-q>, but show summary results every n seconds.
 =item B<-r>, B<--retry>=I<N>
 
 Retry limit (default 3). This is the number of times an attempt at pinging
-a target will be made, not including the first try. 
+a target will be made, not including the first try.
 
 =item B<-R>, B<--random>
 
@@ -183,15 +191,11 @@ Use to defeat, e.g., link data compression.
 
 =item B<-s>, B<--src>
 
-Print cumulative statistics upon exit. 
+Print cumulative statistics upon exit.
 
 =item B<-S>, B<--src>=I<addr>
 
-Set source address. 
-
-=item B<-I>, B<--iface>=I<IFACE>
-
-Set the interface (requires SO_BINDTODEVICE support) 
+Set source address.
 
 =item B<-t>, B<--timeout>=I<MSEC>
 
@@ -203,19 +207,15 @@ B<-C>).
 
 =item B<-T> I<n>
 
-Ignored (for compatibility with fping 2.4). 
+Ignored (for compatibility with fping 2.4).
 
 =item B<-u>, B<--unreach>
 
-Show targets that are unreachable. 
+Show targets that are unreachable.
 
 =item B<-v>, B<--version>
 
-Print B<fping> version information. 
-
-=item B<-H>, B<--ttl>=I<N>
-
-Set the IP TTL field (time to live hops). 
+Print B<fping> version information.
 
 =back
 

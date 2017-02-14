@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 12;
+use Test::Command tests => 18;
 
 #  -n         show targets by name (-d is equivalent)
 #  -O n       set the type of service (tos) flag on the ICMP packets
@@ -10,6 +10,22 @@ use Test::Command tests => 12;
 #  -Q n       same as -q, but show summary every n seconds
 
 # fping -n -> test-14-internet-hosts
+
+# fping -d -n
+{
+my $cmd = Test::Command->new(cmd => "fping -d -n 127.0.0.1");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_is_eq("fping: use either one of -d or -n\n");
+}
+
+# fping -n -d
+{
+my $cmd = Test::Command->new(cmd => "fping -n -d 127.0.0.1");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_is_eq("fping: use either one of -d or -n\n");
+}
 
 # fping -o
 {

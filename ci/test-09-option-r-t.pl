@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 18;
+use Test::Command tests => 21;
 use Test::More;
 
 #  -R         random bytes
@@ -93,6 +93,14 @@ SKIP: {
     $cmd->exit_is_num(0);
     $cmd->stdout_is_eq("::1 is alive\n");
     $cmd->stderr_is_eq("");
+}
+
+# fping -S
+{
+my $cmd = Test::Command->new(cmd => "fping -S bla");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_is_eq("fping: can't parse source address: bla\n");
 }
 
 # fping -t tested in test-4-options-a-b.pl

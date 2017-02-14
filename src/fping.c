@@ -613,8 +613,8 @@ int main(int argc, char** argv)
                 break;
             }
 #endif
-            usage(1);
-            break;
+            fprintf(stderr, "%s: can't parse source address: %s\n", prog, optparse_state.optarg);
+            exit(1);
 
         case 'I':
 #ifdef SO_BINDTODEVICE

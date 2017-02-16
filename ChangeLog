@@ -25,10 +25,10 @@
     fping -d NAME    NAME->IP->IPNAME       NAME->IP->IPNAME
 
   * INCOMPATIBILITY WARNING 3:
-    fping will now reject replies, if they arrive after the defined timeout
-    for reply packets, specified with -t. This change is relevant only for
-    for the counting and looping modes, where now the measured times should
-    be more consistent (see github issue #32 for details).
+    fping will now discard replies, if they arrive after the defined timeout
+    for reply packets, specified with -t. This change is relevant only for for
+    the counting and looping modes, where now the measured times should be
+    more consistent (see github issue #32 for details).
 
     To prevent loosing reply packets because of this change, the default
     timeout in counting and looping modes is now automatically adjusted

@@ -6,8 +6,8 @@
     example, doing 'fping google.com' is going to ping the IPv6 IP of
     google.com on IPv6-enabled hosts.
 
-    If you need exact compatibility with old versions, you can configure
-    and install fping twice: once for ipv4, and once for ipv6:
+    If you need exact compatibility with old versions, you can configure and
+    install fping twice: once for ipv4, and once for ipv6:
     - ./configure --disable-ipv6; make clean install
     - ./configure --disable-ipv4 --program-suffix=6; make clean install
 
@@ -27,14 +27,13 @@
   * INCOMPATIBILITY WARNING 3:
     fping will now discard replies, if they arrive after the defined timeout
     for reply packets, specified with -t. This change is relevant only for for
-    the counting and looping modes, where now the measured times should be
+    the counting and looping modes, where the measured times should now be
     more consistent (see github issue #32 for details).
 
     To prevent loosing reply packets because of this change, the default
-    timeout in counting and looping modes is now automatically adjusted
-    to the period interval (up to 2000ms), but it can be overriden with
-    the -t option. The default timeout for non-looping/counting modes
-    remains 500ms.
+    timeout in counting and looping modes is now automatically adjusted to the
+    period interval (up to 2000 ms), but it can be overriden with the -t
+    option. The default timeout for non-looping/counting modes remains 500 ms.
 
   * (feature) Unified 'fping' and 'fping6' into one binary (#80)
   * (feature) Long option names for all options

@@ -526,7 +526,7 @@ int main(int argc, char** argv)
 
         case 'n':
             name_flag = 1;
-            if(rdns_flag) {
+            if (rdns_flag) {
                 fprintf(stderr, "%s: use either one of -d or -n\n", prog);
                 exit(1);
             }
@@ -534,7 +534,7 @@ int main(int argc, char** argv)
 
         case 'd':
             rdns_flag = 1;
-            if(name_flag) {
+            if (name_flag) {
                 fprintf(stderr, "%s: use either one of -d or -n\n", prog);
                 exit(1);
             }
@@ -733,14 +733,14 @@ int main(int argc, char** argv)
     /* auto-tune default timeout for count/loop modes
      * see also github #32 */
     if (loop_flag || count_flag) {
-        if(!timeout_flag) {
+        if (!timeout_flag) {
             timeout = perhost_interval;
-            if(timeout > AUTOTUNE_TIMEOUT_MAX*100) {
-                timeout = AUTOTUNE_TIMEOUT_MAX*100;
+            if (timeout > AUTOTUNE_TIMEOUT_MAX * 100) {
+                timeout = AUTOTUNE_TIMEOUT_MAX * 100;
             }
         }
         else {
-            if(timeout > perhost_interval && (loop_flag || (count_flag && count > 1))) {
+            if (timeout > perhost_interval && (loop_flag || (count_flag && count > 1))) {
                 fprintf(stderr, "%s: warning: timeout (-t) value larger than period (-p) produces unexpected results\n", prog);
             }
         }
@@ -2063,10 +2063,9 @@ int wait_for_reply(long wait_time)
     this_count = seqmap_value->ping_count;
     this_reply = timeval_diff(&recv_time, sent_time);
 
-
     /* discard reply if delay is larger than timeout
      * (see also: github #32) */
-    if(this_reply > h->timeout) {
+    if (this_reply > h->timeout) {
         return 1;
     }
 

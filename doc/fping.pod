@@ -199,11 +199,19 @@ Set source address.
 
 =item B<-t>, B<--timeout>=I<MSEC>
 
-Initial target timeout in milliseconds (default 500). In the default mode, this
-is the amount of time that B<fping> waits for a response to its first request.
-Successive timeouts are multiplied by the backoff factor specified with B<-B>.
-Note that this option has no effect looping or counting modes (B<-l>, B<-c>, or
-B<-C>).
+Initial target timeout in milliseconds. In the default, non-loop mode, the
+default timeout is 500ms, and it represents the amount of time that B<fping>
+waits for a response to its first request. Successive timeouts are multiplied
+by the backoff factor specified with B<-B>.
+
+In loop/count mode, the default timeout is automatically adjusted to match
+the "period" value (but not more than 2000ms). You can still adjust the timeout
+value with this option, if you wish to, but note that setting a value larger
+than "period" produces inconsistent results, because the timeout value can
+be respected only for the last ping.
+
+Also note that any received replies that are larger than the timeout value, will
+be discarded.
 
 =item B<-T> I<n>
 

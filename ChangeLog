@@ -24,6 +24,18 @@
     fping -n NAME    NAME->IP->IPNAME       NAME
     fping -d NAME    NAME->IP->IPNAME       NAME->IP->IPNAME
 
+  * INCOMPATIBILITY WARNING 3:
+    fping will now reject replies, if they arrive after the defined timeout
+    for reply packets, specified with -t. This change is relevant only for
+    for the counting and looping modes, where now the measured times should
+    be more consistent (see github issue #32 for details).
+
+    To prevent loosing reply packets because of this change, the default
+    timeout in counting and looping modes is now automatically adjusted
+    to the period interval (up to 2000ms), but it can be overriden with
+    the -t option. The default timeout for non-looping/counting modes
+    remains 500ms.
+
   * (feature) Unified 'fping' and 'fping6' into one binary (#80)
   * (feature) Long option names for all options
   * (feature) --enable-ipv6 is now default
@@ -32,6 +44,8 @@
   * (feature) Keep original name if a hostname is given with -n/--name
   * (feature) Option -d/--rdns now always does a rdns-lookup, even for names
               (name->IP->name), as '-n' was doing until now
+  * (feature) Enforce -t timeout on reply packets, by discarding late packets (#32)
+  * (feature) Auto-adjust timeout for -c/-C/-l mode to value of -p
   * (bugfix)  Fix compatibility issue with GNU Hurd
   * (other)   A C99 compiler is now required
   * (other)   Option parsing with optparse (https://github.com/skeeto/optparse)

@@ -29,6 +29,7 @@
 
 #ifndef DEFAULT_TIMEOUT
 #define DEFAULT_TIMEOUT 500       /* individual host timeouts */
+#define AUTOTUNE_TIMEOUT_MAX  2000
 #endif
 
 

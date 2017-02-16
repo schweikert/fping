@@ -282,7 +282,7 @@ int generate_flag = 0; /* flag for IP list generation */
 int verbose_flag, quiet_flag, stats_flag, unreachable_flag, alive_flag;
 int elapsed_flag, version_flag, count_flag, loop_flag, netdata_flag;
 int per_recv_flag, report_all_rtts_flag, name_flag, addr_flag, backoff_flag, rdns_flag;
-int multif_flag;
+int multif_flag, timeout_flag;
 int outage_flag = 0;
 int timestamp_flag = 0;
 int random_data_flag = 0;
@@ -453,6 +453,7 @@ int main(int argc, char** argv)
         case 't':
             if (!(timeout = (unsigned int)atoi(optparse_state.optarg) * 100))
                 usage(1);
+            timeout_flag = 1;
 
             break;
 
@@ -728,6 +729,22 @@ int main(int argc, char** argv)
     }
 
     trials = (count > retry + 1) ? count : retry + 1;
+
+    /* auto-tune default timeout for count/loop modes
+     * see also github #32 */
+    if (loop_flag || count_flag) {
+        if(!timeout_flag) {
+            timeout = perhost_interval;
+            if(timeout > AUTOTUNE_TIMEOUT_MAX*100) {
+                timeout = AUTOTUNE_TIMEOUT_MAX*100;
+            }
+        }
+        else {
+            if(timeout > perhost_interval && (loop_flag || (count_flag && count > 1))) {
+                fprintf(stderr, "%s: warning: timeout (-t) value larger than period (-p) produces unexpected results\n", prog);
+            }
+        }
+    }
 
 #if defined(DEBUG) || defined(_DEBUG)
     if (debugging & DBG_TRACE)
@@ -1995,7 +2012,7 @@ int wait_for_reply(long wait_time)
         );
 
     if (result <= 0) {
-        return 0;
+        return 1;
     }
 
     gettimeofday(&current_time, &tz);
@@ -2045,6 +2062,13 @@ int wait_for_reply(long wait_time)
     sent_time = &seqmap_value->ping_ts;
     this_count = seqmap_value->ping_count;
     this_reply = timeval_diff(&recv_time, sent_time);
+
+
+    /* discard reply if delay is larger than timeout
+     * (see also: github #32) */
+    if(this_reply > h->timeout) {
+        return 1;
+    }
 
     if (loop_flag || h->resp_times[this_count] == RESP_WAITING) {
         /* only for non-duplicates: */
@@ -2684,9 +2708,9 @@ void usage(int is_error)
     fprintf(out, "Probing options:\n");
     fprintf(out, "   -4, --ipv4         only ping IPv4 addresses\n");
     fprintf(out, "   -6, --ipv6         only ping IPv6 addresses\n");
-    fprintf(out, "   -b, --size=BYTES   amount of ping data to send, in bytes (default %d)\n", DEFAULT_PING_DATA_SIZE);
+    fprintf(out, "   -b, --size=BYTES   amount of ping data to send, in bytes (default: %d)\n", DEFAULT_PING_DATA_SIZE);
     fprintf(out, "   -B, --backoff=N    set exponential backoff factor to N\n");
-    fprintf(out, "   -c, --count=N      count of pings to send to each target (default %d)\n", count);
+    fprintf(out, "   -c, --count=N      count of pings to send to each target (default: %d)\n", count);
     fprintf(out, "   -f, --file=FILE    read list of targets from a file ( - means stdin)\n");
     fprintf(out, "   -g, --generate     generate target list (only if no -f specified)\n");
     fprintf(out, "                      (give start and end IP in the target list, or a CIDR address)\n");
@@ -2699,12 +2723,13 @@ void usage(int is_error)
     fprintf(out, "   -m, --all          use all IPs of provided hostnames (e.g. IPv4 and IPv6), use with -A\n");
     fprintf(out, "   -M, --dontfrag     set the Don't Fragment flag\n");
     fprintf(out, "   -O, --tos=N        set the type of service (tos) flag on the ICMP packets\n");
-    fprintf(out, "   -p, --period=MSEC  interval between ping packets to one target (in millisec)\n");
-    fprintf(out, "                      (in looping and counting modes, default %d)\n", perhost_interval / 100);
-    fprintf(out, "   -r, --retry=N      number of retries (default %d)\n", DEFAULT_RETRY);
+    fprintf(out, "   -p, --period=MSEC  interval between ping packets to one target (in ms)\n");
+    fprintf(out, "                      (in looping and counting modes, default: %d ms)\n", perhost_interval / 100);
+    fprintf(out, "   -r, --retry=N      number of retries (default: %d)\n", DEFAULT_RETRY);
     fprintf(out, "   -R, --random       random packet data (to foil link data compression)\n");
     fprintf(out, "   -S, --src=IP       set source address\n");
-    fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (in millisec) (default %d)\n", timeout / 100);
+    fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (in ms)\n");
+    fprintf(out, "                      (default: %d ms, except with -l/-c/-C where it is the -p period)\n", timeout / 100);
     fprintf(out, "\n");
     fprintf(out, "Output options:\n");
     fprintf(out, "   -a, --alive        show targets that are alive\n");
@@ -2712,7 +2737,7 @@ void usage(int is_error)
     fprintf(out, "   -C, --vcount=N     same as -c, report results in verbose format\n");
     fprintf(out, "   -D, --timestamp    print timestamp before each output line\n");
     fprintf(out, "   -e, --elapsed      show elapsed time on return packets\n");
-    fprintf(out, "   -i, --interval=MSEC  interval between sending ping packets (in ms) (default %d)\n", interval / 100);
+    fprintf(out, "   -i, --interval=MSEC  interval between sending ping packets (default: %d ms)\n", interval / 100);
     fprintf(out, "   -n, --name         show targets by name (-d is equivalent)\n");
     fprintf(out, "   -N, --netdata      output compatible for netdata (-l -Q are required)\n");
     fprintf(out, "   -o, --outage       show the accumulated outage time (lost packets * packet interval)\n");

@@ -29,9 +29,9 @@
   * INCOMPATIBILE CHANGE: discard late packets
 
     fping will now discard replies, if they arrive after the defined timeout
-    for reply packets, specified with -t. This change is relevant only for for
-    the counting and looping modes, where the measured times should now be
-    more consistent (see github issue #32 for details).
+    for reply packets, specified with -t. This change is relevant only for the
+    counting and looping modes, where the measured times should now be more
+    consistent (see github issue #32 for details).
 
     To prevent loosing reply packets because of this change, the default
     timeout in counting and looping modes is now automatically adjusted to the

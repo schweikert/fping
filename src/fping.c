@@ -2238,6 +2238,7 @@ void add_name(char* name)
     }
 #endif
     else {
+        hints.ai_socktype = SOCK_STREAM;
         hints.ai_protocol = 0;
     }
     ret_ga = getaddrinfo(name, NULL, &hints, &res0);

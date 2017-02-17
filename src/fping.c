@@ -2727,8 +2727,8 @@ void usage(int is_error)
     fprintf(out, "   -r, --retry=N      number of retries (default: %d)\n", DEFAULT_RETRY);
     fprintf(out, "   -R, --random       random packet data (to foil link data compression)\n");
     fprintf(out, "   -S, --src=IP       set source address\n");
-    fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (in ms)\n");
-    fprintf(out, "                      (default: %d ms, except with -l/-c/-C where it is the -p period)\n", timeout / 100);
+    fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (default: %d ms,\n", timeout/100);
+    fprintf(out, "                      except with -l/-c/-C, where it's the -p period up to 2000 ms)\n");
     fprintf(out, "\n");
     fprintf(out, "Output options:\n");
     fprintf(out, "   -a, --alive        show targets that are alive\n");

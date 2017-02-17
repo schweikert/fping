@@ -30,18 +30,18 @@
 
     fping will now discard replies, if they arrive after the defined timeout
     for reply packets, specified with -t. This change is relevant only for the
-    counting and looping modes, where the measured times should now be more
+    count and loop modes, where the measured times should be now more
     consistent (see github issue #32 for details).
 
     To prevent loosing reply packets because of this change, the default
-    timeout in counting and looping modes is now automatically adjusted to the
+    timeout in count and loop modes is now automatically adjusted to the
     period interval (up to 2000 ms), but it can be overriden with the -t
-    option. The default timeout for non-looping/counting modes remains 500 ms.
+    option. The default timeout for non-loop/count modes remains 500 ms.
 
   * INCOMPATIBLE CHANGE: no restrictions by default
 
-    fping will not enforce that -i is >= 1 and -p >= 10 anymore, except if
-    you ./configure with the new '--enable-safe-limits' parameter.
+    fping will not enforce -i >= 1 and -p >= 10 anymore, except if you
+    './configure --enable-safe-limits'.
 
     The reasoning to removing the restrictions by default, is that users can
     clog the network with other tools anyway, and these restrictions are

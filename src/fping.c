@@ -696,6 +696,7 @@ int main(int argc, char** argv)
         exit(1);
     }
 
+#ifdef FPING_SAFE_LIMITS
     if ((interval < MIN_INTERVAL * 100 || perhost_interval < MIN_PERHOST_INTERVAL * 100)
         && getuid()) {
         fprintf(stderr, "%s: these options are too risky for mere mortals.\n", prog);
@@ -703,6 +704,7 @@ int main(int argc, char** argv)
             prog, MIN_INTERVAL, MIN_PERHOST_INTERVAL);
         exit(1);
     }
+#endif
 
     if (ping_data_size > MAX_PING_DATA) {
         fprintf(stderr, "%s: data size %u not valid, must be lower than %u\n",

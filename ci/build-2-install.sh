@@ -9,7 +9,7 @@ if [ ! -d ci ]; then
 fi
 
 autoreconf -i
-./configure --enable-ipv4 --enable-ipv6 --prefix=/opt/fping
+./configure --enable-ipv4 --enable-ipv6 --enable-safe-limits --prefix=/opt/fping
 make CFLAGS="-g -O0 -fprofile-arcs -ftest-coverage"
 ## setcap currently doesn't work anymore on travis-ci
 #sudo setcap cap_net_raw+ep src/fping

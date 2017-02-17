@@ -2715,8 +2715,8 @@ void usage(int is_error)
     fprintf(out, "   -4, --ipv4         only ping IPv4 addresses\n");
     fprintf(out, "   -6, --ipv6         only ping IPv6 addresses\n");
     fprintf(out, "   -b, --size=BYTES   amount of ping data to send, in bytes (default: %d)\n", DEFAULT_PING_DATA_SIZE);
-    fprintf(out, "   -B, --backoff=N    set exponential backoff factor to N\n");
-    fprintf(out, "   -c, --count=N      count of pings to send to each target (default: %d)\n", count);
+    fprintf(out, "   -B, --backoff=N    set exponential backoff factor to N (default: 1.5)\n");
+    fprintf(out, "   -c, --count=N      count-mode: send N pings to each target\n");
     fprintf(out, "   -f, --file=FILE    read list of targets from a file ( - means stdin)\n");
     fprintf(out, "   -g, --generate     generate target list (only if no -f specified)\n");
     fprintf(out, "                      (give start and end IP in the target list, or a CIDR address)\n");

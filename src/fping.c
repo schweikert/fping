@@ -2716,7 +2716,7 @@ void usage(int is_error)
     fprintf(out, "   -6, --ipv6         only ping IPv6 addresses\n");
     fprintf(out, "   -b, --size=BYTES   amount of ping data to send, in bytes (default: %d)\n", DEFAULT_PING_DATA_SIZE);
     fprintf(out, "   -B, --backoff=N    set exponential backoff factor to N (default: 1.5)\n");
-    fprintf(out, "   -c, --count=N      count-mode: send N pings to each target\n");
+    fprintf(out, "   -c, --count=N      count mode: send N pings to each target\n");
     fprintf(out, "   -f, --file=FILE    read list of targets from a file ( - means stdin)\n");
     fprintf(out, "   -g, --generate     generate target list (only if no -f specified)\n");
     fprintf(out, "                      (give start and end IP in the target list, or a CIDR address)\n");
@@ -2725,12 +2725,12 @@ void usage(int is_error)
 #ifdef SO_BINDTODEVICE
     fprintf(out, "   -I, --iface=IFACE  bind to a particular interface\n");
 #endif
-    fprintf(out, "   -l, --loop         loop sending pings forever\n");
+    fprintf(out, "   -l, --loop         loop mode: send pings forever\n");
     fprintf(out, "   -m, --all          use all IPs of provided hostnames (e.g. IPv4 and IPv6), use with -A\n");
     fprintf(out, "   -M, --dontfrag     set the Don't Fragment flag\n");
     fprintf(out, "   -O, --tos=N        set the type of service (tos) flag on the ICMP packets\n");
     fprintf(out, "   -p, --period=MSEC  interval between ping packets to one target (in ms)\n");
-    fprintf(out, "                      (in looping and counting modes, default: %d ms)\n", perhost_interval / 100);
+    fprintf(out, "                      (in loop and count modes, default: %d ms)\n", perhost_interval / 100);
     fprintf(out, "   -r, --retry=N      number of retries (default: %d)\n", DEFAULT_RETRY);
     fprintf(out, "   -R, --random       random packet data (to foil link data compression)\n");
     fprintf(out, "   -S, --src=IP       set source address\n");

@@ -109,8 +109,13 @@ extern int h_errno;
 #define DEFAULT_PING_DATA_SIZE 56
 
 /* maxima and minima */
+#ifdef FPING_SAFE_LIMITS
 #define MIN_INTERVAL 1 /* in millisec */
 #define MIN_PERHOST_INTERVAL 10 /* in millisec */
+#else
+#define MIN_INTERVAL 0
+#define MIN_PERHOST_INTERVAL 0
+#endif
 
 /* response time array flags */
 #define RESP_WAITING -1

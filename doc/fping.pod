@@ -126,7 +126,7 @@ Set the IP TTL field (time to live hops).
 =item B<-i>, B<--interval>=I<MSEC>
 
 The minimum amount of time (in milliseconds) between sending a ping packet
-to any target (default is 25, minimum is 1).
+to any target (default is 10, minimum is 1).
 
 =item B<-I>, B<--iface>=I<IFACE>
 
@@ -266,8 +266,8 @@ line arguments, and 4 for a system call failure.
 
 =head1 RESTRICTIONS
 
-In order to avoid users mistakingly flooding the network, the following values
-are not allowed for non-root users:
+If fping was configured with C<--enable-safe-limits>, the following values are
+not allowed for non-root users:
 
 =over 4
 

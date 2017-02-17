@@ -1,7 +1,8 @@
 2017-02-13  David Schweikert  <david@schweikert.ch>
-  * Version 4.0-rc1
+  * Version 4.0-rc2
 
-  * INCOMPATIBILITY WARNING 1:
+  * INCOMPATIBILE CHANGE: fping and fping6 unification
+
     fping and fping6 are now unified into one binary. It means that, for
     example, doing 'fping google.com' is going to ping the IPv6 IP of
     google.com on IPv6-enabled hosts.
@@ -11,7 +12,8 @@
     - ./configure --disable-ipv6; make clean install
     - ./configure --disable-ipv4 --program-suffix=6; make clean install
 
-  * INCOMPATIBILITY WARNING 2:
+  * INCOMPATIBILE CHANGE: -n option, not the same as -d anymore
+
     Option -n / --name is now doing a reverse-DNS lookups on host addresses,
     only they are given as IP address, but not for hostnames. For example, if
     you write 'fping -n google.com', fping would previously do a forward-DNS
@@ -24,7 +26,8 @@
     fping -n NAME    NAME->IP->IPNAME       NAME
     fping -d NAME    NAME->IP->IPNAME       NAME->IP->IPNAME
 
-  * INCOMPATIBILITY WARNING 3:
+  * INCOMPATIBILE CHANGE: discard late packets
+
     fping will now discard replies, if they arrive after the defined timeout
     for reply packets, specified with -t. This change is relevant only for for
     the counting and looping modes, where the measured times should now be
@@ -34,6 +37,16 @@
     timeout in counting and looping modes is now automatically adjusted to the
     period interval (up to 2000 ms), but it can be overriden with the -t
     option. The default timeout for non-looping/counting modes remains 500 ms.
+
+  * INCOMPATIBLE CHANGE: no restrictions by default
+
+    fping will not enforce that -i is >= 1 and -p >= 10 anymore, except if
+    you ./configure with the new '--enable-safe-limits' parameter.
+    
+    The reasoning to removing the restrictions by default, is that users can
+    clog the network with other tools anyway, and these restrictions are
+    sometimes getting in the way (for example if you try to ping a lot of
+    hosts).
 
   * (feature) Unified 'fping' and 'fping6' into one binary (#80)
   * (feature) Long option names for all options
@@ -45,6 +58,8 @@
               (name->IP->name), as '-n' was doing until now
   * (feature) Enforce -t timeout on reply packets, by discarding late packets (#32)
   * (feature) Auto-adjust timeout for -c/-C/-l mode to value of -p
+  * (feature) -i/-p restrictions only enforced with ./configure --enable-safe-limits
+  * (feature) Default interval -i changed from 25ms to 10ms
   * (bugfix)  Fix compatibility issue with GNU Hurd
   * (other)   A C99 compiler is now required
   * (other)   Option parsing with optparse (https://github.com/skeeto/optparse)

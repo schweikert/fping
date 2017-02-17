@@ -42,6 +42,11 @@ AS_IF([test "x$enable_timestamp" = "xyes" -a "x$have_so_timestamp" = "xno"], [
   AC_MSG_ERROR([--enable-timestamp not supported on this platform])
 ])
 
+AC_ARG_ENABLE([safe-limits],
+  AS_HELP_STRING([--enable-safe-limits], [Restrict timing parameters (-i, -p) within "safe" limits]))
+AS_IF([test "x$enable_safe_limits" = "xyes"], [
+   AC_DEFINE(FPING_SAFE_LIMITS, [1], [safe limits should be enforced])])
+
 AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_MAINTAINER_MODE

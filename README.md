@@ -23,7 +23,7 @@ _Mailing-list_:
 If you want to install fping from source, proceed as follows:
 
 0. Run ./autogen.sh
-   (only if you got the source from github)
+   (only needed if you got the source code by cloning a git repository)
 1. Run ./configure with the correct arguments
    (see: ./configure --help)
 2. Run make; make install

@@ -78,3 +78,6 @@ default payload size).
 - A C99 compiler is now required
 - Option parsing with optparse (https://github.com/skeeto/optparse). Thanks Christopher Wellons!
 - New changelog file format
+
+
+(see doc/CHANGELOG.pre-v4 for older changes)

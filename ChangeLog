@@ -1,5 +1,5 @@
-2017-02-13  David Schweikert  <david@schweikert.ch>
-  * Version 4.0-rc3
+2017-03-23  David Schweikert  <david@schweikert.ch>
+  * Version 4.0
 
   * INCOMPATIBILE CHANGE: fping and fping6 unification
 
@@ -15,18 +15,18 @@
   * INCOMPATIBILE CHANGE: -n option, not the same as -d anymore
 
     Option -n / --name is now doing a reverse-DNS lookups on host addresses,
-    only they are given as IP address, but not for hostnames. For example, if
-    you write 'fping -n google.com', fping would previously do a forward-DNS
-    lookup on google.com, and then a reverse-DNS lookup on the resolved IP
-    address. Now, it is just going to keep the name 'google.com'. That same
-    behavior can be achieved with the option -d / --rdns (which was previously
-    an alias for -n).
+    only if they are given as IP address, but not for hostnames. For example,
+    if you write 'fping -n google.com', fping would previously do a
+    forward-DNS lookup on google.com, and then a reverse-DNS lookup on the
+    resolved IP address. Now, it is just going to keep the name 'google.com'.
+    That same behavior can be achieved with the option -d / --rdns (which was
+    previously an alias for -n).
 
                      fping<4.0              fping>=4.0
     fping -n NAME    NAME->IP->IPNAME       NAME
     fping -d NAME    NAME->IP->IPNAME       NAME->IP->IPNAME
 
-  * INCOMPATIBILE CHANGE: discard late packets
+  * INCOMPATIBILE CHANGE: discarding of late packets
 
     fping will now discard replies, if they arrive after the defined timeout
     for reply packets, specified with -t. This change is relevant only for the

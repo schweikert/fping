@@ -34,7 +34,7 @@ previously an alias for -n).
 fping will now discard replies, if they arrive after the defined timeout
 for reply packets, specified with -t. This change is relevant only for the
 count and loop modes, where the measured times should be now more
-consistent (see github issue #32 for details).
+consistent (see github issue [#32][i32] for details).
 
 To prevent loosing reply packets because of this change, the default
 timeout in count and loop modes is now automatically adjusted to the
@@ -60,14 +60,14 @@ default payload size).
 
 ## New features
 
-- Unified 'fping' and 'fping6' into one binary (#80)
+- Unified 'fping' and 'fping6' into one binary ([#80][i80])
 - Long option names for all options
 - IPv6 enabled by default
 - New option -4 to force IPv4
 - New option -6 to force IPv6
 - Keep original name if a hostname is given with -n/--name
 - Option -d/--rdns now always does a rdns-lookup, even for names, as '-n' was doing until now
-- Enforce -t timeout on reply packets, by discarding late packets (#32)
+- Enforce -t timeout on reply packets, by discarding late packets ([#32][i32])
 - Auto-adjust timeout for -c/-C/-l mode to value of -p
 
 ## Bugfixes and other changes
@@ -79,5 +79,7 @@ default payload size).
 - Option parsing with optparse (https://github.com/skeeto/optparse). Thanks Christopher Wellons!
 - New changelog file format
 
+[i32]: https://github.com/schweikert/fping/issues/32
+[i80]: https://github.com/schweikert/fping/issues/80
 
 (see doc/CHANGELOG.pre-v4 for older changes)

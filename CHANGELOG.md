@@ -1,3 +1,10 @@
+fping 4.1 (UNRELEASED)
+======================
+
+## Bugfixes and other changes
+
+- Re-added README file to the distribution
+
 fping 4.0 (2017-04-23)
 ======================
 

@@ -170,7 +170,7 @@ In looping or counting modes (B<-l>, B<-c>, or B<-C>), this parameter sets
 the time in milliseconds that B<fping> waits between successive packets to
 an individual target. Default is 1000 and minimum is 10.
 
-=item B<-q>, B<--quet>
+=item B<-q>, B<--quiet>
 
 Quiet. Don't show per-probe results, but only the final summary. Also don't
 show ICMP error messages.

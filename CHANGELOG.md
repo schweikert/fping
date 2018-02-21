@@ -3,7 +3,7 @@ fping 4.1 (UNRELEASED)
 
 ## Bugfixes and other changes
 
-- Re-added README file to the distribution
+- Fix problem when socket fd is 0 (#125, thanks Ramón Novoa!)
 
 fping 4.0 (2017-04-23)
 ======================

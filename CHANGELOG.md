@@ -4,6 +4,7 @@ fping 4.1 (UNRELEASED)
 ## Bugfixes and other changes
 
 - Fix problem when socket fd is 0 (#125, thanks Ramón Novoa!)
+- Fix running on servers with disabled IPv6 (#118, thanks Simon Matter)
 
 fping 4.0 (2017-04-23)
 ======================

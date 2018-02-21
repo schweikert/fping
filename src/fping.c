@@ -231,11 +231,11 @@ HOST_ENTRY* ev_last;
 
 char* prog;
 int ident; /* our pid */
-int socket4 = 0;
+int socket4 = -1;
 #ifndef IPV6
 int hints_ai_family = AF_INET;
 #else
-int socket6 = 0;
+int socket6 = -1;
 int hints_ai_family = AF_UNSPEC;
 #endif
 
@@ -435,14 +435,14 @@ int main(int argc, char** argv)
             break;
         case 'M':
 #ifdef IP_MTU_DISCOVER
-            if (socket4) {
+            if (socket4 >= 0) {
                 int val = IP_PMTUDISC_DO;
                 if (setsockopt(socket4, IPPROTO_IP, IP_MTU_DISCOVER, &val, sizeof(val))) {
                     perror("setsockopt IP_MTU_DISCOVER");
                 }
             }
 #ifdef IPV6
-            if (socket6) {
+            if (socket6 >= 0) {
                 int val = IPV6_PMTUDISC_DO;
                 if (setsockopt(socket6, IPPROTO_IPV6, IPV6_MTU_DISCOVER, &val, sizeof(val))) {
                     perror("setsockopt IPV6_MTU_DISCOVER");
@@ -624,13 +624,13 @@ int main(int argc, char** argv)
 
         case 'I':
 #ifdef SO_BINDTODEVICE
-            if (socket4) {
+            if (socket4 >= 0) {
                 if (setsockopt(socket4, SOL_SOCKET, SO_BINDTODEVICE, optparse_state.optarg, strlen(optparse_state.optarg))) {
                     perror("binding to specific interface (SO_BINTODEVICE)");
                 }
             }
 #ifdef IPV6
-            if (socket6) {
+            if (socket6 >= 0) {
                 if (setsockopt(socket6, SOL_SOCKET, SO_BINDTODEVICE, optparse_state.optarg, strlen(optparse_state.optarg))) {
                     perror("binding to specific interface (SO_BINTODEVICE), IPV6");
                 }
@@ -649,13 +649,13 @@ int main(int argc, char** argv)
 
         case 'O':
             if (sscanf(optparse_state.optarg, "%i", &tos)) {
-                if (socket4) {
+                if (socket4 >= 0) {
                     if (setsockopt(socket4, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
                         perror("setting type of service octet IP_TOS");
                     }
                 }
 #if defined(IPV6) && defined(IPV6_TCLASS)
-                if (socket6) {
+                if (socket6 >= 0) {
                     if (setsockopt(socket6, IPPROTO_IPV6, IPV6_TCLASS, &tos, sizeof(tos))) {
                         perror("setting type of service octet IPV6_TCLASS");
                     }
@@ -680,6 +680,10 @@ int main(int argc, char** argv)
     }
 
     /* validate various option settings */
+
+    if (socket4 < 0 && socket6 < 0) {
+        crash_and_burn("can't create socket (must run as root?)");
+    }
 
     if (ttl > 255) {
         fprintf(stderr, "%s: ttl %u out of range\n", prog, ttl);
@@ -827,13 +831,13 @@ int main(int argc, char** argv)
 
     /* set the TTL, if the -H option was set (otherwise ttl will be = 0) */
     if (ttl > 0) {
-        if (socket4) {
+        if (socket4 >= 0) {
             if (setsockopt(socket4, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl))) {
                 perror("setting time to live");
             }
         }
 #ifdef IPV6
-        if (socket6) {
+        if (socket6 >= 0) {
             if (setsockopt(socket6, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &ttl, sizeof(ttl))) {
                 perror("setting time to live");
             }
@@ -844,13 +848,13 @@ int main(int argc, char** argv)
 #if HAVE_SO_TIMESTAMP
     {
         int opt = 1;
-        if (socket4) {
+        if (socket4 >= 0) {
             if (setsockopt(socket4, SOL_SOCKET, SO_TIMESTAMP, &opt, sizeof(opt))) {
                 perror("setting SO_TIMESTAMP option");
             }
         }
 #ifdef IPV6
-        if (socket6) {
+        if (socket6 >= 0) {
             if (setsockopt(socket6, SOL_SOCKET, SO_TIMESTAMP, &opt, sizeof(opt))) {
                 perror("setting SO_TIMESTAMP option (IPv6)");
             }

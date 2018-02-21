@@ -1716,7 +1716,7 @@ select_again:
 #endif
     }
 
-    return 0;
+    return -1;
 }
 
 int receive_packet(int socket,
@@ -2005,7 +2005,7 @@ int wait_for_reply(long wait_time)
         to.tv_usec = 0;
     }
     s = socket_can_read(&to);
-    if (s == 0) {
+    if (s == -1) {
         return 0; /* timeout */
     }
 

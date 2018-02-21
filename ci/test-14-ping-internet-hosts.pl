@@ -43,9 +43,9 @@ $cmd->stderr_is_eq("");
 
 # fping -4 --addr --rdns
 {
-my $cmd = Test::Command->new(cmd => "fping -4 --addr --rdns www.google.com");
+my $cmd = Test::Command->new(cmd => "fping -4 --addr --rdns www.apple.com");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr{^\S+\.1e100\.net \(\d+\.\d+\.\d+\.\d+\) is alive\n$});
+$cmd->stdout_like(qr{^\S+\.akamaitechnologies\.com \(\d+\.\d+\.\d+\.\d+\) is alive\n$});
 $cmd->stderr_is_eq("");
 }
 

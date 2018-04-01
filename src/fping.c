@@ -437,6 +437,9 @@ int main(int argc, char** argv)
         { "unreach", 'u', OPTPARSE_NONE },
         { "version", 'v', OPTPARSE_NONE },
         { "reachable", 'x', OPTPARSE_REQUIRED },
+#if defined(DEBUG) || defined(_DEBUG)
+        { NULL, 'z', OPTPARSE_REQUIRED },
+#endif
         { 0, 0, 0 }
     };
 

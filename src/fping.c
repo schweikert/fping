@@ -932,11 +932,11 @@ int main(int argc, char** argv)
         exit(num_noaddress ? 2 : 1);
     }
 
-    if (src_addr_set) {
+    if (src_addr_set && socket4 >= 0) {
         socket_set_src_addr_ipv4(socket4, &src_addr);
     }
 #ifdef IPV6
-    if (src_addr6_set) {
+    if (src_addr6_set && socket6 >= 0) {
         socket_set_src_addr_ipv6(socket6, &src_addr6);
     }
 #endif
@@ -1630,11 +1630,11 @@ int send_ping(HOST_ENTRY* h)
         printf("sending [%d] to %s\n", h->num_sent, h->host);
 #endif /* DEBUG || _DEBUG */
 
-    if (h->saddr.ss_family == AF_INET) {
+    if (h->saddr.ss_family == AF_INET && socket4 >= 0) {
         n = socket_sendto_ping_ipv4(socket4, (struct sockaddr*)&h->saddr, h->saddr_len, myseq, ident);
     }
 #ifdef IPV6
-    else if (h->saddr.ss_family == AF_INET6) {
+    else if (h->saddr.ss_family == AF_INET6 && socket6 >= 0) {
         n = socket_sendto_ping_ipv6(socket6, (struct sockaddr*)&h->saddr, h->saddr_len, myseq, ident);
     }
 #endif
@@ -1693,9 +1693,9 @@ int socket_can_read(struct timeval* timeout)
 select_again:
     FD_ZERO(&readset);
     FD_ZERO(&writeset);
-    FD_SET(socket4, &readset);
+    if(socket4 >= 0) FD_SET(socket4, &readset);
 #ifdef IPV6
-    FD_SET(socket6, &readset);
+    if(socket6 >= 0) FD_SET(socket6, &readset);
 #endif
 
     nfound = select(socketmax + 1, &readset, &writeset, NULL, timeout);
@@ -1710,11 +1710,11 @@ select_again:
     }
 
     if (nfound > 0) {
-        if (FD_ISSET(socket4, &readset)) {
+        if (socket4 >= 0 && FD_ISSET(socket4, &readset)) {
             return socket4;
         }
 #ifdef IPV6
-        if (FD_ISSET(socket6, &readset)) {
+        if (socket6 >= 0 && FD_ISSET(socket6, &readset)) {
             return socket6;
         }
 #endif

@@ -3,7 +3,7 @@ dnl Process this file with autoconf to produce a configure script.
 dnl Minimum Autoconf version required.
 AC_PREREQ(2.59)
 
-AC_INIT([fping],[4.0])
+AC_INIT([fping],[4.1])
 
 dnl --disable-ipv4
 AC_ARG_ENABLE([ipv4],

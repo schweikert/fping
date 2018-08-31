@@ -18,6 +18,7 @@ AS_IF([test "x$enable_ipv6" != "xno"], [
     dnl Test if IPv6 is supported
        AC_CHECK_HEADERS([netinet/icmp6.h], [have_ipv6="yes"], [], [[
       #include <netinet/in.h>
+      #include <sys/types.h>
   ]])
 ])
 dnl Can't disable both IPv4 and IPv6

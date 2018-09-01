@@ -6,6 +6,7 @@ fping 4.1 (UNRELEASED)
 - Fix problem when socket fd is 0 (#125, thanks Ramón Novoa!)
 - Fix running on servers with disabled IPv6 (#118, thanks Simon Matter)
 - Allow running "fping -h" or "--help" even when raw socket can't be opened (#131, thanks @teto)
+- Fix build issue with FreeBSD and IPv6 (#132, thanks @gsnw)
 
 fping 4.0 (2017-04-23)
 ======================

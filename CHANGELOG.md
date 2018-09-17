@@ -1,4 +1,4 @@
-fping 4.1 (UNRELEASED)
+fping 4.1 (2018-09-17)
 ======================
 
 ## Bugfixes and other changes

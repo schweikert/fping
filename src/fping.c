@@ -689,7 +689,7 @@ int main(int argc, char** argv)
 
     if (socket4 < 0
 #ifdef IPV6
-	&& socket6 < 0
+       && socket6 < 0
 #endif
     ) {
         crash_and_burn("can't create socket (must run as root?)");

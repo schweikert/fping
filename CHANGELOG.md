@@ -1,3 +1,10 @@
+fping 4.2 (UNRELEASED)
+======================
+
+## Bugfixes and other changes
+
+- Fix build with --disable-ipv6 (#134, thanks @Polynomial-C)
+
 fping 4.1 (2018-09-17)
 ======================
 

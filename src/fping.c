@@ -635,8 +635,9 @@ int main(int argc, char** argv)
 
 #if defined(DEBUG) || defined(_DEBUG)
         case 'z':
-            if (!(debugging = (unsigned int)atoi(optparse_state.optarg)))
-                usage(1);
+            if (sscanf(optparse_state.optarg, "0x%x", &debugging) != 1)
+                if (sscanf(optparse_state.optarg, "%u", &debugging) != 1)
+                    usage(1);
 
             break;
 #endif /* DEBUG || _DEBUG */

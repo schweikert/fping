@@ -34,9 +34,9 @@ AM_CONDITIONAL([IPV6], [test "x$have_ipv6" = "xyes"])
 AM_COND_IF([IPV6], [AC_DEFINE([IPV6], [1], [IPv6 enabled])])
 
 AC_ARG_ENABLE([timestamp],
-  AS_HELP_STRING([--disable-timestamp], [Disable kernel-based packet timestaping (SO_TIMESTAMP)]))
+  AS_HELP_STRING([--disable-timestamp], [Disable kernel-based packet timestaping (SO_TIMESTAMPNS)]))
 AS_IF([test "x$enable_timestamp" != "xno"], [
-   AC_CHECK_DECL([SO_TIMESTAMP], [AC_DEFINE(HAVE_SO_TIMESTAMP, [1], [SO_TIMESTAMP is defined])], [have_so_timestamp="no"], [#include <sys/types.h>
+   AC_CHECK_DECL([SO_TIMESTAMPNS], [AC_DEFINE(HAVE_SO_TIMESTAMPNS, [1], [SO_TIMESTAMPNS is defined])], [have_so_timestamp="no"], [#include <sys/types.h>
 #include <sys/socket.h>])
 ])
 dnl Test if --enable-timestamp is explicitely enabled and make an error if this platform doesn't support it

@@ -66,7 +66,7 @@ void seqmap_init()
     }
 }
 
-unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, struct timeval* now)
+unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, struct timespec* now)
 {
     unsigned int current_id;
     SEQMAP_VALUE* next_value;
@@ -89,7 +89,7 @@ unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, struct ti
     next_value->host_nr = host_nr;
     next_value->ping_count = ping_count;
     next_value->ping_ts.tv_sec = now->tv_sec;
-    next_value->ping_ts.tv_usec = now->tv_usec;
+    next_value->ping_ts.tv_nsec = now->tv_nsec;
 
     /* increase next id */
     current_id = seqmap_next_id;
@@ -98,7 +98,7 @@ unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, struct ti
     return current_id;
 }
 
-SEQMAP_VALUE* seqmap_fetch(unsigned int id, struct timeval* now)
+SEQMAP_VALUE* seqmap_fetch(unsigned int id, struct timespec* now)
 {
     SEQMAP_VALUE* value;
 

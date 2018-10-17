@@ -1195,7 +1195,7 @@ void main_loop()
                     h->ev_type = EV_TYPE_PING;
                     h->ev_time.tv_sec = last_send_time.tv_sec;
                     h->ev_time.tv_usec = last_send_time.tv_usec;
-         	      timeval_add(&h->ev_time, perhost_interval);
+                    timeval_add(&h->ev_time, perhost_interval);
                     ev_enqueue(h);
                 }
                 /* Count mode: schedule timeout after last ping */
@@ -1322,14 +1322,6 @@ void finish()
         }
     }
 
-    if (reachable_flag) {
-        if ((num_hosts-num_unreachable >= reachable)) {
-            printf(">=%d hosts are reachable\n", reachable);
-        } else {
-            printf("<%d hosts are reachable\n", reachable);
-        }
-    }
-
     if (count_flag || loop_flag)
         print_per_system_stats();
 #if defined(DEBUG) || defined(_DEBUG)
@@ -1339,6 +1331,15 @@ void finish()
 
     if (stats_flag)
         print_global_stats();
+
+    if (reachable_flag) {
+        if ((num_hosts-num_unreachable >= reachable)) {
+            printf(">=%d hosts are reachable\n", reachable);
+        } else {
+            printf("<%d hosts are reachable\n", reachable);
+        }
+        exit(0);
+    }
 
     if (num_noaddress)
         exit(2);

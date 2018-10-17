@@ -239,7 +239,7 @@ int socket6 = -1;
 int hints_ai_family = AF_UNSPEC;
 #endif
 
-unsigned int debugging = 1;
+unsigned int debugging = 0;
 
 /* times get *100 because all times are calculated in 10 usec units, not ms */
 unsigned int retry = DEFAULT_RETRY;
@@ -1195,7 +1195,7 @@ void main_loop()
                     h->ev_type = EV_TYPE_PING;
                     h->ev_time.tv_sec = last_send_time.tv_sec;
                     h->ev_time.tv_usec = last_send_time.tv_usec;
-         	           timeval_add(&h->ev_time, perhost_interval);
+         	        timeval_add(&h->ev_time, perhost_interval);
                     ev_enqueue(h);
                 }
                 /* Count mode: schedule timeout after last ping */

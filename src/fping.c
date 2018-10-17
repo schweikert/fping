@@ -1195,7 +1195,7 @@ void main_loop()
                     h->ev_type = EV_TYPE_PING;
                     h->ev_time.tv_sec = last_send_time.tv_sec;
                     h->ev_time.tv_usec = last_send_time.tv_usec;
-         	        timeval_add(&h->ev_time, perhost_interval);
+         	      timeval_add(&h->ev_time, perhost_interval);
                     ev_enqueue(h);
                 }
                 /* Count mode: schedule timeout after last ping */
@@ -1281,13 +1281,6 @@ void main_loop()
                 timeval_add(&next_report_time, report_interval);
         }
     }
-    if (reachable_flag) {
-        if ((num_hosts-num_unreachable >= reachable)) {
-            printf(">=%d hosts are reachable\n", reachable);
-        } else {
-            printf("<%d hosts are reachable\n", reachable);
-        }
-    }
 }
 
 /************************************************************
@@ -1326,6 +1319,14 @@ void finish()
 
                 printf("\n");
             }
+        }
+    }
+
+    if (reachable_flag) {
+        if ((num_hosts-num_unreachable >= reachable)) {
+            printf(">=%d hosts are reachable\n", reachable);
+        } else {
+            printf("<%d hosts are reachable\n", reachable);
         }
     }
 
@@ -1904,7 +1905,7 @@ int decode_icmp_ipv4(
     }
 
     *id = ntohs(icp->icmp_id);
-    *seq = ntohs(icp->icmp_seq);    
+    *seq = ntohs(icp->icmp_seq);
 
     return 1;
 }

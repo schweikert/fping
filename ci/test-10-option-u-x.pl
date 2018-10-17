@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 6;
+use Test::Command tests => 12;
 
 #  -u         show targets that are unreachable
 #  -v         show version
@@ -20,5 +20,21 @@ $cmd->exit_is_num(0);
 $cmd->stdout_like(qr{ping: Version 4\.\d+(-rc\d+)?
 fping: comments to david\@schweikert\.ch
 });
+$cmd->stderr_is_eq("");
+}
+
+# fping -x
+{
+my $cmd = Test::Command->new(cmd => "fping -x 1 8.8.0.0 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq(">=1 hosts are reachable\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping -x
+{
+my $cmd = Test::Command->new(cmd => "fping -x 2 8.8.0.0 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("<2 hosts are reachable\n");
 $cmd->stderr_is_eq("");
 }

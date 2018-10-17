@@ -239,7 +239,7 @@ int socket6 = -1;
 int hints_ai_family = AF_UNSPEC;
 #endif
 
-unsigned int debugging = 0;
+unsigned int debugging = 1;
 
 /* times get *100 because all times are calculated in 10 usec units, not ms */
 unsigned int retry = DEFAULT_RETRY;
@@ -248,7 +248,7 @@ unsigned int interval = DEFAULT_INTERVAL * 100;
 unsigned int perhost_interval = DEFAULT_PERHOST_INTERVAL * 100;
 float backoff = DEFAULT_BACKOFF_FACTOR;
 unsigned int ping_data_size = DEFAULT_PING_DATA_SIZE;
-unsigned int count = 1;
+unsigned int count = 1, reachable = 1;
 unsigned int trials;
 unsigned int report_interval = 0;
 unsigned int ttl = 0;
@@ -285,7 +285,7 @@ struct timezone tz;
 /* switches */
 int generate_flag = 0; /* flag for IP list generation */
 int verbose_flag, quiet_flag, stats_flag, unreachable_flag, alive_flag;
-int elapsed_flag, version_flag, count_flag, loop_flag, netdata_flag;
+int elapsed_flag, version_flag, count_flag, loop_flag, netdata_flag, reachable_flag;
 int per_recv_flag, report_all_rtts_flag, name_flag, addr_flag, backoff_flag, rdns_flag;
 int multif_flag, timeout_flag;
 int outage_flag = 0;
@@ -414,6 +414,7 @@ int main(int argc, char** argv)
         { NULL, 'T', OPTPARSE_REQUIRED },
         { "unreach", 'u', OPTPARSE_NONE },
         { "version", 'v', OPTPARSE_NONE },
+        { "reachable", 'x', OPTPARSE_REQUIRED },
         { 0, 0, 0 }
     };
 
@@ -604,6 +605,12 @@ int main(int argc, char** argv)
             printf("%s: comments to %s\n", prog, EMAIL);
             exit(0);
 
+        case 'x':
+            if (!(reachable = (unsigned int)atoi(optparse_state.optarg)))
+                usage(1); 
+            reachable_flag = 1;     
+            break;
+
         case 'f':
             filename = optparse_state.optarg;
             break;
@@ -732,7 +739,7 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    if (alive_flag || unreachable_flag)
+    if (alive_flag || unreachable_flag || reachable_flag)
         verbose_flag = 0;
 
     if (count_flag) {
@@ -812,6 +819,8 @@ int main(int argc, char** argv)
             fprintf(stderr, "  unreachable_flag set\n");
         if (alive_flag)
             fprintf(stderr, "  alive_flag set\n");
+        if (reachable_flag)
+            fprintf(stderr, "  reachable_flag set\n");
         if (elapsed_flag)
             fprintf(stderr, "  elapsed_flag set\n");
         if (version_flag)
@@ -1186,7 +1195,7 @@ void main_loop()
                     h->ev_type = EV_TYPE_PING;
                     h->ev_time.tv_sec = last_send_time.tv_sec;
                     h->ev_time.tv_usec = last_send_time.tv_usec;
-                    timeval_add(&h->ev_time, perhost_interval);
+         	           timeval_add(&h->ev_time, perhost_interval);
                     ev_enqueue(h);
                 }
                 /* Count mode: schedule timeout after last ping */
@@ -1270,6 +1279,13 @@ void main_loop()
 
             while (timeval_diff(&current_time, &next_report_time) >= 0)
                 timeval_add(&next_report_time, report_interval);
+        }
+    }
+    if (reachable_flag) {
+        if ((num_hosts-num_unreachable >= reachable)) {
+            printf(">=%d hosts are reachable\n", reachable);
+        } else {
+            printf("<%d hosts are reachable\n", reachable);
         }
     }
 }
@@ -1888,7 +1904,7 @@ int decode_icmp_ipv4(
     }
 
     *id = ntohs(icp->icmp_id);
-    *seq = ntohs(icp->icmp_seq);
+    *seq = ntohs(icp->icmp_seq);    
 
     return 1;
 }
@@ -2767,5 +2783,6 @@ void usage(int is_error)
     fprintf(out, "   -s, --stats        print final stats\n");
     fprintf(out, "   -u, --unreach      show targets that are unreachable\n");
     fprintf(out, "   -v, --version      show version\n");
+    fprintf(out, "   -x, --reachable=N  shows if >=N hosts are reachable or not\n");
     exit(is_error);
 }

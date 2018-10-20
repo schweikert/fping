@@ -362,6 +362,11 @@ int main(int argc, char** argv)
     socket4 = open_ping_socket_ipv4(ping_data_size);
 #ifdef IPV6
     socket6 = open_ping_socket_ipv6(ping_data_size);
+    /* if called (sym-linked) via 'fping6', imply '-6'
+     * for backward compatibility */
+    if (strstr(prog, "fping6")) {
+        hints_ai_family = AF_INET6;
+    }
 #endif
 
     if ((uid = getuid())) {

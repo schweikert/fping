@@ -4,6 +4,7 @@ fping 4.2 (UNRELEASED)
 ## Bugfixes and other changes
 
 - Fix build with --disable-ipv6 (#134, thanks @Polynomial-C)
+- Fix hang with '-6', with ipv6 kernel module, but not loaded (#140, thanks @abelbeck)
 
 fping 4.1 (2018-09-17)
 ======================

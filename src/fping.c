@@ -687,11 +687,11 @@ int main(int argc, char** argv)
 
     /* validate various option settings */
 
-    if (socket4 < 0
-#ifdef IPV6
-       && socket6 < 0
+#ifndef IPV6
+    if (socket4 < 0) {
+#else
+    if ((socket4 < 0 && socket6 < 0) || (hints_ai_family == AF_INET6 && socket6 < 0)) {
 #endif
-    ) {
         crash_and_burn("can't create socket (must run as root?)");
     }
 

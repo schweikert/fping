@@ -1334,11 +1334,12 @@ void finish()
 
     if (reachable_flag) {
         if ((num_hosts-num_unreachable >= reachable)) {
-            printf(">=%d hosts are reachable\n", reachable);
+            printf("Number of reachable hosts: %d\n", num_hosts-num_unreachable);
+            exit(0);
         } else {
             printf("<%d hosts are reachable\n", reachable);
+            exit(1);
         }
-        exit(0);
     }
 
     if (num_noaddress)

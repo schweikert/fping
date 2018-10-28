@@ -5,6 +5,10 @@ fping 4.2 (UNRELEASED)
 
 - Fix build with --disable-ipv6 (#134, thanks @Polynomial-C)
 - Fix hang with '-6', with ipv6 kernel module, but not loaded (#140, thanks @abelbeck)
+- Assume '-6' if the binary is named 'fping6' (this is mostly for special
+  embedded-distro use cases, and not meant to be used generally in place of
+  compiling IPv6-only binary or using '-6', see also the notes in #139, thanks
+  abelbeck)
 
 fping 4.1 (2018-09-17)
 ======================

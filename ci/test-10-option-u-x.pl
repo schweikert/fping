@@ -27,7 +27,7 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -x 1 8.8.0.0 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_is_eq("Number of reachable hosts: 1\n");
+$cmd->stdout_is_eq("Enough hosts reachable (required: 1, reachable: 1)\n");
 $cmd->stderr_is_eq("");
 }
 
@@ -35,6 +35,6 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -x 2 8.8.0.0 127.0.0.1");
 $cmd->exit_is_num(1);
-$cmd->stdout_is_eq("<2 hosts are reachable\n");
+$cmd->stdout_is_eq("Not enough hosts reachable (required: 2, reachable: 1)\n");
 $cmd->stderr_is_eq("");
 }

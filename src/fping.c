@@ -248,7 +248,7 @@ unsigned int interval = DEFAULT_INTERVAL * 100;
 unsigned int perhost_interval = DEFAULT_PERHOST_INTERVAL * 100;
 float backoff = DEFAULT_BACKOFF_FACTOR;
 unsigned int ping_data_size = DEFAULT_PING_DATA_SIZE;
-unsigned int count = 1, reachable = 1;
+unsigned int count = 1, min_reachable = 0;
 unsigned int trials;
 unsigned int report_interval = 0;
 unsigned int ttl = 0;
@@ -285,7 +285,7 @@ struct timezone tz;
 /* switches */
 int generate_flag = 0; /* flag for IP list generation */
 int verbose_flag, quiet_flag, stats_flag, unreachable_flag, alive_flag;
-int elapsed_flag, version_flag, count_flag, loop_flag, netdata_flag, reachable_flag;
+int elapsed_flag, version_flag, count_flag, loop_flag, netdata_flag;
 int per_recv_flag, report_all_rtts_flag, name_flag, addr_flag, backoff_flag, rdns_flag;
 int multif_flag, timeout_flag;
 int outage_flag = 0;
@@ -414,7 +414,7 @@ int main(int argc, char** argv)
         { NULL, 'T', OPTPARSE_REQUIRED },
         { "unreach", 'u', OPTPARSE_NONE },
         { "version", 'v', OPTPARSE_NONE },
-        { "reachable", 'x', OPTPARSE_REQUIRED },
+        { "min_reachable", 'x', OPTPARSE_REQUIRED },
         { 0, 0, 0 }
     };
 
@@ -606,9 +606,8 @@ int main(int argc, char** argv)
             exit(0);
 
         case 'x':
-            if (!(reachable = (unsigned int)atoi(optparse_state.optarg)))
+            if (!(min_reachable = (unsigned int)atoi(optparse_state.optarg)))
                 usage(1); 
-            reachable_flag = 1;     
             break;
 
         case 'f':
@@ -739,7 +738,7 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    if (alive_flag || unreachable_flag || reachable_flag)
+    if (alive_flag || unreachable_flag || min_reachable)
         verbose_flag = 0;
 
     if (count_flag) {
@@ -819,8 +818,6 @@ int main(int argc, char** argv)
             fprintf(stderr, "  unreachable_flag set\n");
         if (alive_flag)
             fprintf(stderr, "  alive_flag set\n");
-        if (reachable_flag)
-            fprintf(stderr, "  reachable_flag set\n");
         if (elapsed_flag)
             fprintf(stderr, "  elapsed_flag set\n");
         if (version_flag)
@@ -1332,12 +1329,12 @@ void finish()
     if (stats_flag)
         print_global_stats();
 
-    if (reachable_flag) {
-        if ((num_hosts-num_unreachable >= reachable)) {
-            printf("Number of reachable hosts: %d\n", num_hosts-num_unreachable);
+    if (min_reachable) {
+        if ((num_hosts-num_unreachable) >= min_reachable) {
+            printf("Enough hosts reachable (required: %d, reachable: %d)\n", min_reachable, num_hosts-num_unreachable);
             exit(0);
         } else {
-            printf("<%d hosts are reachable\n", reachable);
+            printf("Not enough hosts reachable (required: %d, reachable: %d)\n", min_reachable, num_hosts-num_unreachable);
             exit(1);
         }
     }
@@ -2786,6 +2783,6 @@ void usage(int is_error)
     fprintf(out, "   -s, --stats        print final stats\n");
     fprintf(out, "   -u, --unreach      show targets that are unreachable\n");
     fprintf(out, "   -v, --version      show version\n");
-    fprintf(out, "   -x, --reachable=N  shows if >=N hosts are reachable or not\n");
+    fprintf(out, "   -x, --min_reachable=N  shows if >=N hosts are reachable or not\n");
     exit(is_error);
 }

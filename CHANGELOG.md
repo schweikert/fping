@@ -1,6 +1,11 @@
 fping 4.2 (UNRELEASED)
 ======================
 
+## New features
+
+- New option -x / --reachable to check if the number of reachable hosts is >= a certain
+  number. Useful for example to implement connectivity-checks (#138, thanks @deepak0004)
+
 ## Bugfixes and other changes
 
 - Fix build with --disable-ipv6 (#134, thanks @Polynomial-C)

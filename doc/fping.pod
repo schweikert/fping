@@ -225,9 +225,10 @@ Show targets that are unreachable.
 
 Print B<fping> version information.
 
-=item B<-x>, B<--min_reachable>=I<N>
+=item B<-x>, B<--reachable>=I<N>
 
-Given a list of hosts, this mode prints if number of active hosts>=N or not.
+Given a list of hosts, this mode checks if number of reachable hosts is >= N
+and exits true in that case.
 
 =back
 

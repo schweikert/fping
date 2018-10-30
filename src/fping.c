@@ -419,7 +419,7 @@ int main(int argc, char** argv)
         { NULL, 'T', OPTPARSE_REQUIRED },
         { "unreach", 'u', OPTPARSE_NONE },
         { "version", 'v', OPTPARSE_NONE },
-        { "min_reachable", 'x', OPTPARSE_REQUIRED },
+        { "reachable", 'x', OPTPARSE_REQUIRED },
         { 0, 0, 0 }
     };
 
@@ -2788,6 +2788,6 @@ void usage(int is_error)
     fprintf(out, "   -s, --stats        print final stats\n");
     fprintf(out, "   -u, --unreach      show targets that are unreachable\n");
     fprintf(out, "   -v, --version      show version\n");
-    fprintf(out, "   -x, --min_reachable=N  shows if >=N hosts are reachable or not\n");
+    fprintf(out, "   -x, --reachable=N  shows if >=N hosts are reachable or not\n");
     exit(is_error);
 }

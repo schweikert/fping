@@ -291,6 +291,7 @@ int multif_flag, timeout_flag;
 int outage_flag = 0;
 int timestamp_flag = 0;
 int random_data_flag = 0;
+int output_json_flag;
 #if defined(DEBUG) || defined(_DEBUG)
 int randomly_lose_flag, sent_times_flag, trace_flag, print_per_system_flag;
 int lose_factor;
@@ -395,6 +396,7 @@ int main(int argc, char** argv)
         { "help", 'h', OPTPARSE_NONE },
         { "ttl", 'H', OPTPARSE_REQUIRED },
         { "interval", 'i', OPTPARSE_REQUIRED },
+        { "JSON", 'J', OPTPARSE_NONE },
         { "iface", 'I', OPTPARSE_REQUIRED },
         { "loop", 'l', OPTPARSE_NONE },
         { "all", 'm', OPTPARSE_NONE },
@@ -677,6 +679,11 @@ int main(int argc, char** argv)
             outage_flag = 1;
             break;
 
+        case 'J':
+            count_flag = 1;
+            output_json_flag = 1;
+            break;
+
         case '?':
             fprintf(stderr, "%s: %s\n", argv[0], optparse_state.errmsg);
             fprintf(stderr, "see 'fping -h' for usage information\n");
@@ -832,6 +839,8 @@ int main(int argc, char** argv)
             fprintf(stderr, "  outage_flag set\n");
         if (netdata_flag)
             fprintf(stderr, "  netdata_flag set\n");
+        if (output_json_flag)
+            fprintf(stderr, "  output_json_flag set\n");
     }
 #endif /* DEBUG || _DEBUG */
 
@@ -1351,9 +1360,19 @@ void print_per_system_stats(void)
     if (verbose_flag || per_recv_flag)
         fprintf(stderr, "\n");
 
+    if (output_json_flag) {
+        /* Print JSON header */
+        fprintf(stderr, "{ \"results\": [\n");        
+    }
+    
     for (i = 0; i < num_hosts; i++) {
         h = table[i];
-        fprintf(stderr, "%s%s :", h->host, h->pad);
+        if (output_json_flag) {
+            fprintf(stderr, "{ \"host\": \"%s\", ", h->host);        
+        }
+        else {
+        	fprintf(stderr, "%s%s :", h->host, h->pad);
+        }
 
         if (report_all_rtts_flag) {
             for (j = 0; j < h->num_sent; j++) {
@@ -1367,8 +1386,19 @@ void print_per_system_stats(void)
         }
         else {
             if (h->num_recv <= h->num_sent) {
-                fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
-                    h->num_sent, h->num_recv, h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
+                if (output_json_flag) {
+                    fprintf(stderr, "\"xmtcount\" : %d, \"rcvcount\" : %d, \"losspct\" : %d",
+                        h->num_sent, h->num_recv, h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
+                    if ( !(h->num_recv) ) {
+                        fprintf(stderr, "}");
+                        if ( i + 1 < num_hosts )
+                            fprintf(stderr, ",");
+                    }                    
+                }
+                else {
+                	fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
+                    	h->num_sent, h->num_recv, h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
+                }
 
                 if (outage_flag) {
                     /* Time outage total */
@@ -1377,16 +1407,32 @@ void print_per_system_stats(void)
                 }
             }
             else {
-                fprintf(stderr, " xmt/rcv/%%return = %d/%d/%d%%",
+                if (output_json_flag) {
+                    fprintf(stderr, "\"xmtcount\": %d,\"rcvcount\" : %d,\"returnpct\" : %d",
+                        h->num_sent, h->num_recv,
+                        ((h->num_recv * 100) / h->num_sent));
+                    if ( i + 1 < num_hosts )
+                        fprintf(stderr, ",");
+                }
+                else
+                    fprintf(stderr, " xmt/rcv/%%return = %d/%d/%d%%",
                     h->num_sent, h->num_recv,
                     ((h->num_recv * 100) / h->num_sent));
             }
 
             if (h->num_recv) {
                 avg = h->total_time / h->num_recv;
-                fprintf(stderr, ", min/avg/max = %s", sprint_tm(h->min_reply));
-                fprintf(stderr, "/%s", sprint_tm(avg));
-                fprintf(stderr, "/%s", sprint_tm(h->max_reply));
+                if (output_json_flag) {
+                    fprintf(stderr, ", \"minrtt\" : %s, \"avgrtt\" : %s, \"maxrtt\" : %s }",
+                        sprint_tm(h->min_reply), sprint_tm(avg), sprint_tm(h->max_reply));
+                    if ( i + 1 < num_hosts )
+                        fprintf(stderr, ",");
+                }
+                else {
+                	fprintf(stderr, ", min/avg/max = %s", sprint_tm(h->min_reply));
+                	fprintf(stderr, "/%s", sprint_tm(avg));
+                	fprintf(stderr, "/%s", sprint_tm(h->max_reply));
+                }
             }
 
             fprintf(stderr, "\n");
@@ -1404,6 +1450,10 @@ void print_per_system_stats(void)
             }
         }
 #endif
+    }
+    if (output_json_flag) {
+            /* Print JSON trailer */
+            fprintf(stderr, "]}\n");
     }
 }
 
@@ -2755,6 +2805,7 @@ void usage(int is_error)
     fprintf(out, "   -D, --timestamp    print timestamp before each output line\n");
     fprintf(out, "   -e, --elapsed      show elapsed time on return packets\n");
     fprintf(out, "   -i, --interval=MSEC  interval between sending ping packets (default: %d ms)\n", interval / 100);
+    fprintf(out, "   -J, --JSON         output in JSON records (useful with -c # -q flags)\n");
     fprintf(out, "   -n, --name         show targets by name (-d is equivalent)\n");
     fprintf(out, "   -N, --netdata      output compatible for netdata (-l -Q are required)\n");
     fprintf(out, "   -o, --outage       show the accumulated outage time (lost packets * packet interval)\n");

@@ -1,4 +1,4 @@
-fping 4.2 (UNRELEASED)
+fping 4.2 (2019-02-19)
 ======================
 
 ## New features

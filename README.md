@@ -29,12 +29,11 @@ If you want to install fping from source, proceed as follows:
 2. Run `make; make install`.
 3. Make fping either setuid, or, if under Linux:
    `sudo setcap cap_net_raw+ep fping`
-4. Have a look at the [fping(8)](doc/fping.pod) manual for usage help
-   (`fping -h` will also give a minimal help output)
 
 ## Usage
 
-See: [fping man-page](doc/fping.pod)
+Have a look at the [fping(8)](doc/fping.pod) manual page for usage help.
+(`fping -h` will also give a minimal help output.)
 
 ## Credits
 

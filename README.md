@@ -23,10 +23,10 @@ _Mailing-list_:
 If you want to install fping from source, proceed as follows:
 
 0. Run `./autogen.sh`
-   (only if you got the source from github)
-1. Run `./configure` with the correct arguments
+   (only if you got the source from Github).
+1. Run `./configure` with the correct arguments.
    (see: `./configure --help`)
-2. Run `make; make install`
+2. Run `make; make install`.
 3. Make fping either setuid, or, if under Linux:
    `sudo setcap cap_net_raw+ep fping`
 4. Have a look at the [fping(8)](doc/fping.pod) manual for usage help

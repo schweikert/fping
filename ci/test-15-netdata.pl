@@ -31,5 +31,5 @@ SET avg = \d{1,2}
 SET max = \d{1,2}
 END}
 );
-$cmd->stderr_like(qr{127.0.0.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = 0.\d+/0.\d+/0.\d+});
+$cmd->stderr_like(qr{127.0.0.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+});
 }

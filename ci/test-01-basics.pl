@@ -27,9 +27,9 @@ SKIP: {
 {
     my $cmd = Test::Command->new(cmd => "fping -p 100 -C3 127.0.0.1");
     $cmd->exit_is_num(0);
-    $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 84 bytes, 0\.\d+ ms \(0\.\d+ avg, 0% loss\)
-127\.0\.0\.1 : \[1\], 84 bytes, 0\.\d+ ms \(0.\d+ avg, 0% loss\)
-127\.0\.0\.1 : \[2\], 84 bytes, 0\.\d+ ms \(0.\d+ avg, 0% loss\)
+    $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 84 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+127\.0\.0\.1 : \[1\], 84 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+127\.0\.0\.1 : \[2\], 84 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
 });
-    $cmd->stderr_like(qr{127\.0\.0\.1 : 0\.\d+ 0\.\d+ 0\.\d+\n});
+    $cmd->stderr_like(qr{127\.0\.0\.1 : \d\.\d+ \d\.\d+ \d\.\d+\n});
 }

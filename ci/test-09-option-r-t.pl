@@ -46,10 +46,10 @@ $cmd->stderr_like(qr{\s*
 \s*1 ICMP Echo Replies received
 \s*0 other ICMP received
 
-\s*0.\d+ ms \(min round trip time\)
-\s*0.\d+ ms \(avg round trip time\)
-\s*0.\d+ ms \(max round trip time\)
-\s*0.\d+ sec \(elapsed real time\)
+\s*\d\.\d+ ms \(min round trip time\)
+\s*\d\.\d+ ms \(avg round trip time\)
+\s*\d\.\d+ ms \(max round trip time\)
+\s*\d\.\d+ sec \(elapsed real time\)
 });
 }
 
@@ -69,10 +69,10 @@ $cmd->stderr_like(qr{\s*
 \s*0 ICMP Echo Replies received
 \s*0 other ICMP received
 
-\s*0.\d+ ms \(min round trip time\)
-\s*0.\d+ ms \(avg round trip time\)
-\s*0.\d+ ms \(max round trip time\)
-\s*0.\d+ sec \(elapsed real time\)
+\s*\d\.\d+ ms \(min round trip time\)
+\s*\d\.\d+ ms \(avg round trip time\)
+\s*\d\.\d+ ms \(max round trip time\)
+\s*\d\.\d+ sec \(elapsed real time\)
 });
 }
 

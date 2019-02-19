@@ -19,8 +19,8 @@ $cmd->stderr_is_eq("");
 # fping -l
 {
 my $cmd = Test::Command->new(cmd => '(sleep 2; pkill fping)& fping -p 900 -l 127.0.0.1');
-$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 84 bytes, 0\.\d+ ms \(0.\d+ avg, 0% loss\)
-127\.0\.0\.1 : \[1\], 84 bytes, 0\.\d+ ms \(0\.\d+ avg, 0% loss\)
+$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 84 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+127\.0\.0\.1 : \[1\], 84 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
 });
 }
 

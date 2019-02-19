@@ -248,7 +248,7 @@ unsigned int interval = DEFAULT_INTERVAL * 100;
 unsigned int perhost_interval = DEFAULT_PERHOST_INTERVAL * 100;
 float backoff = DEFAULT_BACKOFF_FACTOR;
 unsigned int ping_data_size = DEFAULT_PING_DATA_SIZE;
-unsigned int count = 1;
+unsigned int count = 1, min_reachable = 0;
 unsigned int trials;
 unsigned int report_interval = 0;
 unsigned int ttl = 0;
@@ -419,6 +419,7 @@ int main(int argc, char** argv)
         { NULL, 'T', OPTPARSE_REQUIRED },
         { "unreach", 'u', OPTPARSE_NONE },
         { "version", 'v', OPTPARSE_NONE },
+        { "reachable", 'x', OPTPARSE_REQUIRED },
         { 0, 0, 0 }
     };
 
@@ -623,6 +624,11 @@ int main(int argc, char** argv)
             printf("%s: comments to %s\n", prog, EMAIL);
             exit(0);
 
+        case 'x':
+            if (!(min_reachable = (unsigned int)atoi(optparse_state.optarg)))
+                usage(1); 
+            break;
+
         case 'f':
             filename = optparse_state.optarg;
             break;
@@ -751,7 +757,7 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    if (alive_flag || unreachable_flag)
+    if (alive_flag || unreachable_flag || min_reachable)
         verbose_flag = 0;
 
     if (count_flag) {
@@ -1341,6 +1347,16 @@ void finish()
 
     if (stats_flag)
         print_global_stats();
+
+    if (min_reachable) {
+        if ((num_hosts-num_unreachable) >= min_reachable) {
+            printf("Enough hosts reachable (required: %d, reachable: %d)\n", min_reachable, num_hosts-num_unreachable);
+            exit(0);
+        } else {
+            printf("Not enough hosts reachable (required: %d, reachable: %d)\n", min_reachable, num_hosts-num_unreachable);
+            exit(1);
+        }
+    }
 
     if (num_noaddress)
         exit(2);
@@ -2786,5 +2802,6 @@ void usage(int is_error)
     fprintf(out, "   -s, --stats        print final stats\n");
     fprintf(out, "   -u, --unreach      show targets that are unreachable\n");
     fprintf(out, "   -v, --version      show version\n");
+    fprintf(out, "   -x, --reachable=N  shows if >=N hosts are reachable or not\n");
     exit(is_error);
 }

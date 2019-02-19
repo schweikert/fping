@@ -22,22 +22,23 @@ _Mailing-list_:
 
 If you want to install fping from source, proceed as follows:
 
-0. Run ./autogen.sh
+0. Run `./autogen.sh`
    (only if you got the source from github)
-1. Run ./configure with the correct arguments
-   (see: ./configure --help)
-2. Run make; make install
+1. Run `./configure` with the correct arguments
+   (see: `./configure --help`)
+2. Run `make; make install`
 3. Make fping either setuid, or, if under Linux:
-   sudo setcap cap_net_raw+ep fping
-4. Have a look at the fping(8) manual for usage help
-   (fping -h will also give a minimal help output)
+   `sudo setcap cap_net_raw+ep fping`
+4. Have a look at the [fping(8)](doc/fping.pod) manual for usage help
+   (`fping -h` will also give a minimal help output)
 
 ## Usage
 
 See: [fping man-page](doc/fping.pod)
 
 ## Credits
-Original author:  Roland Schemers (schemers@stanford.edu)
-Previous maintainer:  RL "Bob" Morgan (morgan@stanford.edu)
-Initial IPv6 Support: Jeroen Massar (jeroen@unfix.org / jeroen@ipng.nl)
-Other contributors: see ChangeLog
+
+* Original author:  Roland Schemers (schemers@stanford.edu)
+* Previous maintainer:  RL "Bob" Morgan (morgan@stanford.edu)
+* Initial IPv6 Support: Jeroen Massar (jeroen@unfix.org / jeroen@ipng.nl)
+* Other contributors: see [ChangeLog](ChangeLog)

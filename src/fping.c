@@ -422,7 +422,7 @@ int main(int argc, char** argv)
         { 0, 0, 0 }
     };
 
-    //while ((c = optparse(&optparse_state, "46ADMNRadeghlmnoqsuvzB:C:H:I:O:Q:S:T:b:c:f:i:p:r:t:")) != EOF) {
+    float opt_value_float;
     while ((c = optparse_long(&optparse_state, longopts, NULL)) != EOF) {
         switch (c) {
         case '4':
@@ -467,10 +467,13 @@ int main(int argc, char** argv)
             break;
 
         case 't':
-            if (!(timeout = (unsigned int)atoi(optparse_state.optarg) * 100))
+            if (!sscanf(optparse_state.optarg, "%f", &opt_value_float))
                 usage(1);
+            if (opt_value_float < 0) {
+                usage(1);
+            }
+            timeout = opt_value_float * 100;
             timeout_flag = 1;
-
             break;
 
         case 'r':
@@ -479,14 +482,21 @@ int main(int argc, char** argv)
             break;
 
         case 'i':
-            if (!sscanf(optparse_state.optarg, "%u", &interval))
+            if (!sscanf(optparse_state.optarg, "%f", &opt_value_float))
                 usage(1);
-            interval *= 100;
+            if (opt_value_float < 0) {
+                usage(1);
+            }
+            interval = opt_value_float * 100;
             break;
 
         case 'p':
-            if (!(perhost_interval = (unsigned int)atoi(optparse_state.optarg) * 100))
+            if (!sscanf(optparse_state.optarg, "%f", &opt_value_float))
                 usage(1);
+            if (opt_value_float < 0) {
+                usage(1);
+            }
+            perhost_interval = opt_value_float * 100;
 
             break;
 
@@ -523,8 +533,12 @@ int main(int argc, char** argv)
         case 'Q':
             verbose_flag = 0;
             quiet_flag = 1;
-            if (!(report_interval = (unsigned int)atoi(optparse_state.optarg) * 100000))
+            if (!sscanf(optparse_state.optarg, "%f", &opt_value_float))
                 usage(1);
+            if (opt_value_float < 0) {
+                usage(1);
+            }
+            report_interval = opt_value_float * 100000;
 
             break;
 

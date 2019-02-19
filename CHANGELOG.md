@@ -3,6 +3,7 @@ fping 4.2 (UNRELEASED)
 
 ## Bugfixes and other changes
 
+- Allow decimal numbers for '-t', '-i', '-p', and '-Q'
 - Fix build with --disable-ipv6 (#134, thanks @Polynomial-C)
 - Fix hang with '-6', with ipv6 kernel module, but not loaded (#140, thanks @abelbeck)
 - Assume '-6' if the binary is named 'fping6' (this is mostly for special

@@ -13,7 +13,7 @@ _Current maintainer_:
   David Schweikert \<david@schweikert.ch\>
 
 _Website_:  
-  http://fping.org/
+  https://fping.org/
 
 _Mailing-list_:  
   https://groups.google.com/group/fping-users

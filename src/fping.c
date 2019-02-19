@@ -785,11 +785,6 @@ int main(int argc, char** argv)
                 timeout = AUTOTUNE_TIMEOUT_MAX * 100;
             }
         }
-        else {
-            if (timeout > perhost_interval && (loop_flag || (count_flag && count > 1))) {
-                fprintf(stderr, "%s: warning: timeout (-t) value larger than period (-p) produces unexpected results\n", prog);
-            }
-        }
     }
 
 #if defined(DEBUG) || defined(_DEBUG)

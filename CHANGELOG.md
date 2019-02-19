@@ -15,6 +15,9 @@ fping 4.2 (UNRELEASED)
   embedded-distro use cases, and not meant to be used generally in place of
   compiling IPv6-only binary or using '-6', see also the notes in #139, thanks
   abelbeck)
+- Get rid of warning "timeout (-t) value larger than period (-p) produces unexpected results"
+  (#142, thanks @MrDragon1122)
+  
 
 fping 4.1 (2018-09-17)
 ======================

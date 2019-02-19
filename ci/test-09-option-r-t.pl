@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 23;
+use Test::Command tests => 21;
 use Test::More;
 
 #  -R         random bytes
@@ -104,9 +104,3 @@ $cmd->stderr_is_eq("fping: can't parse source address: bla\n");
 }
 
 # (note: fping -t also tested in test-4-options-a-b.pl)
-
-{
-my $cmd = Test::Command->new(cmd => "fping -c 2 -p 100 -t 200 127.0.0.1");
-$cmd->exit_is_num(0);
-$cmd->stderr_like(qr{^fping: warning: timeout \(-t\) value larger than period \(-p\) produces unexpected results\n.*});
-}

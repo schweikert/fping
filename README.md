@@ -40,4 +40,4 @@ Have a look at the [fping(8)](doc/fping.pod) manual page for usage help.
 * Original author:  Roland Schemers (schemers@stanford.edu)
 * Previous maintainer:  RL "Bob" Morgan (morgan@stanford.edu)
 * Initial IPv6 Support: Jeroen Massar (jeroen@unfix.org / jeroen@ipng.nl)
-* Other contributors: see [ChangeLog](ChangeLog)
+* Other contributors: see [CHANGELOG.md](CHANGELOG.md)

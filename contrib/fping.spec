@@ -1,6 +1,6 @@
 Summary: send ICMP echo probes to multiple hosts
 Name: fping
-Version: 3.4
+Version: 4.2
 Release: 1
 License: BSD with advertising
 Group: Applications/System
@@ -47,7 +47,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %attr(4755, root, root) /usr/sbin/fping
 %attr(4755, root, root) /usr/sbin/fping6
-%doc README COPYING ChangeLog
+%doc README.md COPYING CHANGELOG.md
 /usr/share/man/man8/fping.8.gz
 /usr/share/man/man8/fping6.8.gz
 

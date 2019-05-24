@@ -189,7 +189,7 @@ a target will be made, not including the first try.
 Instead of using all-zeros as the packet data, generate random bytes.
 Use to defeat, e.g., link data compression.
 
-=item B<-s>, B<--src>
+=item B<-s>, B<--stats>
 
 Print cumulative statistics upon exit.
 

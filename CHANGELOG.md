@@ -1,3 +1,10 @@
+UNRELEASED
+==========
+
+## Bugfixes and other changes
+
+-  Corrected long option name of -s to --stats (#148, thanks @wopfel)
+
 fping 4.2 (2019-02-19)
 ======================
 

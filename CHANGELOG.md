@@ -3,7 +3,8 @@ UNRELEASED
 
 ## Bugfixes and other changes
 
--  Corrected long option name of -s to --stats (#148, thanks @wopfel)
+- Corrected long option name of -s to --stats (#148, thanks @wopfel)
+- Do not fail if using fping6 with -6 flag (#149, thanks @stromnet)
 
 fping 4.2 (2019-02-19)
 ======================

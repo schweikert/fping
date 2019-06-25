@@ -29,15 +29,15 @@ www\.google\.com\s*: xmt/rcv/%loss = [123]/3/\d+%, min/avg/max = $re_num/$re_num
 {
 my $cmd = Test::Command->new(cmd => "fping -A -n 8.8.8.8");
 $cmd->exit_is_num(0);
-$cmd->stdout_is_eq("google-public-dns-a.google.com (8.8.8.8) is alive\n");
+$cmd->stdout_is_eq("dns.google (8.8.8.8) is alive\n");
 $cmd->stderr_is_eq("");
 }
 
 # fping -4 -A -n
 {
-my $cmd = Test::Command->new(cmd => "fping -4 -A -n google-public-dns-a.google.com");
+my $cmd = Test::Command->new(cmd => "fping -4 -A -n dns.google");
 $cmd->exit_is_num(0);
-$cmd->stdout_is_eq("google-public-dns-a.google.com (8.8.8.8) is alive\n");
+$cmd->stdout_like(qr{^dns.google \(8\.8\.(4\.4|8\.8)\) is alive\n$});
 $cmd->stderr_is_eq("");
 }
 
@@ -62,9 +62,9 @@ SKIP: {
     if(system("/sbin/ifconfig | grep inet6.*Scope:Global") != 0) {
         skip 'No IPv6 on this host', 3;
     }
-    my $cmd = Test::Command->new(cmd => "fping -6 -n -A google-public-dns-a.google.com");
+    my $cmd = Test::Command->new(cmd => "fping -6 -n -A dns.google");
     $cmd->exit_is_num(0);
-    $cmd->stdout_is_eq("google-public-dns-a.google.com (2001:4860:4860::8888) is alive\n");
+    $cmd->stdout_is_eq("dns.google (2001:4860:4860::8888) is alive\n");
     $cmd->stderr_is_eq("");
 }
 
@@ -73,7 +73,7 @@ SKIP: {
     if(system("/sbin/ifconfig | grep inet6.*Scope:Global") != 0) {
         skip 'No IPv6 on this host', 3;
     }
-    my $cmd = Test::Command->new(cmd => "fping -A -m google-public-dns-a.google.com");
+    my $cmd = Test::Command->new(cmd => "fping -A -m dns.google");
     $cmd->exit_is_num(0);
     $cmd->stdout_is_eq("2001:4860:4860::8888 is alive\n8.8.8.8 is alive\n");
     $cmd->stderr_is_eq("");
@@ -91,7 +91,7 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -n 8.8.8.8");
 $cmd->exit_is_num(0);
-$cmd->stdout_is_eq("google-public-dns-a.google.com is alive\n");
+$cmd->stdout_is_eq("dns.google is alive\n");
 $cmd->stderr_is_eq("");
 }
 

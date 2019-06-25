@@ -435,7 +435,7 @@ int main(int argc, char** argv)
             break;
         case '6':
 #ifdef IPV6
-            if (hints_ai_family != AF_UNSPEC) {
+            if (hints_ai_family != AF_UNSPEC && hints_ai_family != AF_INET6) {
                 fprintf(stderr, "%s: can't specify both -4 and -6\n", prog);
                 exit(1);
             }

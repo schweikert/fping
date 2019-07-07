@@ -2149,6 +2149,27 @@ int wait_for_reply(long wait_time)
         sum_replies += this_reply;
         h->total_time += this_reply;
         total_replies++;
+        
+        if (h->num_recv == 1) {
+            num_alive++;
+            if (verbose_flag || alive_flag) {
+                printf("%s", h->host);
+
+                if (verbose_flag)
+                    printf(" is alive");
+
+                if (elapsed_flag)
+                    printf(" (%s ms)", sprint_tm(this_reply));
+
+                if (addr_cmp((struct sockaddr*)&response_addr, (struct sockaddr*)&h->saddr)) {
+                    char buf[INET6_ADDRSTRLEN];
+                    getnameinfo((struct sockaddr*)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+                    fprintf(stderr, " [<- %s]", buf);
+                }
+
+                printf("\n");
+            }
+        }
     }
 
     /* received ping is cool, so process it */
@@ -2182,27 +2203,6 @@ int wait_for_reply(long wait_time)
             /* count is out of bounds?? */
             fprintf(stderr, "%s : duplicate for [%d], %d bytes, %s ms\n",
                 h->host, this_count, result, sprint_tm(this_reply));
-        }
-    }
-
-    if (h->num_recv == 1) {
-        num_alive++;
-        if (verbose_flag || alive_flag) {
-            printf("%s", h->host);
-
-            if (verbose_flag)
-                printf(" is alive");
-
-            if (elapsed_flag)
-                printf(" (%s ms)", sprint_tm(this_reply));
-
-            if (addr_cmp((struct sockaddr*)&response_addr, (struct sockaddr*)&h->saddr)) {
-                char buf[INET6_ADDRSTRLEN];
-                getnameinfo((struct sockaddr*)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
-                fprintf(stderr, " [<- %s]", buf);
-            }
-
-            printf("\n");
         }
     }
 

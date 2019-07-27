@@ -1,0 +1,21 @@
+pool:
+  name: Hosted Ubuntu 1604
+steps:
+- script: |
+   sudo apt-get update -qq
+   sudo apt-get install libcap2-bin
+   echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' |  sudo tee -a /etc/ssl/certs/ca-
+  displayName: 'before_install'
+
+- script: |
+   ci/build-1-autotools.sh
+   curl -L http://cpanmin.us | perl - --sudo App::cpanminus
+   cpanm --sudo Test::Command
+  displayName: install
+
+- script: |
+   ci/build-2-install.sh
+   env PATH=`pwd`/src:$PATH prove ci/test-{01..13}*.pl
+   env PATH=`pwd`/src:$PATH prove ci/test-15*.pl
+   ci/test-tarball.sh
+  displayName: 'build_test'

@@ -43,6 +43,7 @@ extern "C" {
 #include <stdarg.h>
 #include <stdio.h>
 #include <time.h>
+#include <math.h>
 
 #include "config.h"
 #include "seqmap.h"
@@ -214,6 +215,8 @@ typedef struct host_entry {
     int total_time_i; /* sum of response times */
     int discard_next_recv_i; /* don't count next received reply for split reporting */
     int* resp_times; /* individual response times */
+    int* window;
+    int window_size;
 #if defined(DEBUG) || defined(_DEBUG)
     int* sent_times; /* per-sent-ping timestamp */
 #endif /* DEBUG || _DEBUG */
@@ -1702,6 +1705,9 @@ int send_ping(HOST_ENTRY* h)
         if (!loop_flag)
             h->resp_times[h->num_sent] = RESP_WAITING;
 
+        /* mark this trial outstanding in the window */
+        h->window[h->num_sent % h->window_size] = 1;
+
 #if defined(DEBUG) || defined(_DEBUG)
         if (sent_times_flag)
             h->sent_times[h->num_sent] = timeval_diff(&h->last_send_time, &start_time);
@@ -2185,6 +2191,9 @@ int wait_for_reply(long wait_time)
         }
     }
 
+    /* Mark as received in window */
+    h->window[this_count % h->window_size] = 2;
+
     if (h->num_recv == 1) {
         num_alive++;
         if (verbose_flag || alive_flag) {
@@ -2217,9 +2226,26 @@ int wait_for_reply(long wait_time)
             h->host, h->pad, this_count, result, sprint_tm(this_reply));
         printf(" (%s avg, ", sprint_tm(avg));
 
+        /* Remove from expected count any still in window */
+        int expected = h->num_sent;
+        for (int j = 0; j < h->window_size; j++) {
+            if ( h->window[j] == 0 )
+                fprintf(stderr, " ");
+            if ( h->window[j] == 1 )
+                fprintf(stderr, "o");
+            if ( h->window[j] == 2 )
+                fprintf(stderr, "+");
+
+            if ( h->window[j] == 1 )
+                expected--;
+        }
+        fprintf(stderr, " ");
+        if ( expected < 0 )
+                expected = 0;
+
         if (h->num_recv <= h->num_sent) {
-            printf("%d%% loss)",
-                ((h->num_sent - h->num_recv) * 100) / h->num_sent);
+            printf("%d%% loss %d/%d/%d)",
+                ((expected - h->num_recv) * 100) / expected, h->num_recv, expected, h->num_sent);
         }
         else {
             printf("%d%% return)",
@@ -2387,6 +2413,7 @@ void add_addr(char* name, char* host, struct sockaddr* ipaddr, socklen_t ipaddr_
     p->timeout = timeout;
     p->running = 1;
     p->min_reply = 0;
+    p->window_size = ceil((float)timeout / (float)perhost_interval);
 
     if (netdata_flag) {
         char* s = p->name;
@@ -2411,6 +2438,15 @@ void add_addr(char* name, char* host, struct sockaddr* ipaddr, socklen_t ipaddr_
 
         p->resp_times = i;
     }
+
+    /* Array for in-flight packet window */
+    i = (int*)malloc(p->window_size * sizeof(int));
+    if (!i)
+         crash_and_burn("can't allocate window array");
+    for (n = 1; n < p->window_size; n++)
+        i[n] = 0;
+
+    p->window = i;
 
 #if defined(DEBUG) || defined(_DEBUG)
     /* likewise for sent times */

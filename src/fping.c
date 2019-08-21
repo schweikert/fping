@@ -2252,7 +2252,7 @@ int wait_for_reply(long wait_time)
         if ( expected < 0 )
                 expected = 0;
 
-        if (h->num_recv <= h->num_sent) {
+        if (h->num_recv <= expected) {
             printf("%d%% loss %d/%d/%d)",
                 ((expected - h->num_recv) * 100) / expected, h->num_recv, expected, h->num_sent);
         }

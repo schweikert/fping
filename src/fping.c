@@ -2227,34 +2227,35 @@ int wait_for_reply(long wait_time)
         printf(" (%s avg, ", sprint_tm(avg));
 
         /* Calculate the expected number of packets */
-        long now = timeval_diff(&current_time, &start_time);
+        long now = timeval_diff(&recv_time, &start_time);
         int expected = h->num_sent;
         for (int j = 0; j < h->window_size; j++) {
             int v = h->window[j];
+            if ( v >= 0 && h->window[j] + h->timeout > now ){
+               /* This entry has not been received yet */
+               /* And it is still within it's timeout, do not count it*/
+               expected--;
+            }
+#if 0
             if ( v == INT_MIN ){
-                /* This entry has been received */
                 fprintf(stderr, " ");
             }
             else {
-                /* This entry has not been received yet */
                 if (h->window[j] + h->timeout > now ){
-                    /* And it is still within it's timeout, do not count it*/
-                    expected--;
                     fprintf(stderr, ".");
                 }
                 else {
-                    /* It has timed out */
                     fprintf(stderr, "x");
                 }
             }
+#endif
         }
-        fprintf(stderr, " ");
         if ( expected < 0 )
                 expected = 0;
 
         if (h->num_recv <= expected) {
-            printf("%d%% loss %d/%d/%d)",
-                ((expected - h->num_recv) * 100) / expected, h->num_recv, expected, h->num_sent);
+            printf("%d%% loss)",
+                ((expected - h->num_recv) * 100) / expected);
         }
         else {
             printf("%d%% return)",

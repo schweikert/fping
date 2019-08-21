@@ -2250,8 +2250,8 @@ int wait_for_reply(long wait_time)
             }
 #endif
         }
-        if ( expected < 0 )
-                expected = 0;
+        if ( expected < 1 )
+                expected = 1;
 
         if (h->num_recv <= expected) {
             printf("%d%% loss)",
@@ -2423,7 +2423,10 @@ void add_addr(char* name, char* host, struct sockaddr* ipaddr, socklen_t ipaddr_
     p->timeout = timeout;
     p->running = 1;
     p->min_reply = 0;
+
     p->window_size = 2 * timeout / perhost_interval;
+    if ( p->window_size <= 0 )
+        p->window_size = 1;
 
     if (netdata_flag) {
         char* s = p->name;

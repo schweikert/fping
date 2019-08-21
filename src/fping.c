@@ -43,7 +43,7 @@ extern "C" {
 #include <stdarg.h>
 #include <stdio.h>
 #include <time.h>
-#include <math.h>
+#include <limits.h>
 
 #include "config.h"
 #include "seqmap.h"
@@ -215,8 +215,8 @@ typedef struct host_entry {
     int total_time_i; /* sum of response times */
     int discard_next_recv_i; /* don't count next received reply for split reporting */
     int* resp_times; /* individual response times */
-    int* window;
-    int window_size;
+    int* window; /* circular buffer of per-sent-ping timestamps for pings within their timeouts */
+    int window_size; /* size of above; needs to be larger than ceil(timeout / period) */
 #if defined(DEBUG) || defined(_DEBUG)
     int* sent_times; /* per-sent-ping timestamp */
 #endif /* DEBUG || _DEBUG */
@@ -1706,7 +1706,7 @@ int send_ping(HOST_ENTRY* h)
             h->resp_times[h->num_sent] = RESP_WAITING;
 
         /* mark this trial outstanding in the window */
-        h->window[h->num_sent % h->window_size] = 1;
+        h->window[h->num_sent % h->window_size] = timeval_diff(&h->last_send_time, &start_time);;
 
 #if defined(DEBUG) || defined(_DEBUG)
         if (sent_times_flag)
@@ -2192,7 +2192,7 @@ int wait_for_reply(long wait_time)
     }
 
     /* Mark as received in window */
-    h->window[this_count % h->window_size] = 2;
+    h->window[this_count % h->window_size] = INT_MIN;
 
     if (h->num_recv == 1) {
         num_alive++;
@@ -2226,18 +2226,27 @@ int wait_for_reply(long wait_time)
             h->host, h->pad, this_count, result, sprint_tm(this_reply));
         printf(" (%s avg, ", sprint_tm(avg));
 
-        /* Remove from expected count any still in window */
+        /* Calculate the expected number of packets */
+        long now = timeval_diff(&current_time, &start_time);
         int expected = h->num_sent;
         for (int j = 0; j < h->window_size; j++) {
-            if ( h->window[j] == 0 )
+            int v = h->window[j];
+            if ( v == INT_MIN ){
+                /* This entry has been received */
                 fprintf(stderr, " ");
-            if ( h->window[j] == 1 )
-                fprintf(stderr, "o");
-            if ( h->window[j] == 2 )
-                fprintf(stderr, "+");
-
-            if ( h->window[j] == 1 )
-                expected--;
+            }
+            else {
+                /* This entry has not been received yet */
+                if (h->window[j] + h->timeout > now ){
+                    /* And it is still within it's timeout, do not count it*/
+                    expected--;
+                    fprintf(stderr, ".");
+                }
+                else {
+                    /* It has timed out */
+                    fprintf(stderr, "x");
+                }
+            }
         }
         fprintf(stderr, " ");
         if ( expected < 0 )
@@ -2413,7 +2422,7 @@ void add_addr(char* name, char* host, struct sockaddr* ipaddr, socklen_t ipaddr_
     p->timeout = timeout;
     p->running = 1;
     p->min_reply = 0;
-    p->window_size = ceil((float)timeout / (float)perhost_interval);
+    p->window_size = 2 * timeout / perhost_interval;
 
     if (netdata_flag) {
         char* s = p->name;
@@ -2444,7 +2453,7 @@ void add_addr(char* name, char* host, struct sockaddr* ipaddr, socklen_t ipaddr_
     if (!i)
          crash_and_burn("can't allocate window array");
     for (n = 1; n < p->window_size; n++)
-        i[n] = 0;
+        i[n] = INT_MIN;
 
     p->window = i;
 

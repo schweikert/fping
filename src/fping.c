@@ -291,12 +291,21 @@ int multif_flag, timeout_flag;
 int outage_flag = 0;
 int timestamp_flag = 0;
 int random_data_flag = 0;
+int output_json_flag = 0;
 #if defined(DEBUG) || defined(_DEBUG)
 int randomly_lose_flag, sent_times_flag, trace_flag, print_per_system_flag;
 int lose_factor;
 #endif /* DEBUG || _DEBUG */
 
 char* filename = NULL; /* file containing hosts to ping */
+
+/* JSON output parameters */
+#define JSON_MAX_INDENT 16
+#define JSON_DEFAULT_INDENT 2
+
+char json_indent[JSON_MAX_INDENT + 1] = "                ";
+char json_space[2] = " ";
+char json_lf[2] = "\n";
 
 /*** forward declarations ***/
 
@@ -351,6 +360,7 @@ int main(int argc, char** argv)
     int tos = 0;
     HOST_ENTRY* cursor;
     struct optparse optparse_state;
+    unsigned int json_indent_num = JSON_DEFAULT_INDENT;
 
     /* pre-parse -h/--help, so that we also can output help information
      * without trying to open the socket, which might fail */
@@ -401,6 +411,7 @@ int main(int argc, char** argv)
         { "ttl", 'H', OPTPARSE_REQUIRED },
         { "interval", 'i', OPTPARSE_REQUIRED },
         { "iface", 'I', OPTPARSE_REQUIRED },
+        { "json", 'J', OPTPARSE_OPTIONAL },
         { "loop", 'l', OPTPARSE_NONE },
         { "all", 'm', OPTPARSE_NONE },
         { "dontfrag", 'M', OPTPARSE_NONE },
@@ -702,6 +713,22 @@ int main(int argc, char** argv)
             outage_flag = 1;
             break;
 
+        case 'J':
+            if (optparse_state.optarg && !(json_indent_num = (unsigned int)strtoul(optparse_state.optarg, (char**)NULL, 10)) && errno == EINVAL)
+                usage(1);
+
+            if (json_indent_num > JSON_MAX_INDENT)
+                usage(1);
+
+            json_indent[json_indent_num] = 0;
+            if (json_indent_num == 0)
+                json_space[0] = json_lf[0] = 0;
+
+            output_json_flag = 1;
+            verbose_flag = 0;
+            quiet_flag = 1;
+            break;
+
         case '?':
             fprintf(stderr, "%s: %s\n", argv[0], optparse_state.errmsg);
             fprintf(stderr, "see 'fping -h' for usage information\n");
@@ -787,6 +814,11 @@ int main(int argc, char** argv)
         }
     }
 
+    if (output_json_flag) {
+        verbose_flag = 0;
+        quiet_flag = 1;
+    }
+
 #if defined(DEBUG) || defined(_DEBUG)
     if (debugging & DBG_TRACE)
         trace_flag = 1;
@@ -856,6 +888,8 @@ int main(int argc, char** argv)
             fprintf(stderr, "  outage_flag set\n");
         if (netdata_flag)
             fprintf(stderr, "  netdata_flag set\n");
+        if (output_json_flag)
+            fprintf(stderr, "  output_json_flag set\n");
     }
 #endif /* DEBUG || _DEBUG */
 
@@ -1333,6 +1367,9 @@ void finish()
         }
     }
 
+    if (output_json_flag)
+        printf("{%s", json_lf);
+
     if (count_flag || loop_flag)
         print_per_system_stats();
 #if defined(DEBUG) || defined(_DEBUG)
@@ -1340,15 +1377,27 @@ void finish()
         print_per_system_stats();
 #endif /* DEBUG || _DEBUG */
 
-    if (stats_flag)
+    if (stats_flag) {
+        if (output_json_flag && (count_flag || loop_flag))
+            printf(",%s", json_lf);
+#if defined(DEBUG) || defined(_DEBUG)
+        else if (output_json_flag && print_per_system_flag)
+            printf(",%s", json_lf);
+#endif /* DEBUG || _DEBUG */
         print_global_stats();
+    }
+
+    if (output_json_flag)
+        printf("%s}%s", json_lf, json_lf); /* trailing newline if we're pretty-printing */
 
     if (min_reachable) {
         if ((num_hosts-num_unreachable) >= min_reachable) {
-            printf("Enough hosts reachable (required: %d, reachable: %d)\n", min_reachable, num_hosts-num_unreachable);
+            if (!output_json_flag)
+                printf("Enough hosts reachable (required: %d, reachable: %d)\n", min_reachable, num_hosts-num_unreachable);
             exit(0);
         } else {
-            printf("Not enough hosts reachable (required: %d, reachable: %d)\n", min_reachable, num_hosts-num_unreachable);
+            if (!output_json_flag)
+                printf("Not enough hosts reachable (required: %d, reachable: %d)\n", min_reachable, num_hosts-num_unreachable);
             exit(1);
         }
     }
@@ -1382,48 +1431,117 @@ void print_per_system_stats(void)
 
     fflush(stdout);
 
+    if (output_json_flag)
+        printf("%s\"hosts\":%s{%s", json_indent, json_space, json_lf);
     if (verbose_flag || per_recv_flag)
         fprintf(stderr, "\n");
 
     for (i = 0; i < num_hosts; i++) {
         h = table[i];
-        fprintf(stderr, "%s%s :", h->host, h->pad);
+        if (output_json_flag)
+            printf("%s%s\"%s\":%s", json_indent, json_indent, h->host, json_space);
+        else
+            fprintf(stderr, "%s%s :", h->host, h->pad);
 
         if (report_all_rtts_flag) {
+            if (output_json_flag)
+                printf("[%s", json_lf);
+
             for (j = 0; j < h->num_sent; j++) {
-                if ((resp = h->resp_times[j]) >= 0)
-                    fprintf(stderr, " %d.%02d", resp / 100, resp % 100);
-                else
-                    fprintf(stderr, " -");
+                if ((resp = h->resp_times[j]) >= 0) {
+                   if (output_json_flag)
+                        printf("%s%s%s%d.%02d", json_indent, json_indent, json_indent, resp / 100, resp % 100);
+                    else
+                        fprintf(stderr, " %d.%02d", resp / 100, resp % 100);
+                }
+                else {
+                    if (output_json_flag)
+                        printf("%s%s%snull", json_indent, json_indent, json_indent);
+                    else
+                        fprintf(stderr, " -");
+                }
+
+                if (output_json_flag) {
+                    /* JSON doesn't allow trailing commas */
+                    if (j + 1 < h->num_sent)
+                        printf(",%s", json_lf);
+                    else
+                        printf("%s", json_lf);
+                }
             }
 
-            fprintf(stderr, "\n");
+            if (output_json_flag) {
+                if (i + 1 < num_hosts)
+                    printf("%s%s],%s", json_indent, json_indent, json_lf);
+                else
+                    printf("%s%s]", json_indent, json_indent);
+            }
+            else {
+                fprintf(stderr, "\n");
+            }
         }
         else {
+            if (output_json_flag)
+                printf("{%s", json_lf);
+
             if (h->num_recv <= h->num_sent) {
-                fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
-                    h->num_sent, h->num_recv, h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
+                if (output_json_flag) {
+                    printf("%s%s%s\"xmt\":%s%d,%s", json_indent, json_indent, json_indent, json_space, h->num_sent, json_lf);
+                    printf("%s%s%s\"rcv\":%s%d,%s", json_indent, json_indent, json_indent, json_space, h->num_recv, json_lf);
+                    printf("%s%s%s\"loss_percentage\":%s%d", json_indent, json_indent, json_indent, json_space,
+                        h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
+                }
+                else {
+                    fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
+                        h->num_sent, h->num_recv, h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
+                }
 
                 if (outage_flag) {
                     /* Time outage total */
                     outage_ms = (h->num_sent - h->num_recv) * perhost_interval / 100;
-                    fprintf(stderr, ", outage(ms) = %d", outage_ms);
+                    if (output_json_flag)
+                        printf(",%s%s%s%s\"outage\":%s%d", json_lf, json_indent, json_indent, json_indent, json_space, outage_ms);
+                    else
+                        fprintf(stderr, ", outage(ms) = %d", outage_ms);
                 }
             }
             else {
-                fprintf(stderr, " xmt/rcv/%%return = %d/%d/%d%%",
-                    h->num_sent, h->num_recv,
-                    ((h->num_recv * 100) / h->num_sent));
+                if (output_json_flag) {
+                    printf("%s%s%s\"xmt\":%s%d,%s", json_indent, json_indent, json_indent, json_space, h->num_sent, json_lf);
+                    printf("%s%s%s\"rcv\":%s%d,%s", json_indent, json_indent, json_indent, json_space, h->num_recv, json_lf);
+                    printf("%s%s%s\"return_percentage\":%s%d", json_indent, json_indent, json_indent, json_space,
+                        ((h->num_recv * 100) / h->num_sent));
+                }
+                else {
+                    fprintf(stderr, " xmt/rcv/%%return = %d/%d/%d%%",
+                       h->num_sent, h->num_recv,
+                       ((h->num_recv * 100) / h->num_sent));
+                }
             }
 
             if (h->num_recv) {
                 avg = h->total_time / h->num_recv;
-                fprintf(stderr, ", min/avg/max = %s", sprint_tm(h->min_reply));
-                fprintf(stderr, "/%s", sprint_tm(avg));
-                fprintf(stderr, "/%s", sprint_tm(h->max_reply));
+                if (output_json_flag) {
+                    printf(",%s%s%s%s\"min\":%s%s", json_lf, json_indent, json_indent, json_indent, json_space, sprint_tm(h->min_reply));
+                    printf(",%s%s%s%s\"avg\":%s%s", json_lf, json_indent, json_indent, json_indent, json_space, sprint_tm(avg));
+                    printf(",%s%s%s%s\"max\":%s%s", json_lf, json_indent, json_indent, json_indent, json_space, sprint_tm(h->max_reply));
+                }
+                else {
+                    fprintf(stderr, ", min/avg/max = %s", sprint_tm(h->min_reply));
+                    fprintf(stderr, "/%s", sprint_tm(avg));
+                    fprintf(stderr, "/%s", sprint_tm(h->max_reply));
+                }
             }
 
-            fprintf(stderr, "\n");
+            if (output_json_flag) {
+                if (i + 1 < num_hosts)
+                    printf("%s%s%s},%s", json_lf, json_indent, json_indent, json_lf);
+                else
+                    printf("%s%s%s}", json_lf, json_indent, json_indent);
+            }
+            else {
+                fprintf(stderr, "\n");
+            }
         }
 
 #if defined(DEBUG) || defined(_DEBUG)
@@ -1439,6 +1557,9 @@ void print_per_system_stats(void)
         }
 #endif
     }
+
+    if (output_json_flag)
+        printf("%s%s}", json_lf, json_indent);
 }
 
 /************************************************************
@@ -1610,18 +1731,6 @@ void print_per_system_splits(void)
 void print_global_stats(void)
 {
     fflush(stdout);
-    fprintf(stderr, "\n");
-    fprintf(stderr, " %7d targets\n", num_hosts);
-    fprintf(stderr, " %7d alive\n", num_alive);
-    fprintf(stderr, " %7d unreachable\n", num_unreachable);
-    fprintf(stderr, " %7d unknown addresses\n", num_noaddress);
-    fprintf(stderr, "\n");
-    fprintf(stderr, " %7d timeouts (waiting for response)\n", num_timeout);
-    fprintf(stderr, " %7d ICMP Echos sent\n", num_pingsent);
-    fprintf(stderr, " %7d ICMP Echo Replies received\n", num_pingreceived);
-    fprintf(stderr, " %7d other ICMP received\n", num_othericmprcvd);
-    fprintf(stderr, "\n");
-
     if (total_replies == 0) {
         min_reply = 0;
         max_reply = 0;
@@ -1629,13 +1738,43 @@ void print_global_stats(void)
         sum_replies = 0;
     }
 
-    fprintf(stderr, " %s ms (min round trip time)\n", sprint_tm(min_reply));
-    fprintf(stderr, " %s ms (avg round trip time)\n",
-        sprint_tm((int)(sum_replies / total_replies)));
-    fprintf(stderr, " %s ms (max round trip time)\n", sprint_tm(max_reply));
-    fprintf(stderr, " %12.3f sec (elapsed real time)\n",
-        timeval_diff(&end_time, &start_time) / 100000.0);
-    fprintf(stderr, "\n");
+    if (output_json_flag) {
+        printf("%s\"stats\":%s{%s", json_indent, json_space, json_lf);
+        printf("%s%s\"targets\":%s%d,%s", json_indent, json_indent, json_space, num_hosts, json_lf);
+        printf("%s%s\"alive\":%s%d,%s", json_indent, json_indent, json_space, num_alive, json_lf);
+        printf("%s%s\"unreachable\":%s%d,%s", json_indent, json_indent, json_space, num_unreachable, json_lf);
+        printf("%s%s\"unknown_addresses\":%s%d,%s", json_indent, json_indent, json_space, num_noaddress, json_lf);
+        printf("%s%s\"timeouts\":%s%d,%s", json_indent, json_indent, json_space, num_timeout, json_lf);
+        printf("%s%s\"icmp_echos_sent\":%s%d,%s", json_indent, json_indent, json_space, num_pingsent, json_lf);
+        printf("%s%s\"icmp_echo_replies_received\":%s%d,%s", json_indent, json_indent, json_space, num_pingreceived, json_lf);
+        printf("%s%s\"other_icmp_received\":%s%d,%s", json_indent, json_indent, json_space, num_othericmprcvd, json_lf);
+        printf("%s%s\"min_rtt\":%s%s,%s", json_indent, json_indent, json_space, sprint_tm(min_reply), json_lf);
+        printf("%s%s\"avg_rtt\":%s%s,%s", json_indent, json_indent, json_space, sprint_tm((int)(sum_replies / total_replies)), json_lf);
+        printf("%s%s\"max_rtt\":%s%s,%s", json_indent, json_indent, json_space, sprint_tm(max_reply), json_lf);
+        printf("%s%s\"elapsed_real_time\":%s%.3f%s", json_indent, json_indent, json_space,
+            timeval_diff(&end_time, &start_time) / 100000.0, json_lf);
+        printf("%s}", json_indent);
+    }
+    else {
+        fprintf(stderr, "\n");
+        fprintf(stderr, " %7d targets\n", num_hosts);
+        fprintf(stderr, " %7d alive\n", num_alive);
+        fprintf(stderr, " %7d unreachable\n", num_unreachable);
+        fprintf(stderr, " %7d unknown addresses\n", num_noaddress);
+        fprintf(stderr, "\n");
+        fprintf(stderr, " %7d timeouts (waiting for response)\n", num_timeout);
+        fprintf(stderr, " %7d ICMP Echos sent\n", num_pingsent);
+        fprintf(stderr, " %7d ICMP Echo Replies received\n", num_pingreceived);
+        fprintf(stderr, " %7d other ICMP received\n", num_othericmprcvd);
+        fprintf(stderr, "\n");
+        fprintf(stderr, " %s ms (min round trip time)\n", sprint_tm(min_reply));
+        fprintf(stderr, " %s ms (avg round trip time)\n",
+            sprint_tm((int)(sum_replies / total_replies)));
+        fprintf(stderr, " %s ms (max round trip time)\n", sprint_tm(max_reply));
+        fprintf(stderr, " %12.3f sec (elapsed real time)\n",
+            timeval_diff(&end_time, &start_time) / 100000.0);
+        fprintf(stderr, "\n");
+    }
 }
 
 /************************************************************
@@ -2789,6 +2928,9 @@ void usage(int is_error)
     fprintf(out, "   -D, --timestamp    print timestamp before each output line\n");
     fprintf(out, "   -e, --elapsed      show elapsed time on return packets\n");
     fprintf(out, "   -i, --interval=MSEC  interval between sending ping packets (default: %d ms)\n", interval / 100);
+    fprintf(out, "   -J, --json[=N]     output in JSON format to stdout (implies -q)\n");
+    fprintf(out, "                      optionally specify JSON indentation (default: %d, max: %d)\n", JSON_DEFAULT_INDENT, JSON_MAX_INDENT);
+    fprintf(out, "                      indentation == 0 will disable pretty-printing\n");
     fprintf(out, "   -n, --name         show targets by name (-d is equivalent)\n");
     fprintf(out, "   -N, --netdata      output compatible for netdata (-l -Q are required)\n");
     fprintf(out, "   -o, --outage       show the accumulated outage time (lost packets * packet interval)\n");

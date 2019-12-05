@@ -5,7 +5,7 @@ UNRELEASED
 
 - Corrected long option name of -s to --stats (#148, thanks @wopfel)
 - Do not fail if using fping6 with -6 flag (#149, thanks @stromnet)
-- Fail if interface binding (-I) does not work (by @kbucheli)
+- Fail if interface binding (-I) does not work (#162, by @kbucheli)
 
 fping 4.2 (2019-02-19)
 ======================

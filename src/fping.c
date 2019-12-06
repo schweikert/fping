@@ -626,7 +626,7 @@ int main(int argc, char** argv)
 
         case 'x':
             if (!(min_reachable = (unsigned int)atoi(optparse_state.optarg)))
-                usage(1); 
+                usage(1);
             break;
 
         case 'f':
@@ -658,12 +658,14 @@ int main(int argc, char** argv)
             if (socket4 >= 0) {
                 if (setsockopt(socket4, SOL_SOCKET, SO_BINDTODEVICE, optparse_state.optarg, strlen(optparse_state.optarg))) {
                     perror("binding to specific interface (SO_BINTODEVICE)");
+                    exit(1);
                 }
             }
 #ifdef IPV6
             if (socket6 >= 0) {
                 if (setsockopt(socket6, SOL_SOCKET, SO_BINDTODEVICE, optparse_state.optarg, strlen(optparse_state.optarg))) {
                     perror("binding to specific interface (SO_BINTODEVICE), IPV6");
+                    exit(1);
                 }
             }
 #endif

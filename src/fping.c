@@ -427,11 +427,13 @@ int main(int argc, char** argv)
     while ((c = optparse_long(&optparse_state, longopts, NULL)) != EOF) {
         switch (c) {
         case '4':
+#ifdef IPV6
             if (hints_ai_family != AF_UNSPEC) {
                 fprintf(stderr, "%s: can't specify both -4 and -6\n", prog);
                 exit(1);
             }
             hints_ai_family = AF_INET;
+#endif
             break;
         case '6':
 #ifdef IPV6

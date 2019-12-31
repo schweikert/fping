@@ -358,9 +358,9 @@ int main(int argc, char** argv)
         usage(0);
     }
 
-    socket4 = open_ping_socket_ipv4(ping_data_size);
+    socket4 = open_ping_socket_ipv4();
 #ifdef IPV6
-    socket6 = open_ping_socket_ipv6(ping_data_size);
+    socket6 = open_ping_socket_ipv6();
     /* if called (sym-linked) via 'fping6', imply '-6'
      * for backward compatibility */
     if (strstr(prog, "fping6")) {

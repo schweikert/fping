@@ -280,7 +280,6 @@ struct timeval start_time;
 struct timeval end_time;
 struct timeval last_send_time; /* time last ping was sent */
 struct timeval next_report_time; /* time next -Q report is expected */
-struct timezone tz;
 
 /* switches */
 int generate_flag = 0; /* flag for IP list generation */
@@ -1011,7 +1010,7 @@ int main(int argc, char** argv)
 
     signal(SIGINT, finish);
 
-    gettimeofday(&start_time, &tz);
+    gettimeofday(&start_time, NULL);
     current_time = start_time;
 
     if (report_interval) {
@@ -1283,7 +1282,7 @@ void main_loop()
                 ; /* process other replies in the queue */
         }
 
-        gettimeofday(&current_time, &tz);
+        gettimeofday(&current_time, NULL);
 
         /* Print report */
         if (report_interval && (loop_flag || count_flag) && (timeval_diff(&current_time, &next_report_time) >= 0)) {
@@ -1317,7 +1316,7 @@ void finish()
     int i;
     HOST_ENTRY* h;
 
-    gettimeofday(&end_time, &tz);
+    gettimeofday(&end_time, NULL);
 
     /* tot up unreachables */
     for (i = 0; i < num_hosts; i++) {
@@ -1553,7 +1552,7 @@ void print_per_system_splits(void)
     if (verbose_flag || per_recv_flag)
         fprintf(stderr, "\n");
 
-    gettimeofday(&current_time, &tz);
+    gettimeofday(&current_time, NULL);
     curr_tm = localtime((time_t*)&current_time.tv_sec);
     fprintf(stderr, "[%2.2d:%2.2d:%2.2d]\n", curr_tm->tm_hour,
         curr_tm->tm_min, curr_tm->tm_sec);
@@ -1666,7 +1665,7 @@ int send_ping(HOST_ENTRY* h)
     int myseq;
     int ret = 1;
 
-    gettimeofday(&h->last_send_time, &tz);
+    gettimeofday(&h->last_send_time, NULL);
     myseq = seqmap_add(h->i, h->num_sent, &h->last_send_time);
 
 #if defined(DEBUG) || defined(_DEBUG)
@@ -2070,7 +2069,7 @@ int wait_for_reply(long wait_time)
         return 1;
     }
 
-    gettimeofday(&current_time, &tz);
+    gettimeofday(&current_time, NULL);
 
     /* Process ICMP packet and retrieve id/seq */
     if (response_addr.ss_family == AF_INET) {

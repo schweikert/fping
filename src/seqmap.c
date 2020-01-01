@@ -35,6 +35,7 @@
  *           https://github.com/schweikert/fping/issues/48
  */
 
+#include "config.h"
 #include "seqmap.h"
 #include "limits.h"
 #include "options.h"

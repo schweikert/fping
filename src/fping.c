@@ -34,6 +34,7 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#include "config.h"
 #include "fping.h"
 #include "options.h"
 #include "optparse.h"
@@ -44,7 +45,6 @@ extern "C" {
 #include <stdio.h>
 #include <time.h>
 
-#include "config.h"
 #include "seqmap.h"
 
 #ifdef HAVE_UNISTD_H
@@ -608,7 +608,7 @@ int main(int argc, char** argv)
             break;
 
         case 'H':
-            if (!(ttl = (u_int)atoi(optparse_state.optarg)))
+            if (!(ttl = (unsigned int)atoi(optparse_state.optarg)))
                 usage(1);
             break;
 

@@ -2339,7 +2339,7 @@ void add_name(char* name)
             }
 
             if (name_flag || rdns_flag) {
-                char nameaddrbuf[512];
+                char nameaddrbuf[512+3];
                 snprintf(nameaddrbuf, sizeof(nameaddrbuf) / sizeof(char), "%s (%s)", printname, addrbuf);
                 add_addr(name, nameaddrbuf, res->ai_addr, res->ai_addrlen);
             }
@@ -2583,7 +2583,7 @@ void timeval_add(struct timeval* a, long t_10u)
 
 char* sprint_tm(int t)
 {
-    static char buf[10];
+    static char buf[12];
 
     if (t < 0) {
         /* negative (unexpected) */

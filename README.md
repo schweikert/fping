@@ -35,8 +35,9 @@ If you want to install fping from source, proceed as follows:
 0. Install Cygwin with autoconf, gcc-core, gcc-g++, libgcc1, 
    mingw64-x86_64-gcc-core, mingw64-x86_64-gcc-g++
 1. Run ./autogen.sh
-2. Run make
-3. Take the .exe file with cygwin1.dll
+2. Run ./configure
+3. Run make
+4. Take the .exe file with cygwin1.dll
 
 ## Usage
 

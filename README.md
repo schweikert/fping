@@ -30,6 +30,14 @@ If you want to install fping from source, proceed as follows:
 3. Make fping either setuid, or, if under Linux:
    `sudo setcap cap_net_raw+ep fping`
 
+## Windows compile by Cygwin
+
+0. Install Cygwin with autoconf, gcc-core, gcc-g++, libgcc1, 
+   mingw64-x86_64-gcc-core, mingw64-x86_64-gcc-g++
+1. Run ./autogen.sh
+2. Run make
+3. Take the .exe file with cygwin1.dll
+
 ## Usage
 
 Have a look at the [fping(8)](doc/fping.pod) manual page for usage help.

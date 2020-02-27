@@ -47,7 +47,7 @@
 char* ping_buffer_ipv4 = 0;
 size_t ping_pkt_size_ipv4;
 
-int open_ping_socket_ipv4()
+int open_ping_socket_ipv4(int *using_sock_dgram)
 {
     struct protoent* proto;
     int s;
@@ -55,6 +55,8 @@ int open_ping_socket_ipv4()
     /* confirm that ICMP is available on this machine */
     if ((proto = getprotobyname("icmp")) == NULL)
         crash_and_burn("icmp: unknown protocol");
+
+    *using_sock_dgram = 0;
 
     /* create raw socket for ICMP calls (ping) */
     s = socket(AF_INET, SOCK_RAW, proto->p_proto);
@@ -64,6 +66,13 @@ int open_ping_socket_ipv4()
         if (s < 0) {
             return -1;
         }
+
+#ifdef __linux__
+        /* We only treat SOCK_DGRAM differently on Linux, where the IPv4 header
+         * structure is missing in the message.
+         */
+        *using_sock_dgram = 1;
+#endif
     }
 
     /* Make sure that we use non-blocking IO */

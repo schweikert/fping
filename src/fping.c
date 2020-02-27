@@ -232,6 +232,7 @@ HOST_ENTRY* ev_last;
 char* prog;
 int ident4 = 0; /* our icmp identity field */
 int socket4 = -1;
+int using_sock_dgram4 = 0;
 #ifndef IPV6
 int hints_ai_family = AF_INET;
 #else
@@ -359,7 +360,7 @@ int main(int argc, char** argv)
         usage(0);
     }
 
-    socket4 = open_ping_socket_ipv4();
+    socket4 = open_ping_socket_ipv4(&using_sock_dgram4);
 #ifdef IPV6
     socket6 = open_ping_socket_ipv6();
     /* if called (sym-linked) via 'fping6', imply '-6'
@@ -1836,19 +1837,22 @@ int decode_icmp_ipv4(
     unsigned short* id,
     unsigned short* seq)
 {
-    struct ip* ip = (struct ip*)reply_buf;
     struct icmp* icp;
     int hlen = 0;
 
+    if (!using_sock_dgram4) {
+        struct ip* ip = (struct ip*)reply_buf;
+
 #if defined(__alpha__) && __STDC__ && !defined(__GLIBC__)
-    /* The alpha headers are decidedly broken.
-     * Using an ANSI compiler, it provides ip_vhl instead of ip_hl and
-     * ip_v.  So, to get ip_hl, we mask off the bottom four bits.
-     */
-    hlen = (ip->ip_vhl & 0x0F) << 2;
+        /* The alpha headers are decidedly broken.
+         * Using an ANSI compiler, it provides ip_vhl instead of ip_hl and
+         * ip_v.  So, to get ip_hl, we mask off the bottom four bits.
+         */
+        hlen = (ip->ip_vhl & 0x0F) << 2;
 #else
-    hlen = ip->ip_hl << 2;
+        hlen = ip->ip_hl << 2;
 #endif
+    }
 
     if (reply_buf_len < hlen + ICMP_MINLEN) {
         /* too short */
@@ -2090,6 +2094,10 @@ int wait_for_reply(long wait_time)
         }
         if (id != ident4) {
             return 1; /* packet received, but not the one we are looking for! */
+        }
+        if (using_sock_dgram4) {
+            /* IP header is not included in read SOCK_DGRAM ICMP responses */
+            result += sizeof(struct ip);
         }
     }
 #ifdef IPV6

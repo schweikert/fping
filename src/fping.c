@@ -1469,6 +1469,15 @@ void print_netdata(void)
     for (i = 0; i < num_hosts; i++) {
         h = table[i];
 
+        /* if we just sent the probe and didn't receive a reply, we shouldn't count it */
+        h->discard_next_recv_i = 0;
+        if (h->waiting && timeval_diff(&current_time, &h->last_send_time) < h->timeout) {
+            if (h->num_sent_i) {
+                h->num_sent_i--;
+                h->discard_next_recv_i = 1;
+            }
+        }
+
         if (!sent_charts) {
             printf("CHART fping.%s_packets '' 'FPing Packets for host %s' packets '%s' fping.packets line 110020 %d\n", h->name, h->host, h->name, report_interval / 100000);
             printf("DIMENSION xmt sent absolute 1 1\n");
@@ -1484,15 +1493,6 @@ void print_netdata(void)
             printf("CHART fping.%s_quality '' 'FPing Quality for host %s' percentage '%s' fping.quality area 110010 %d\n", h->name, h->host, h->name, report_interval / 100000);
             printf("DIMENSION returned '' absolute 1 1\n");
             /* printf("DIMENSION lost '' absolute 1 1\n"); */
-        }
-
-        /* if we just sent the probe and didn't receive a reply, we shouldn't count it */
-        h->discard_next_recv_i = 0;
-        if (h->waiting && timeval_diff(&current_time, &h->last_send_time) < h->timeout) {
-            if (h->num_sent_i) {
-                h->num_sent_i--;
-                h->discard_next_recv_i = 1;
-            }
         }
 
         printf("BEGIN fping.%s_quality\n", h->name);

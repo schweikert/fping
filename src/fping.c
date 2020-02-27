@@ -230,11 +230,12 @@ HOST_ENTRY* ev_first;
 HOST_ENTRY* ev_last;
 
 char* prog;
-int ident; /* our pid */
+int ident4 = 0; /* our icmp identity field */
 int socket4 = -1;
 #ifndef IPV6
 int hints_ai_family = AF_INET;
 #else
+int ident6 = 0;
 int socket6 = -1;
 int hints_ai_family = AF_UNSPEC;
 #endif
@@ -368,6 +369,11 @@ int main(int argc, char** argv)
     }
 #endif
 
+    memset(&src_addr, 0, sizeof(src_addr));
+#ifdef IPV6
+    memset(&src_addr6, 0, sizeof(src_addr6));
+#endif
+
     if ((uid = getuid())) {
         /* drop privileges */
         if (setuid(getuid()) == -1)
@@ -375,7 +381,7 @@ int main(int argc, char** argv)
     }
 
     optparse_init(&optparse_state, argv);
-    ident = getpid() & 0xFFFF;
+    ident4 = ident6 = getpid() & 0xFFFF;
     verbose_flag = 1;
     backoff_flag = 1;
     opterr = 1;
@@ -965,12 +971,12 @@ int main(int argc, char** argv)
         exit(num_noaddress ? 2 : 1);
     }
 
-    if (src_addr_set && socket4 >= 0) {
-        socket_set_src_addr_ipv4(socket4, &src_addr);
+    if (socket4 >= 0) {
+        socket_set_src_addr_ipv4(socket4, &src_addr, &ident4);
     }
 #ifdef IPV6
-    if (src_addr6_set && socket6 >= 0) {
-        socket_set_src_addr_ipv6(socket6, &src_addr6);
+    if (socket6 >= 0) {
+        socket_set_src_addr_ipv6(socket6, &src_addr6, &ident6);
     }
 #endif
 
@@ -1674,11 +1680,11 @@ int send_ping(HOST_ENTRY* h)
 #endif /* DEBUG || _DEBUG */
 
     if (h->saddr.ss_family == AF_INET && socket4 >= 0) {
-        n = socket_sendto_ping_ipv4(socket4, (struct sockaddr*)&h->saddr, h->saddr_len, myseq, ident);
+        n = socket_sendto_ping_ipv4(socket4, (struct sockaddr*)&h->saddr, h->saddr_len, myseq, ident4);
     }
 #ifdef IPV6
     else if (h->saddr.ss_family == AF_INET6 && socket6 >= 0) {
-        n = socket_sendto_ping_ipv6(socket6, (struct sockaddr*)&h->saddr, h->saddr_len, myseq, ident);
+        n = socket_sendto_ping_ipv6(socket6, (struct sockaddr*)&h->saddr, h->saddr_len, myseq, ident6);
     }
 #endif
     else {
@@ -1871,7 +1877,7 @@ int decode_icmp_ipv4(
 
         sent_icmp = (struct icmp*)(reply_buf + hlen + ICMP_MINLEN + sizeof(struct ip));
 
-        if (sent_icmp->icmp_type != ICMP_ECHO || ntohs(sent_icmp->icmp_id) != ident) {
+        if (sent_icmp->icmp_type != ICMP_ECHO || sent_icmp->icmp_id != ident4) {
             /* not caused by us */
             return 0;
         }
@@ -1920,7 +1926,7 @@ int decode_icmp_ipv4(
         return 0;
     }
 
-    *id = ntohs(icp->icmp_id);
+    *id = icp->icmp_id;
     *seq = ntohs(icp->icmp_seq);
 
     return 1;
@@ -1963,7 +1969,7 @@ int decode_icmp_ipv6(
 
         sent_icmp = (struct icmp6_hdr*)(reply_buf + sizeof(struct icmp6_hdr) + sizeof(struct ip));
 
-        if (sent_icmp->icmp6_type != ICMP_ECHO || ntohs(sent_icmp->icmp6_id) != ident) {
+        if (sent_icmp->icmp6_type != ICMP_ECHO || sent_icmp->icmp6_id != ident6) {
             /* not caused by us */
             return 0;
         }
@@ -2012,7 +2018,7 @@ int decode_icmp_ipv6(
         return 0;
     }
 
-    *id = ntohs(icp->icmp6_id);
+    *id = icp->icmp6_id;
     *seq = ntohs(icp->icmp6_seq);
 
     return 1;
@@ -2082,6 +2088,9 @@ int wait_for_reply(long wait_time)
                 &seq)) {
             return 1;
         }
+        if (id != ident4) {
+            return 1; /* packet received, but not the one we are looking for! */
+        }
     }
 #ifdef IPV6
     else if (response_addr.ss_family == AF_INET6) {
@@ -2094,14 +2103,13 @@ int wait_for_reply(long wait_time)
                 &seq)) {
             return 1;
         }
+        if (id != ident6) {
+            return 1; /* packet received, but not the one we are looking for! */
+        }
     }
 #endif
     else {
         return 1;
-    }
-
-    if (id != ident) {
-        return 1; /* packet received, but not the one we are looking for! */
     }
 
     seqmap_value = seqmap_fetch(seq, &current_time);

@@ -41,8 +41,8 @@ $cmd->stderr_like(qr{localhost : \d\.\d+ \d\.\d+
 {
 my $cmd = Test::Command->new(cmd => "fping -D -c 2 -p 100 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr{\[\d{10}\.\d+\] 127\.0\.0\.1 : \[0\], 84 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
-\[\d{10}\.\d+\] 127\.0\.0\.1 : \[1\], 84 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+$cmd->stdout_like(qr{\[\d+\.\d+\] 127\.0\.0\.1 : \[0\], 84 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+\[\d+\.\d+\] 127\.0\.0\.1 : \[1\], 84 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
 });
 
 $cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+

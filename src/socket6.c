@@ -88,15 +88,23 @@ void init_ping_buffer_ipv6(size_t ping_data_size)
         crash_and_burn("can't malloc ping packet");
 }
 
-void socket_set_src_addr_ipv6(int s, struct in6_addr* src_addr)
+void socket_set_src_addr_ipv6(int s, struct in6_addr* src_addr, int *ident)
 {
     struct sockaddr_in6 sa;
+    socklen_t len = sizeof(sa);
+
     memset(&sa, 0, sizeof(sa));
     sa.sin6_family = AF_INET6;
     sa.sin6_addr = *src_addr;
-
     if (bind(s, (struct sockaddr*)&sa, sizeof(sa)) < 0)
         errno_crash_and_burn("cannot bind source address");
+
+    memset(&sa, 0, len);
+    if (getsockname(s, (struct sockaddr *)&sa, &len) < 0)
+        errno_crash_and_burn("can't get ICMP socket identity");
+
+    if (sa.sin6_port)
+        *ident = sa.sin6_port;
 }
 
 int socket_sendto_ping_ipv6(int s, struct sockaddr* saddr, socklen_t saddr_len, uint16_t icmp_seq_nr, uint16_t icmp_id_nr)
@@ -108,7 +116,7 @@ int socket_sendto_ping_ipv6(int s, struct sockaddr* saddr, socklen_t saddr_len, 
     icp->icmp6_type = ICMP6_ECHO_REQUEST;
     icp->icmp6_code = 0;
     icp->icmp6_seq = htons(icmp_seq_nr);
-    icp->icmp6_id = htons(icmp_id_nr);
+    icp->icmp6_id = icmp_id_nr;
 
     if (random_data_flag) {
         for (n = sizeof(struct icmp6_hdr); n < ping_pkt_size_ipv6; ++n) {

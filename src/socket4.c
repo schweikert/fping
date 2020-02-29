@@ -47,7 +47,7 @@
 char* ping_buffer_ipv4 = 0;
 size_t ping_pkt_size_ipv4;
 
-int open_ping_socket_ipv4()
+int open_ping_socket_ipv4(int *using_sock_dgram)
 {
     struct protoent* proto;
     int s;
@@ -55,6 +55,8 @@ int open_ping_socket_ipv4()
     /* confirm that ICMP is available on this machine */
     if ((proto = getprotobyname("icmp")) == NULL)
         crash_and_burn("icmp: unknown protocol");
+
+    *using_sock_dgram = 0;
 
     /* create raw socket for ICMP calls (ping) */
     s = socket(AF_INET, SOCK_RAW, proto->p_proto);
@@ -64,6 +66,13 @@ int open_ping_socket_ipv4()
         if (s < 0) {
             return -1;
         }
+
+#ifdef __linux__
+        /* We only treat SOCK_DGRAM differently on Linux, where the IPv4 header
+         * structure is missing in the message.
+         */
+        *using_sock_dgram = 1;
+#endif
     }
 
     /* Make sure that we use non-blocking IO */
@@ -89,15 +98,23 @@ void init_ping_buffer_ipv4(size_t ping_data_size)
         crash_and_burn("can't malloc ping packet");
 }
 
-void socket_set_src_addr_ipv4(int s, struct in_addr* src_addr)
+void socket_set_src_addr_ipv4(int s, struct in_addr* src_addr, int *ident)
 {
     struct sockaddr_in sa;
-    memset(&sa, 0, sizeof(sa));
+    socklen_t len = sizeof(sa);
+
+    memset(&sa, 0, len);
     sa.sin_family = AF_INET;
     sa.sin_addr = *src_addr;
-
-    if (bind(s, (struct sockaddr*)&sa, sizeof(sa)) < 0)
+    if (bind(s, (struct sockaddr*)&sa, len) < 0)
         errno_crash_and_burn("cannot bind source address");
+
+    memset(&sa, 0, len);
+    if (getsockname(s, (struct sockaddr *)&sa, &len) < 0)
+        errno_crash_and_burn("can't get ICMP socket identity");
+
+    if (sa.sin_port)
+        *ident = sa.sin_port;
 }
 
 unsigned short calcsum(unsigned short* buffer, int length)
@@ -128,7 +145,7 @@ int socket_sendto_ping_ipv4(int s, struct sockaddr* saddr, socklen_t saddr_len, 
     icp->icmp_code = 0;
     icp->icmp_cksum = 0;
     icp->icmp_seq = htons(icmp_seq_nr);
-    icp->icmp_id = htons(icmp_id_nr);
+    icp->icmp_id = icmp_id_nr;
 
     if (random_data_flag) {
         for (n = ((char*)&icp->icmp_data - (char*)icp); n < ping_pkt_size_ipv4; ++n) {

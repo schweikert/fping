@@ -14,14 +14,14 @@ int in_cksum( unsigned short *p, int n );
 extern int random_data_flag;
 
 /* socket.c */
-int  open_ping_socket_ipv4();
+int  open_ping_socket_ipv4(int *using_sock_dgram);
 void init_ping_buffer_ipv4(size_t ping_data_size);
-void socket_set_src_addr_ipv4(int s, struct in_addr *src_addr);
+void socket_set_src_addr_ipv4(int s, struct in_addr *src_addr, int *ident);
 int  socket_sendto_ping_ipv4(int s, struct sockaddr *saddr, socklen_t saddr_len, uint16_t icmp_seq, uint16_t icmp_id);
 #ifdef IPV6
 int  open_ping_socket_ipv6();
 void init_ping_buffer_ipv6(size_t ping_data_size);
-void socket_set_src_addr_ipv6(int s, struct in6_addr *src_addr);
+void socket_set_src_addr_ipv6(int s, struct in6_addr *src_addr, int *ident);
 int  socket_sendto_ping_ipv6(int s, struct sockaddr *saddr, socklen_t saddr_len, uint16_t icmp_seq, uint16_t icmp_id);
 #endif
 

@@ -80,6 +80,17 @@ extern "C" {
 
 #include <sys/select.h>
 
+/*** compatibility ***/
+
+/* Mac OS X's getaddrinfo() does not fail if we use an invalid combination,
+ * e.g. AF_INET6 with "127.0.0.1". If we pass AI_UNUSABLE to flags, it behaves
+ * like other platforms. But AI_UNUSABLE isn't available on other platforms,
+ * and we can safely use 0 for flags instead.
+ */
+#ifndef AI_UNUSABLE
+#define AI_UNUSABLE 0
+#endif
+
 /*** externals ***/
 
 extern char* optarg;
@@ -2289,7 +2300,7 @@ void add_name(char* name)
 
     /* getaddrinfo */
     bzero(&hints, sizeof(struct addrinfo));
-    hints.ai_flags = 0;
+    hints.ai_flags = AI_UNUSABLE;
     hints.ai_socktype = SOCK_RAW;
     hints.ai_family = hints_ai_family;
     if (hints_ai_family == AF_INET) {

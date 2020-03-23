@@ -41,7 +41,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 /* description of the data structure used:
  *
@@ -92,6 +91,7 @@ unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, struct ti
     next_value->ping_count = ping_count;
     next_value->ping_ts.tv_sec = now->tv_sec;
     next_value->ping_ts.tv_usec = now->tv_usec;
+
     /* increase next id */
     current_id = seqmap_next_id;
     seqmap_next_id = (seqmap_next_id + 1) % SEQMAP_MAXSEQ;

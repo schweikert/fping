@@ -65,7 +65,6 @@ void seqmap_init()
     if (seqmap_map == NULL) {
         perror("malloc error (can't allocate seqmap_map)");
     }
-
 }
 
 unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, struct timeval* now)

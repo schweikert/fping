@@ -312,6 +312,7 @@ long timeval_diff(struct timeval* a, struct timeval* b);
 void timeval_add(struct timeval* a, long t_10u);
 void usage(int);
 int wait_for_reply(long);
+void handle_reply_timeouts();
 void print_per_system_stats(void);
 void print_per_system_splits(void);
 void print_netdata(void);
@@ -626,7 +627,7 @@ int main(int argc, char** argv)
 
         case 'x':
             if (!(min_reachable = (unsigned int)atoi(optparse_state.optarg)))
-                usage(1); 
+                usage(1);
             break;
 
         case 'f':
@@ -1280,6 +1281,9 @@ void main_loop()
         }
 
         gettimeofday(&current_time, &tz);
+
+        /* Replies without answers */
+        handle_reply_timeouts();
 
         /* Print report */
         if (report_interval && (loop_flag || count_flag) && (timeval_diff(&current_time, &next_report_time) >= 0)) {
@@ -2241,7 +2245,65 @@ int wait_for_reply(long wait_time)
     }
 
     fflush(stdout);
+    seqmap_clear(seq);
     return num_jobs;
+}
+
+void handle_reply_timeouts()
+{
+    unsigned int seq;
+    SEQMAP_VALUE * seqmap_value;
+    HOST_ENTRY* h;
+    long duration;
+    int ping_number;
+    int avg;
+
+    for(;;) {
+
+        seq = seqmap_get_oldest_id();
+        seqmap_value = seqmap_fetch(seq, &current_time);
+
+        if (seqmap_value == NULL) {
+            break;
+        }
+
+        h = table[seqmap_value->host_nr];
+
+        ping_number = seqmap_value->ping_count;
+        duration = timeval_diff(&current_time, &(seqmap_value->ping_ts));
+
+        /* not yet in a timeout */
+        if (duration <= h->timeout) {
+            break;
+        }
+
+        if (per_recv_flag) {
+            if (timestamp_flag) {
+                printf("[%lu.%06lu] ",
+                    (unsigned long)current_time.tv_sec,
+                    (unsigned long)current_time.tv_usec);
+            }
+            avg = h->total_time / h->num_recv;
+            printf("%s%s : [%d], timed out",
+                h->host, h->pad, ping_number);
+            printf(" (%s avg, ", sprint_tm(avg));
+
+            if (h->num_recv <= h->num_sent) {
+                printf("%d%% loss)",
+                    ((h->num_sent - h->num_recv) * 100) / h->num_sent);
+            }
+            else {
+                printf("%d%% return)",
+                    (h->num_recv_total * 100) / h->num_sent);
+            }
+
+            printf("\n");
+            fflush(stdout);
+        }
+
+        seqmap_clear(seq);
+    }
+    return;
 }
 
 /************************************************************

@@ -16,5 +16,7 @@ typedef struct seqmap_value
 void seqmap_init();
 unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, struct timeval *now);
 SEQMAP_VALUE *seqmap_fetch(unsigned int id, struct timeval *now);
+void seqmap_clear(unsigned int id);
+unsigned int seqmap_get_oldest_id();
 
 #endif

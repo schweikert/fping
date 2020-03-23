@@ -41,6 +41,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* description of the data structure used:
  *
@@ -53,6 +54,7 @@
 
 static SEQMAP_VALUE* seqmap_map = NULL;
 static unsigned int seqmap_next_id = 0;
+static unsigned int seqmap_first_id = 0;
 
 #define SEQMAP_TIMEOUT_IN_S 10
 #define SEQMAP_UNASSIGNED_HOST_NR UINT_MAX
@@ -63,6 +65,7 @@ void seqmap_init()
     if (seqmap_map == NULL) {
         perror("malloc error (can't allocate seqmap_map)");
     }
+
 }
 
 unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, struct timeval* now)
@@ -89,7 +92,6 @@ unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, struct ti
     next_value->ping_count = ping_count;
     next_value->ping_ts.tv_sec = now->tv_sec;
     next_value->ping_ts.tv_usec = now->tv_usec;
-
     /* increase next id */
     current_id = seqmap_next_id;
     seqmap_next_id = (seqmap_next_id + 1) % SEQMAP_MAXSEQ;
@@ -113,4 +115,25 @@ SEQMAP_VALUE* seqmap_fetch(unsigned int id, struct timeval* now)
     }
 
     return value;
+}
+
+void seqmap_clear(unsigned int id)
+{
+    if (id > SEQMAP_MAXSEQ) {
+        return;
+    }
+
+    memset(&seqmap_map[id], 0, sizeof(SEQMAP_VALUE));
+
+    while (seqmap_map[seqmap_first_id].ping_ts.tv_sec == 0
+        && seqmap_first_id != seqmap_next_id ) {
+        seqmap_first_id = (seqmap_first_id + 1) % SEQMAP_MAXSEQ;
+    }
+
+    return;
+}
+
+unsigned int seqmap_get_oldest_id()
+{
+    return seqmap_first_id;
 }

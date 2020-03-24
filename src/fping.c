@@ -2283,11 +2283,17 @@ void handle_reply_timeouts()
                     (unsigned long)current_time.tv_sec,
                     (unsigned long)current_time.tv_usec);
             }
-            avg = h->total_time / h->num_recv;
+
             printf("%s%s : [%d], timed out",
                 h->host, h->pad, ping_number);
-            printf(" (%s avg, ", sprint_tm(avg));
 
+            if (h->num_recv > 0) {
+                avg = h->total_time / h->num_recv;
+                printf(" (%s avg, ", sprint_tm(avg));
+            }
+            else {
+                printf(" (no avg, ");
+            }
             if (h->num_recv <= h->num_sent) {
                 printf("%d%% loss)",
                     ((h->num_sent - h->num_recv) * 100) / h->num_sent);

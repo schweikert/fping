@@ -419,6 +419,7 @@ int main(int argc, char** argv)
         { "interval", 'i', OPTPARSE_REQUIRED },
         { "iface", 'I', OPTPARSE_REQUIRED },
         { "loop", 'l', OPTPARSE_NONE },
+        { "line-buffered", 'L', OPTPARSE_NONE },
         { "all", 'm', OPTPARSE_NONE },
         { "dontfrag", 'M', OPTPARSE_NONE },
         { "name", 'n', OPTPARSE_NONE },
@@ -615,6 +616,10 @@ int main(int argc, char** argv)
         case 'l':
             loop_flag = 1;
             backoff_flag = 0;
+            break;
+
+        case 'L':
+            setlinebuf(stdout);
             break;
 
         case 'u':
@@ -2819,6 +2824,7 @@ void usage(int is_error)
     fprintf(out, "   -D, --timestamp    print timestamp before each output line\n");
     fprintf(out, "   -e, --elapsed      show elapsed time on return packets\n");
     fprintf(out, "   -i, --interval=MSEC  interval between sending ping packets (default: %d ms)\n", interval / 100);
+    fprintf(out, "   -L, --line-buffered Use line buffering on output\n");
     fprintf(out, "   -n, --name         show targets by name (-d is equivalent)\n");
     fprintf(out, "   -N, --netdata      output compatible for netdata (-l -Q are required)\n");
     fprintf(out, "   -o, --outage       show the accumulated outage time (lost packets * packet interval)\n");

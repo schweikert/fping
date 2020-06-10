@@ -260,11 +260,13 @@ char* prog;
 int ident4 = 0; /* our icmp identity field */
 int ident6 = 0;
 int socket4 = -1;
+int socktype4 = -1;
 int using_sock_dgram4 = 0;
 #ifndef IPV6
 int hints_ai_family = AF_INET;
 #else
 int socket6 = -1;
+int socktype6 = -1;
 int hints_ai_family = AF_UNSPEC;
 #endif
 
@@ -406,9 +408,16 @@ int main(int argc, char** argv)
         usage(0);
     }
 
-    socket4 = open_ping_socket_ipv4(&using_sock_dgram4);
+    socket4 = open_ping_socket_ipv4(&socktype4);
+#ifdef __linux__
+    /* We only treat SOCK_DGRAM differently on Linux, where the IPv4 header
+     * structure is missing in the message.
+     */
+    using_sock_dgram4 = (socktype4 == SOCK_DGRAM);
+#endif
+
 #ifdef IPV6
-    socket6 = open_ping_socket_ipv6();
+    socket6 = open_ping_socket_ipv6(&socktype6);
     /* if called (sym-linked) via 'fping6', imply '-6'
      * for backward compatibility */
     if (strstr(prog, "fping6")) {
@@ -428,7 +437,7 @@ int main(int argc, char** argv)
     }
 
     optparse_init(&optparse_state, argv);
-    ident4 = ident6 = getpid() & 0xFFFF;
+    ident4 = ident6 = htons(getpid() & 0xFFFF);
     verbose_flag = 1;
     backoff_flag = 1;
     opterr = 1;
@@ -1023,11 +1032,11 @@ int main(int argc, char** argv)
     }
 
     if (socket4 >= 0) {
-        socket_set_src_addr_ipv4(socket4, &src_addr, &ident4);
+        socket_set_src_addr_ipv4(socket4, &src_addr, (socktype4 == SOCK_DGRAM) ? &ident4 : NULL);
     }
 #ifdef IPV6
     if (socket6 >= 0) {
-        socket_set_src_addr_ipv6(socket6, &src_addr6, &ident6);
+        socket_set_src_addr_ipv6(socket6, &src_addr6, (socktype6 == SOCK_DGRAM) ? &ident6 : NULL);
     }
 #endif
 

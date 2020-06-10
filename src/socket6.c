@@ -46,7 +46,7 @@
 char* ping_buffer_ipv6 = 0;
 size_t ping_pkt_size_ipv6;
 
-int open_ping_socket_ipv6()
+int open_ping_socket_ipv6(int *socktype)
 {
     struct protoent* proto;
     int s;
@@ -56,10 +56,12 @@ int open_ping_socket_ipv6()
         crash_and_burn("icmp: unknown protocol");
 
     /* create raw socket for ICMP calls (ping) */
-    s = socket(AF_INET6, SOCK_RAW, proto->p_proto);
+    *socktype = SOCK_RAW;
+    s = socket(AF_INET6, *socktype, proto->p_proto);
     if (s < 0) {
         /* try non-privileged icmp (works on Mac OSX without privileges, for example) */
-        s = socket(AF_INET6, SOCK_DGRAM, proto->p_proto);
+        *socktype = SOCK_DGRAM;
+        s = socket(AF_INET6, *socktype, proto->p_proto);
         if (s < 0) {
             return -1;
         }
@@ -99,12 +101,14 @@ void socket_set_src_addr_ipv6(int s, struct in6_addr* src_addr, int *ident)
     if (bind(s, (struct sockaddr*)&sa, sizeof(sa)) < 0)
         errno_crash_and_burn("cannot bind source address");
 
-    memset(&sa, 0, len);
-    if (getsockname(s, (struct sockaddr *)&sa, &len) < 0)
-        errno_crash_and_burn("can't get ICMP socket identity");
+    if (ident) {
+        memset(&sa, 0, len);
+        if (getsockname(s, (struct sockaddr *)&sa, &len) < 0)
+            errno_crash_and_burn("can't get ICMP socket identity");
 
-    if (sa.sin6_port)
-        *ident = sa.sin6_port;
+        if (sa.sin6_port)
+            *ident = sa.sin6_port;
+    }
 }
 
 int socket_sendto_ping_ipv6(int s, struct sockaddr* saddr, socklen_t saddr_len, uint16_t icmp_seq_nr, uint16_t icmp_id_nr)

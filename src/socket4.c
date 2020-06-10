@@ -47,7 +47,7 @@
 char* ping_buffer_ipv4 = 0;
 size_t ping_pkt_size_ipv4;
 
-int open_ping_socket_ipv4(int *using_sock_dgram)
+int open_ping_socket_ipv4(int *socktype)
 {
     struct protoent* proto;
     int s;
@@ -56,23 +56,16 @@ int open_ping_socket_ipv4(int *using_sock_dgram)
     if ((proto = getprotobyname("icmp")) == NULL)
         crash_and_burn("icmp: unknown protocol");
 
-    *using_sock_dgram = 0;
-
     /* create raw socket for ICMP calls (ping) */
-    s = socket(AF_INET, SOCK_RAW, proto->p_proto);
+    *socktype = SOCK_RAW;
+    s = socket(AF_INET, *socktype, proto->p_proto);
     if (s < 0) {
         /* try non-privileged icmp (works on Mac OSX without privileges, for example) */
-        s = socket(AF_INET, SOCK_DGRAM, proto->p_proto);
+        *socktype = SOCK_DGRAM;
+        s = socket(AF_INET, *socktype, proto->p_proto);
         if (s < 0) {
             return -1;
         }
-
-#ifdef __linux__
-        /* We only treat SOCK_DGRAM differently on Linux, where the IPv4 header
-         * structure is missing in the message.
-         */
-        *using_sock_dgram = 1;
-#endif
     }
 
     /* Make sure that we use non-blocking IO */
@@ -109,12 +102,14 @@ void socket_set_src_addr_ipv4(int s, struct in_addr* src_addr, int *ident)
     if (bind(s, (struct sockaddr*)&sa, len) < 0)
         errno_crash_and_burn("cannot bind source address");
 
-    memset(&sa, 0, len);
-    if (getsockname(s, (struct sockaddr *)&sa, &len) < 0)
-        errno_crash_and_burn("can't get ICMP socket identity");
+    if (ident) {
+        memset(&sa, 0, len);
+        if (getsockname(s, (struct sockaddr *)&sa, &len) < 0)
+            errno_crash_and_burn("can't get ICMP socket identity");
 
-    if (sa.sin_port)
-        *ident = sa.sin_port;
+        if (sa.sin_port)
+            *ident = sa.sin_port;
+    }
 }
 
 unsigned short calcsum(unsigned short* buffer, int length)

@@ -252,6 +252,8 @@ int socket6 = -1;
 int hints_ai_family = AF_UNSPEC;
 #endif
 
+volatile sig_atomic_t status_snapshot = 0;
+
 unsigned int debugging = 0;
 
 /* times get *100 because all times are calculated in 10 usec units, not ms */
@@ -329,6 +331,7 @@ void print_per_system_splits(void);
 void print_netdata(void);
 void print_global_stats(void);
 void main_loop();
+void sigstatus();
 void finish();
 char* sprint_tm(int t);
 void ev_enqueue(HOST_ENTRY* h);
@@ -1027,6 +1030,7 @@ int main(int argc, char** argv)
 #endif
 
     signal(SIGINT, finish);
+    signal(SIGQUIT, sigstatus);
 
     gettimeofday(&start_time, NULL);
     current_time = start_time;
@@ -1302,6 +1306,11 @@ void main_loop()
 
         gettimeofday(&current_time, NULL);
 
+        if (status_snapshot) {
+            status_snapshot = 0;
+            print_per_system_splits();
+        }
+
         /* Print report */
         if (report_interval && (loop_flag || count_flag) && (timeval_diff(&current_time, &next_report_time) >= 0)) {
             if (netdata_flag)
@@ -1314,6 +1323,26 @@ void main_loop()
         }
     }
 }
+
+/************************************************************
+
+  Function: sigstatus
+
+*************************************************************
+
+  Inputs:  void (none)
+
+  Description:
+
+  SIGQUIT signal handler - set flag and return
+
+************************************************************/
+
+void sigstatus()
+{
+    status_snapshot = 1;
+}
+
 
 /************************************************************
 

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 7;
+use Test::Command tests => 9;
 use Test::More;
 
 #  -i n       interval between sending ping packets (in millisec) (default 25)
@@ -23,6 +23,21 @@ $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 84 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0
 127\.0\.0\.1 : \[1\], 84 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
 });
 }
+
+# fping -l with SIGQUIT
+{
+my $cmd = Test::Command->new(cmd => '(sleep 2; pkill -QUIT fping; sleep 2; pkill fping)& fping -p 900 -l 127.0.0.1');
+$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 84 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+127\.0\.0\.1 : \[1\], 84 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+127\.0\.0\.1 : \[2\], 84 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+127\.0\.0\.1 : \[3\], 84 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+127\.0\.0\.1 : \[4\], 84 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+});
+$cmd->stderr_like(qr{\[\d+:\d+:\d+\]
+127\.0\.0\.1 : xmt/rcv/%loss = \d+/\d+/\d+%, min/avg/max = \d+\.\d+/\d+\.\d+/\d+\.\d+
+});
+}
+
 
 # fping -M
 SKIP: {

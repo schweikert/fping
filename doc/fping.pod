@@ -19,7 +19,8 @@ of targets to check; if a target does not respond within a certain time limit
 and/or retry limit it is designated as unreachable. B<fping> also supports
 sending a specified number of pings to a target, or looping indefinitely (as in
 B<ping> ). Unlike B<ping>, B<fping> is meant to be used in scripts, so its
-output is designed to be easy to parse.
+output is designed to be easy to parse.  Current statistics can be obtained without
+termination of process with signal SIGQUIT (^\ from the keyboard on most systems).
 
 =head1 OPTIONS
 

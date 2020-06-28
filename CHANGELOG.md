@@ -1,12 +1,22 @@
 UNRELEASED
 ==========
 
+## New features
+
+- Linux unprivileged ping support (#173, thanks @tycho)
+- Add SIGQUIT summary support similar to ping (#185, thanks @laddp)
+
 ## Bugfixes and other changes
 
 - Corrected long option name of -s to --stats (#148, thanks @wopfel)
 - Do not fail if using fping6 with -6 flag (#149, thanks @stromnet)
 - Fail if interface binding (-I) does not work (#162, thanks @kbucheli)
 - Fix using option -4 when fping is compiled IPv4-only (#154, thanks @pbhenson)
+- Add Azure pipeline test build (#153 and #170, thanks @gsnw)
+- GCC 10 compatibility fixes (#167 and #168, thanks @cranderson)
+- Macos build fix (#174, thanks @tycho)
+- Fix xmt stats in Netdata output (#172, thanks @vlvkobal)
+- Only increase num_alive if response is not a duplicate (#151, thanks @brownowski)
 
 fping 4.2 (2019-02-19)
 ======================

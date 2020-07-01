@@ -299,7 +299,7 @@ struct timeval next_report_time; /* time next -Q report is expected */
 /* switches */
 int generate_flag = 0; /* flag for IP list generation */
 int verbose_flag, quiet_flag, stats_flag, unreachable_flag, alive_flag;
-int elapsed_flag, version_flag, count_flag, loop_flag, netdata_flag;
+int elapsed_flag, version_flag, count_flag, loop_flag, netdata_flag, loss_flag;
 int per_recv_flag, report_all_rtts_flag, name_flag, addr_flag, backoff_flag, rdns_flag;
 int multif_flag, timeout_flag;
 int outage_flag = 0;
@@ -440,6 +440,7 @@ int main(int argc, char** argv)
         { "unreach", 'u', OPTPARSE_NONE },
         { "version", 'v', OPTPARSE_NONE },
         { "reachable", 'x', OPTPARSE_REQUIRED },
+        { "loss", 'L', OPTPARSE_NONE },
         { 0, 0, 0 }
     };
 
@@ -631,6 +632,10 @@ int main(int argc, char** argv)
         case 'H':
             if (!(ttl = (unsigned int)atoi(optparse_state.optarg)))
                 usage(1);
+            break;
+        
+        case 'L':
+            loss_flag = 1;
             break;
 
 #if defined(DEBUG) || defined(_DEBUG)
@@ -2276,11 +2281,14 @@ int wait_for_reply(long wait_time)
             h->host, h->pad, this_count, result, sprint_tm(this_reply));
         printf(" (%s avg, ", sprint_tm(avg));
 
-        if (h->num_recv <= h->num_sent) {
+        if(loss_flag) { 
+            /* alculating single loss rates */
+	         printf("%d%% loss)",(h->num_sent - h->num_recv)> 0 ? 100 : 0);
+	         h->num_recv = h->num_sent;
+        } else if (h->num_recv <= h->num_sent) {
             printf("%d%% loss)",
                 ((h->num_sent - h->num_recv) * 100) / h->num_sent);
-        }
-        else {
+        }else {
             printf("%d%% return)",
                 (h->num_recv_total * 100) / h->num_sent);
         }
@@ -2857,5 +2865,6 @@ void usage(int is_error)
     fprintf(out, "   -u, --unreach      show targets that are unreachable\n");
     fprintf(out, "   -v, --version      show version\n");
     fprintf(out, "   -x, --reachable=N  shows if >=N hosts are reachable or not\n");
+    fprintf(out, "   -L, --loss         single request loss rate\n");
     exit(is_error);
 }

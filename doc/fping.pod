@@ -133,6 +133,12 @@ to any target (default is 10, minimum is 1).
 
 Set the interface (requires SO_BINDTODEVICE support).
 
+=item B<-J>, B<--json>[=I<N>]
+
+Output in JSON format to stdout (implies -q).
+Optionally specify JSON indentation (default: 2, max: 16).
+Indentation == 0 will disable pretty-printing.
+
 =item B<-l>, B<--loop>
 
 Loop sending packets to each target indefinitely. Can be interrupted with

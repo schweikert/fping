@@ -2321,7 +2321,7 @@ void add_name(char* name)
     char addrbuf[256];
 
     /* getaddrinfo */
-    bzero(&hints, sizeof(struct addrinfo));
+    memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_flags = AI_UNUSABLE;
     hints.ai_socktype = SOCK_RAW;
     hints.ai_family = hints_ai_family;

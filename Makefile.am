@@ -1,3 +1,3 @@
 SUBDIRS = doc src
 
-EXTRA_DIST = CHANGELOG.md ci contrib README.md
+EXTRA_DIST = CHANGELOG.md contrib README.md ci/*.sh ci/*.pl

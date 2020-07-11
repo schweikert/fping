@@ -22,13 +22,13 @@ BEGIN fping\.127_0_0_1_quality
 SET returned = 100
 END
 CHART fping\.127_0_0_1_latency '' 'FPing Latency for host 127\.0\.0\.1' ms '127_0_0_1' fping\.latency area 110000 1
-DIMENSION min minimum absolute 10 1000
-DIMENSION max maximum absolute 10 1000
-DIMENSION avg average absolute 10 1000
+DIMENSION min minimum absolute 1 1000000
+DIMENSION max maximum absolute 1 1000000
+DIMENSION avg average absolute 1 1000000
 BEGIN fping\.127_0_0_1_latency
-SET min = \d{1,2}
-SET avg = \d{1,2}
-SET max = \d{1,2}
+SET min = \d+
+SET avg = \d+
+SET max = \d+
 END}
 );
 $cmd->stderr_like(qr{127.0.0.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+});

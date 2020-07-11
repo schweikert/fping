@@ -1,3 +1,8 @@
+fping 5.0 (unreleased)
+======================
+
+- Improved precision of measurements from 10us to 1us (#136, thanks @tycho)
+
 fping 4.3 (2020-07-11)
 ======================
 

@@ -1031,6 +1031,7 @@ int main(int argc, char** argv)
 
     signal(SIGINT, finish);
     signal(SIGQUIT, sigstatus);
+    setlinebuf(stdout);
 
     gettimeofday(&start_time, NULL);
     current_time = start_time;
@@ -1430,8 +1431,6 @@ void print_per_system_stats(void)
     HOST_ENTRY* h;
     int resp;
 
-    fflush(stdout);
-
     if (verbose_flag || per_recv_flag)
         fprintf(stderr, "\n");
 
@@ -1510,8 +1509,6 @@ void print_netdata(void)
 
     int i, avg;
     HOST_ENTRY* h;
-
-    fflush(stdout);
 
     for (i = 0; i < num_hosts; i++) {
         h = table[i];
@@ -1594,8 +1591,6 @@ void print_per_system_splits(void)
     HOST_ENTRY* h;
     struct tm* curr_tm;
 
-    fflush(stdout);
-
     if (verbose_flag || per_recv_flag)
         fprintf(stderr, "\n");
 
@@ -1659,7 +1654,6 @@ void print_per_system_splits(void)
 
 void print_global_stats(void)
 {
-    fflush(stdout);
     fprintf(stderr, "\n");
     fprintf(stderr, " %7d targets\n", num_hosts);
     fprintf(stderr, " %7d alive\n", num_alive);
@@ -2299,7 +2293,6 @@ int wait_for_reply(long wait_time)
         remove_job(h);
     }
 
-    fflush(stdout);
     return num_jobs;
 }
 

@@ -17,6 +17,7 @@ UNRELEASED
 - Macos build fix (#174, thanks @tycho)
 - Fix xmt stats in Netdata output (#172, thanks @vlvkobal)
 - Only increase num_alive if response is not a duplicate (#151, thanks @brownowski)
+- Use line buffering for stdout (#179, thanks @bg6cq)
 
 fping 4.2 (2019-02-19)
 ======================

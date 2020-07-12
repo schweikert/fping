@@ -1,3 +1,9 @@
+fping 4.4 (unreleased)
+======================
+## Bugfixes and other changes
+
+- Fix build with --disable-ipv6 (#187, thanks Polynomial-C)
+
 fping 4.3 (2020-07-11)
 ======================
 

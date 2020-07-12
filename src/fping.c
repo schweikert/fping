@@ -258,12 +258,12 @@ HOST_ENTRY* ev_last;
 
 char* prog;
 int ident4 = 0; /* our icmp identity field */
+int ident6 = 0;
 int socket4 = -1;
 int using_sock_dgram4 = 0;
 #ifndef IPV6
 int hints_ai_family = AF_INET;
 #else
-int ident6 = 0;
 int socket6 = -1;
 int hints_ai_family = AF_UNSPEC;
 #endif

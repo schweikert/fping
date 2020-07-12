@@ -1311,7 +1311,7 @@ void main_loop()
 
 #if defined(DEBUG) || defined(_DEBUG)
             if (trace_flag) {
-                fprintf(stderr, "next event in %ld ms (%s)\n", wait_time / 100, ev_first->host);
+                printf( "next event in %ld ms (%s)\n", wait_time / 100, ev_first->host);
             }
 #endif
         }
@@ -1464,58 +1464,60 @@ void print_per_system_stats(void)
     int64_t resp;
 
     if (verbose_flag || per_recv_flag)
-        fprintf(stderr, "\n");
+        printf( "\n");
 
     for (i = 0; i < num_hosts; i++) {
         h = table[i];
-        fprintf(stderr, "%s%s :", h->host, h->pad);
+        printf( "%s%s :", h->host, h->pad);
 
         if (report_all_rtts_flag) {
             for (j = 0; j < h->num_sent; j++) {
                 if ((resp = h->resp_times[j]) >= 0)
-                    fprintf(stderr, " %s", sprint_tm(resp));
+                    printf( " %s", sprint_tm(resp));
                 else
-                    fprintf(stderr, " -");
+                    printf( " -");
             }
 
-            fprintf(stderr, "\n");
+            printf( "\n");
         }
         else {
             if (h->num_recv <= h->num_sent) {
-                fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
+               //normal output
+
+                printf( " xmt/rcv/%%loss = %d/%d/%d%%",
                     h->num_sent, h->num_recv, h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
 
                 if (outage_flag) {
                     /* Time outage total */
                     outage_ms = (h->num_sent - h->num_recv) * perhost_interval / 100;
-                    fprintf(stderr, ", outage(ms) = %d", outage_ms);
+                    printf( ", outage(ms) = %d", outage_ms);
                 }
             }
             else {
-                fprintf(stderr, " xmt/rcv/%%return = %d/%d/%d%%",
+                printf(" xmt/rcv/%%return = %d/%d/%d%%",
                     h->num_sent, h->num_recv,
                     ((h->num_recv * 100) / h->num_sent));
             }
 
             if (h->num_recv) {
                 avg = h->total_time / h->num_recv;
-                fprintf(stderr, ", min/avg/max = %s", sprint_tm(h->min_reply));
-                fprintf(stderr, "/%s", sprint_tm(avg));
-                fprintf(stderr, "/%s", sprint_tm(h->max_reply));
+                printf( ", min/avg/max = %s", sprint_tm(h->min_reply));
+                printf( "/%s", sprint_tm(avg));
+                printf( "/%s", sprint_tm(h->max_reply));
             }
 
-            fprintf(stderr, "\n");
+            printf( "\n");
         }
 
 #if defined(DEBUG) || defined(_DEBUG)
         if (sent_times_flag) {
             for (j = 0; j < h->num_sent; j++) {
                 if ((resp = h->sent_times[j]) >= 0)
-                    fprintf(stderr, " %s", sprint_tm(resp));
+                    printf( " %s", sprint_tm(resp));
                 else
-                    fprintf(stderr, " -");
+                    printf( " -");
 
-                fprintf(stderr, "\n");
+                printf( "\n");
             }
         }
 #endif
@@ -1619,21 +1621,22 @@ void print_netdata(void)
 
 void print_per_system_splits(void)
 {
+   // verbose output
     int i, avg, outage_ms_i;
     HOST_ENTRY* h;
     struct tm* curr_tm;
 
     if (verbose_flag || per_recv_flag)
-        fprintf(stderr, "\n");
+        printf( "\n");
 
     clock_gettime(CLOCKID, &current_time);
     curr_tm = localtime((time_t*)&current_time.tv_sec);
-    fprintf(stderr, "[%2.2d:%2.2d:%2.2d]\n", curr_tm->tm_hour,
+    printf( "[%2.2d:%2.2d:%2.2d]\n", curr_tm->tm_hour,
         curr_tm->tm_min, curr_tm->tm_sec);
 
     for (i = 0; i < num_hosts; i++) {
         h = table[i];
-        fprintf(stderr, "%s%s :", h->host, h->pad);
+        printf( "%s%s :", h->host, h->pad);
 
         /* if we just sent the probe and didn't receive a reply, we shouldn't count it */
         h->discard_next_recv_i = 0;
@@ -1645,28 +1648,28 @@ void print_per_system_splits(void)
         }
 
         if (h->num_recv_i <= h->num_sent_i) {
-            fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
+            printf( " xmt/rcv/%%loss = %d/%d/%d%%",
                 h->num_sent_i, h->num_recv_i, h->num_sent_i > 0 ? ((h->num_sent_i - h->num_recv_i) * 100) / h->num_sent_i : 0);
 
             if (outage_flag) {
                 /* Time outage  */
                 outage_ms_i = (h->num_sent_i - h->num_recv_i) * perhost_interval / 100;
-                fprintf(stderr, ", outage(ms) = %d", outage_ms_i);
+                printf( ", outage(ms) = %d", outage_ms_i);
             }
         }
         else {
-            fprintf(stderr, " xmt/rcv/%%return = %d/%d/%d%%",
+            printf( " xmt/rcv/%%return = %d/%d/%d%%",
                 h->num_sent_i, h->num_recv_i, h->num_sent_i > 0 ? ((h->num_recv_i * 100) / h->num_sent_i) : 0);
         }
 
         if (h->num_recv_i) {
             avg = h->total_time_i / h->num_recv_i;
-            fprintf(stderr, ", min/avg/max = %s", sprint_tm(h->min_reply_i));
-            fprintf(stderr, "/%s", sprint_tm(avg));
-            fprintf(stderr, "/%s", sprint_tm(h->max_reply_i));
+            printf( ", min/avg/max = %s", sprint_tm(h->min_reply_i));
+            printf( "/%s", sprint_tm(avg));
+            printf( "/%s", sprint_tm(h->max_reply_i));
         }
 
-        fprintf(stderr, "\n");
+        printf( "\n");
         h->num_sent_i = h->num_recv_i = h->max_reply_i = h->min_reply_i = h->total_time_i = 0;
     }
 }
@@ -1686,17 +1689,17 @@ void print_per_system_splits(void)
 
 void print_global_stats(void)
 {
-    fprintf(stderr, "\n");
-    fprintf(stderr, " %7d targets\n", num_hosts);
-    fprintf(stderr, " %7d alive\n", num_alive);
-    fprintf(stderr, " %7d unreachable\n", num_unreachable);
-    fprintf(stderr, " %7d unknown addresses\n", num_noaddress);
-    fprintf(stderr, "\n");
-    fprintf(stderr, " %7d timeouts (waiting for response)\n", num_timeout);
-    fprintf(stderr, " %7d ICMP Echos sent\n", num_pingsent);
-    fprintf(stderr, " %7d ICMP Echo Replies received\n", num_pingreceived);
-    fprintf(stderr, " %7d other ICMP received\n", num_othericmprcvd);
-    fprintf(stderr, "\n");
+    printf( "\n");
+    printf( " %7d targets\n", num_hosts);
+    printf( " %7d alive\n", num_alive);
+    printf( " %7d unreachable\n", num_unreachable);
+    printf( " %7d unknown addresses\n", num_noaddress);
+    printf( "\n");
+    printf( " %7d timeouts (waiting for response)\n", num_timeout);
+    printf( " %7d ICMP Echos sent\n", num_pingsent);
+    printf( " %7d ICMP Echo Replies received\n", num_pingreceived);
+    printf( " %7d other ICMP received\n", num_othericmprcvd);
+    printf( "\n");
 
     if (total_replies == 0) {
         min_reply = 0;
@@ -1705,13 +1708,13 @@ void print_global_stats(void)
         sum_replies = 0;
     }
 
-    fprintf(stderr, " %s ms (min round trip time)\n", sprint_tm(min_reply));
-    fprintf(stderr, " %s ms (avg round trip time)\n",
+    printf( " %s ms (min round trip time)\n", sprint_tm(min_reply));
+    printf( " %s ms (avg round trip time)\n",
         sprint_tm((int)(sum_replies / total_replies)));
-    fprintf(stderr, " %s ms (max round trip time)\n", sprint_tm(max_reply));
-    fprintf(stderr, " %12.3f sec (elapsed real time)\n",
+    printf( " %s ms (max round trip time)\n", sprint_tm(max_reply));
+    printf( " %12.3f sec (elapsed real time)\n",
         timespec_diff(&end_time, &start_time) / 1e9);
-    fprintf(stderr, "\n");
+    printf( "\n");
 }
 
 /************************************************************
@@ -2235,7 +2238,7 @@ int wait_for_reply(long wait_time)
         sum_replies += this_reply;
         h->total_time += this_reply;
         total_replies++;
-        
+
         if (h->num_recv == 1) {
             num_alive++;
             if (verbose_flag || alive_flag) {
@@ -2250,7 +2253,7 @@ int wait_for_reply(long wait_time)
                 if (addr_cmp((struct sockaddr*)&response_addr, (struct sockaddr*)&h->saddr)) {
                     char buf[INET6_ADDRSTRLEN];
                     getnameinfo((struct sockaddr*)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
-                    fprintf(stderr, " [<- %s]", buf);
+                    printf( " [<- %s]", buf);
                 }
 
                 printf("\n");
@@ -2271,15 +2274,15 @@ int wait_for_reply(long wait_time)
         if ((this_count >= 0) && (this_count < trials)) {
             if (h->resp_times[this_count] >= 0) {
                 if (!per_recv_flag) {
-                    fprintf(stderr, "%s : duplicate for [%d], %d bytes, %s ms",
+                    printf( "%s : duplicate for [%d], %d bytes, %s ms",
                         h->host, this_count, result, sprint_tm(this_reply));
 
                     if (addr_cmp((struct sockaddr*)&response_addr, (struct sockaddr*)&h->saddr)) {
                         char buf[INET6_ADDRSTRLEN];
                         getnameinfo((struct sockaddr*)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
-                        fprintf(stderr, " [<- %s]", buf);
+                        printf( " [<- %s]", buf);
                     }
-                    fprintf(stderr, "\n");
+                    printf( "\n");
                 }
             }
             else
@@ -2287,7 +2290,7 @@ int wait_for_reply(long wait_time)
         }
         else {
             /* count is out of bounds?? */
-            fprintf(stderr, "%s : duplicate for [%d], %d bytes, %s ms\n",
+            printf( "%s : duplicate for [%d], %d bytes, %s ms\n",
                 h->host, this_count, result, sprint_tm(this_reply));
         }
     }
@@ -2298,6 +2301,7 @@ int wait_for_reply(long wait_time)
                 (unsigned long)recv_time.tv_sec,
                 (unsigned long)recv_time.tv_nsec);
         }
+        //verbose ouput
         avg = h->total_time / h->num_recv;
         printf("%s%s : [%d], %d bytes, %s ms",
             h->host, h->pad, this_count, result, sprint_tm(this_reply));
@@ -2315,7 +2319,7 @@ int wait_for_reply(long wait_time)
         if (addr_cmp((struct sockaddr*)&response_addr, (struct sockaddr*)&h->saddr)) {
             char buf[INET6_ADDRSTRLEN];
             getnameinfo((struct sockaddr*)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
-            fprintf(stderr, " [<- %s]", buf);
+            printf( " [<- %s]", buf);
         }
 
         printf("\n");
@@ -2752,7 +2756,7 @@ void ev_enqueue(HOST_ENTRY* h)
 #if defined(DEBUG) || defined(_DEBUG)
     if (trace_flag) {
         long st = timespec_diff_10us(&h->ev_time, &current_time);
-        fprintf(stderr, "Enqueue: host=%s, when=%ld ms (%ld, %ld)\n", h->host, st / 100, h->ev_time.tv_sec, h->ev_time.tv_nsec);
+        printf( "Enqueue: host=%s, when=%ld ms (%ld, %ld)\n", h->host, st / 100, h->ev_time.tv_sec, h->ev_time.tv_nsec);
     }
 #endif
 

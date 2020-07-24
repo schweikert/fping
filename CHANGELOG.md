@@ -1,7 +1,8 @@
-fping 4.4 (unreleased)
+fping 4.4 (2020-07-24)
 ======================
 ## Bugfixes and other changes
 
+- Fix wrong ident used for normal (non-unprivileged) pings (#191, thanks @tycho)
 - Fix build with --disable-ipv6 (#187, thanks Polynomial-C)
 
 fping 4.3 (2020-07-11)

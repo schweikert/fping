@@ -109,8 +109,6 @@ extern int h_errno;
 
 /*** Constants ***/
 
-#define EMAIL "david@schweikert.ch"
-
 #if HAVE_SO_TIMESTAMPNS
 #define CLOCKID CLOCK_REALTIME
 #endif
@@ -148,6 +146,7 @@ extern int h_errno;
 #define RESP_WAITING -1
 #define RESP_UNUSED -2
 #define RESP_ERROR -3
+#define RESP_TIMEOUT -4
 
 /* debugging flags */
 #if defined(DEBUG) || defined(_DEBUG)
@@ -204,11 +203,7 @@ char* icmp_unreach_str[16] = {
 
 #define ICMP_UNREACH_MAXTYPE 15
 
-/* entry used to keep track of each host we are pinging */
-
-#define EV_TYPE_PING 1
-#define EV_TYPE_TIMEOUT 2
-
+struct event;
 typedef struct host_entry {
     /* Each host can have an event attached: either the next time that a ping needs
       * to be sent, or the timeout, if the last ping was sent */
@@ -220,14 +215,11 @@ typedef struct host_entry {
     int i; /* index into array */
     char* name; /* name as given by user */
     char* host; /* text description of host */
-    char* pad; /* pad to align print names */
     struct sockaddr_storage saddr; /* internet address */
     socklen_t saddr_len;
     int timeout; /* time to wait for response */
-    unsigned char running; /* unset when through sending */
-    unsigned char waiting; /* waiting for response */
     struct timespec last_send_time; /* time of last packet sent */
-    int num_sent; /* number of ping packets sent */
+    int num_sent; /* number of ping packets sent (for statistics) */
     int num_recv; /* number of pings received (duplicates ignored) */
     int num_recv_total; /* number of pings received, including duplicates */
     int max_reply; /* longest response time */
@@ -239,22 +231,63 @@ typedef struct host_entry {
     int max_reply_i; /* longest response time */
     int min_reply_i; /* shortest response time */
     int total_time_i; /* sum of response times */
-    int discard_next_recv_i; /* don't count next received reply for split reporting */
     int64_t* resp_times; /* individual response times */
+
+    /* to avoid allocating two struct events each time that we send a ping, we
+     * preallocate here two struct events for each ping that we might send for
+     * this host. */
+    struct event *event_storage_ping;
+    struct event *event_storage_timeout;
 #if defined(DEBUG) || defined(_DEBUG)
     int64_t* sent_times; /* per-sent-ping timestamp */
 #endif /* DEBUG || _DEBUG */
 } HOST_ENTRY;
 
+int event_storage_count; /* how many events can be stored in host_entry->event_storage_xxx */
+
+/* basic algorithm to ensure that we have correct data at all times:
+ *
+ * 1. when a ping is sent:
+ *    - two events get added into event_queue:
+ *      - t+PERIOD: ping event
+ *      - t+TIMEOUT: timeout event
+ *
+ * 2. when a ping is received:
+ *    - record statistics (increase num_sent and num_received)
+ *    - remove timeout event (we store the event in seqmap, so that we can retrieve it when the response is received)
+ *
+ * 3. when a timeout happens:
+ *    - record statistics (increase num_sent only)
+ */
+
+#define EV_TYPE_PING 1
+#define EV_TYPE_TIMEOUT 2
+
+struct event {
+    struct event *ev_prev;
+    struct event *ev_next;
+    struct timespec ev_time;
+    struct host_entry *host;
+    int ping_index;
+};
+
+struct event_queue {
+    struct event *first;
+    struct event *last;
+};
+
 /*** globals ***/
 
 HOST_ENTRY** table = NULL; /* array of pointers to items in the list */
 
-/* event queue (ev): This, together with the ev_next / ev_prev elements are used
- * to track the next event happening for each host. This can be either a new ping
- * that needs to be sent or a timeout */
-HOST_ENTRY* ev_first;
-HOST_ENTRY* ev_last;
+/* we keep two separate queues: a ping queue, for when the next ping should be
+ * sent, and a timeout queue. the reason for having two separate queues is that
+ * the ping period and the timeout value are different, so if we put them in
+ * the same event queue, we would need to scan many more entries when inserting
+ * into the sorted list.
+ */
+struct event_queue event_queue_ping;
+struct event_queue event_queue_timeout;
 
 char* prog;
 int ident4 = 0; /* our icmp identity field */
@@ -298,8 +331,7 @@ long min_reply = 0;
 int total_replies = 0;
 double sum_replies = 0;
 int max_hostname_len = 0;
-int num_jobs = 0; /* number of hosts still to do */
-int num_hosts; /* total number of hosts */
+int num_hosts = 0; /* total number of hosts */
 int num_alive = 0, /* total number alive */
     num_unreachable = 0, /* total number unreachable */
     num_noaddress = 0; /* total number of addresses not found */
@@ -338,8 +370,7 @@ char* na_cat(char* name, struct in_addr ipaddr);
 void crash_and_burn(char* message);
 void errno_crash_and_burn(char* message);
 char* get_host_by_address(struct in_addr in);
-void remove_job(HOST_ENTRY* h);
-int send_ping(HOST_ENTRY* h);
+int send_ping(HOST_ENTRY* h, int index);
 void timespec_from_ns(struct timespec* a, uint64_t ns);
 int64_t timespec_ns(struct timespec* a);
 int64_t timespec_diff(struct timespec* a, struct timespec* b);
@@ -355,13 +386,17 @@ void main_loop();
 void sigstatus();
 void finish();
 const char* sprint_tm(int64_t t);
-void ev_enqueue(HOST_ENTRY* h);
-HOST_ENTRY* ev_dequeue();
-void ev_remove(HOST_ENTRY* h);
+void ev_enqueue(struct event_queue *queue, struct event *event);
+struct event *ev_dequeue(struct event_queue *queue);
+void ev_remove(struct event_queue *queue, struct event *event);
 void add_cidr(char*);
 void add_range(char*, char*);
 void print_warning(char* fmt, ...);
 int addr_cmp(struct sockaddr* a, struct sockaddr* b);
+void host_add_ping_event(HOST_ENTRY *h, int index, struct timespec *ts);
+void host_add_timeout_event(HOST_ENTRY *h, int index, struct timespec *ts);
+struct event *host_get_timeout_event(HOST_ENTRY *h, int index);
+void stats_add(HOST_ENTRY *h, int index, int success, int64_t latency);
 
 /*** function definitions ***/
 
@@ -394,11 +429,9 @@ static inline long ns_to_tick(int64_t ns)
 
 int main(int argc, char** argv)
 {
-    int c, i, n;
-    char* buf;
+    int c;
     uid_t uid;
     int tos = 0;
-    HOST_ENTRY* cursor;
     struct optparse optparse_state;
 
     /* pre-parse -h/--help, so that we also can output help information
@@ -688,7 +721,6 @@ int main(int argc, char** argv)
 
         case 'v':
             printf("%s: Version %s\n", prog, VERSION);
-            printf("%s: comments to %s\n", prog, EMAIL);
             exit(0);
 
         case 'x':
@@ -962,13 +994,30 @@ int main(int argc, char** argv)
     }
 #endif
 
+    clock_gettime(CLOCKID, &start_time);
+    current_time = start_time;
+
     /* handle host names supplied on command line or in a file */
     /* if the generate_flag is on, then generate the IP list */
 
     argv = &argv[optparse_state.optind];
     argc -= optparse_state.optind;
 
-    /* cover allowable conditions */
+    /* calculate how many ping can be in-flight per host */
+    if(count_flag) {
+        event_storage_count = count;
+    }
+    else if(loop_flag) {
+        if(perhost_interval > timeout) {
+            event_storage_count = 1;
+        }
+        else {
+            event_storage_count = 1 + timeout / perhost_interval;
+        }
+    }
+    else {
+        event_storage_count = 1;
+    }
 
     /* file and generate are mutually exclusive */
     /* file and command line are mutually exclusive */
@@ -1040,33 +1089,20 @@ int main(int argc, char** argv)
     }
 #endif
 
-    /* allocate array to hold outstanding ping requests */
-
-    table = (HOST_ENTRY**)malloc(sizeof(HOST_ENTRY*) * num_hosts);
-    if (!table)
-        crash_and_burn("Can't malloc array of hosts");
-
-    cursor = ev_first;
-
-    for (num_jobs = 0; num_jobs < num_hosts; num_jobs++) {
-        table[num_jobs] = cursor;
-        cursor->i = num_jobs;
-
-        /* as long as we're here, put this in so names print out nicely */
-        if (count_flag || loop_flag) {
-            n = max_hostname_len - strlen(cursor->host);
-            buf = (char*)malloc(n + 1);
-            if (!buf)
-                crash_and_burn("can't malloc host pad");
-
-            for (i = 0; i < n; i++)
-                buf[i] = ' ';
-
-            buf[n] = '\0';
-            cursor->pad = buf;
+    /* allocate and initialize array to map host nr to host_entry */
+    {
+        struct event *cursor = event_queue_ping.first;
+        int i= 0;
+        table = (HOST_ENTRY**)calloc(num_hosts, sizeof(HOST_ENTRY *));
+        if (!table)
+            crash_and_burn("Can't malloc array of hosts");
+        /* initialize table of hosts. we know that we have ping events scheduled
+         * for each of them */
+        for (cursor = event_queue_ping.first; cursor; cursor = cursor->ev_next) {
+            table[i] = cursor->host;
+            cursor->host->i = i;
+            i++;
         }
-
-        cursor = cursor->ev_next;
     }
 
     init_ping_buffer_ipv4(ping_data_size);
@@ -1077,9 +1113,6 @@ int main(int argc, char** argv)
     signal(SIGINT, finish);
     signal(SIGQUIT, sigstatus);
     setlinebuf(stdout);
-
-    clock_gettime(CLOCKID, &start_time);
-    current_time = start_time;
 
     if (report_interval) {
         next_report_time = start_time;
@@ -1230,117 +1263,121 @@ void main_loop()
 {
     long lt;
     long wait_time;
-    long wait_time_next_report;
-    HOST_ENTRY* h;
+    struct event *event;
+    struct host_entry *h;
 
-    while (ev_first) {
-        /* Any event that can be processed now ? */
-        if (timespec_diff_10us(&ev_first->ev_time, &current_time) < 0) {
-            /* Event type: ping */
-            if (ev_first->ev_type == EV_TYPE_PING) {
-                /* Make sure that we don't ping more than once every "interval" */
-                lt = timespec_diff_10us(&current_time, &last_send_time);
-                if (lt < interval)
-                    goto wait_for_reply;
+    while (event_queue_ping.first || event_queue_timeout.first) {
+        dbg_printf("%s", "# main_loop\n");
 
-                /* Dequeue the event */
-                h = ev_dequeue();
+        /* timeout event ? */
+        if (event_queue_timeout.first &&
+            timespec_diff_10us(&event_queue_timeout.first->ev_time, &current_time) <= 0)
+        {
+            event = ev_dequeue(&event_queue_timeout);
+            h = event->host;
 
-                /* Send the ping */
-                send_ping(h);
+            dbg_printf("%s [%d]: timeout event\n", h->host, event->ping_index);
 
-                /* Check what needs to be done next */
-                if (!loop_flag && !count_flag) {
-                    /* Normal mode: schedule retry */
-                    if (h->waiting < retry + 1) {
-                        h->ev_type = EV_TYPE_PING;
-                        copy_timespec(&h->ev_time, &last_send_time);
-                        timespec_add_10us(&h->ev_time, h->timeout);
-                        ev_enqueue(h);
+            stats_add(h, event->ping_index, 0, -1);
 
-                        if (backoff_flag) {
-                            h->timeout *= backoff;
-                        }
+            /* do we need to send a retry? */
+            if (!loop_flag && !count_flag) {
+                if (h->num_sent < retry + 1) {
+                    if (backoff_flag) {
+                        h->timeout *= backoff;
                     }
-                    /* Normal mode: schedule timeout for last retry */
-                    else {
-                        h->ev_type = EV_TYPE_TIMEOUT;
-                        copy_timespec(&h->ev_time, &last_send_time);
-                        timespec_add_10us(&h->ev_time, h->timeout);
-                        ev_enqueue(h);
-                    }
-                }
-                /* Loop and count mode: schedule next ping */
-                else if (loop_flag || (count_flag && h->num_sent < count)) {
-                    h->ev_type = EV_TYPE_PING;
-                    copy_timespec(&h->ev_time, &last_send_time);
-                    timespec_add_10us(&h->ev_time, perhost_interval);
-                    ev_enqueue(h);
-                }
-                /* Count mode: schedule timeout after last ping */
-                else if (count_flag && h->num_sent >= count) {
-                    h->ev_type = EV_TYPE_TIMEOUT;
-                    copy_timespec(&h->ev_time, &last_send_time);
-                    timespec_add_10us(&h->ev_time, h->timeout);
-                    ev_enqueue(h);
+                    send_ping(h, event->ping_index);
                 }
             }
-            /* Event type: timeout */
-            else if (ev_first->ev_type == EV_TYPE_TIMEOUT) {
-                num_timeout++;
-                remove_job(ev_first);
-            }
+
+            /* note: we process first timeout events, because we might need to
+             * wait to process ping events, while we for sure never need to
+             * wait for timeout events.
+             */
+            continue;
         }
 
-    wait_for_reply:
+        /* ping event ? */
+        if (event_queue_ping.first &&
+            timespec_diff_10us(&event_queue_ping.first->ev_time, &current_time) <= 0)
+        {
+            /* Make sure that we don't ping more than once every "interval" */
+            lt = timespec_diff_10us(&current_time, &last_send_time);
+            if (lt < interval)
+                goto wait_for_reply;
 
-        /* When can we expect the next event? */
-        if (ev_first) {
-            if (ev_first->ev_time.tv_sec == 0) {
+            /* Dequeue the event */
+            event = ev_dequeue(&event_queue_ping);
+            h = event->host;
+
+            dbg_printf("%s [%d]: ping event\n", h->host, event->ping_index);
+
+            /* Send the ping */
+            send_ping(h, event->ping_index);
+
+            /* Loop and count mode: schedule next ping */
+            if (loop_flag || (count_flag && event->ping_index+1 < count)) {
+                struct timespec next_ping_time;
+                next_ping_time = event->ev_time;
+                timespec_add_10us(&next_ping_time, perhost_interval);
+                host_add_ping_event(h, event->ping_index+1, &next_ping_time);
+            }
+        }
+        
+        wait_for_reply:
+
+        /* When is the next ping next event? */
+        wait_time = -1;
+        if (event_queue_ping.first) {
+            wait_time = timespec_diff_10us(&event_queue_ping.first->ev_time, &current_time);
+            if (wait_time < 0)
                 wait_time = 0;
-            }
-            else {
-                wait_time = timespec_diff_10us(&ev_first->ev_time, &current_time);
-                if (wait_time < 0)
-                    wait_time = 0;
-            }
-            if (ev_first->ev_type == EV_TYPE_PING) {
-                /* make sure that we wait enough, so that the inter-ping delay is
-                 * bigger than 'interval' */
-                if (wait_time < interval) {
-                    lt = timespec_diff_10us(&current_time, &last_send_time);
-                    if (lt < interval) {
-                        wait_time = interval - lt;
-                    }
-                    else {
-                        wait_time = 0;
-                    }
+            /* make sure that we wait enough, so that the inter-ping delay is
+             * bigger than 'interval' */
+            if (wait_time < interval) {
+                lt = timespec_diff_10us(&current_time, &last_send_time);
+                if (lt < interval) {
+                    wait_time = interval - lt;
                 }
             }
 
-#if defined(DEBUG) || defined(_DEBUG)
-            if (trace_flag) {
-                fprintf(stderr, "next event in %ld ms (%s)\n", wait_time / 100, ev_first->host);
-            }
-#endif
-        }
-        else {
-            wait_time = interval;
+            dbg_printf("next ping event in %ld ms (%s)\n", wait_time / 100, event_queue_ping.first->host->host);
         }
 
-        /* Make sure we don't wait too long, in case a report is expected */
+        /* When is the next timeout event? */
+        if (event_queue_timeout.first) {
+            long wait_time_timeout = timespec_diff_10us(&event_queue_timeout.first->ev_time, &current_time);
+            if(wait_time < 0 || wait_time_timeout < wait_time) {
+                wait_time = wait_time_timeout;
+                if (wait_time < 0) {
+                    wait_time = 0;
+                }
+            }
+            
+            dbg_printf("next timeout event in %ld ms (%s)\n", wait_time / 100, event_queue_timeout.first->host->host);
+        }
+
+        /* When is the next report due? */
         if (report_interval && (loop_flag || count_flag)) {
-            wait_time_next_report = timespec_diff_10us(&next_report_time, &current_time);
+            long wait_time_next_report = timespec_diff_10us(&next_report_time, &current_time);
             if (wait_time_next_report < wait_time) {
                 wait_time = wait_time_next_report;
                 if (wait_time < 0) {
                     wait_time = 0;
                 }
             }
+
+            dbg_printf("next report  event in %ld ms\n", wait_time_next_report / 100);
+        }
+
+        /* if wait_time is still -1, it means that we are waiting for nothing... */
+        if(wait_time == -1) {
+            break;
         }
 
         /* Receive replies */
         /* (this is what sleeps during each loop iteration) */
+        dbg_printf("waiting up to %ld ms\n", wait_time/100);
         if (wait_for_reply(wait_time)) {
             while (wait_for_reply(0))
                 ; /* process other replies in the queue */
@@ -1477,7 +1514,7 @@ void print_per_system_stats(void)
 
     for (i = 0; i < num_hosts; i++) {
         h = table[i];
-        fprintf(stderr, "%s%s :", h->host, h->pad);
+        fprintf(stderr, "%-*s :", max_hostname_len, h->host);
 
         if (report_all_rtts_flag) {
             for (j = 0; j < h->num_sent; j++) {
@@ -1553,15 +1590,6 @@ void print_netdata(void)
 
     for (i = 0; i < num_hosts; i++) {
         h = table[i];
-
-        /* if we just sent the probe and didn't receive a reply, we shouldn't count it */
-        h->discard_next_recv_i = 0;
-        if (h->waiting && timespec_diff_10us(&current_time, &h->last_send_time) < h->timeout) {
-            if (h->num_sent_i) {
-                h->num_sent_i--;
-                h->discard_next_recv_i = 1;
-            }
-        }
 
         if (!sent_charts) {
             printf("CHART fping.%s_packets '' 'FPing Packets for host %s' packets '%s' fping.packets line 110020 %d\n", h->name, h->host, h->name, report_interval / 100000);
@@ -1642,16 +1670,7 @@ void print_per_system_splits(void)
 
     for (i = 0; i < num_hosts; i++) {
         h = table[i];
-        fprintf(stderr, "%s%s :", h->host, h->pad);
-
-        /* if we just sent the probe and didn't receive a reply, we shouldn't count it */
-        h->discard_next_recv_i = 0;
-        if (h->waiting && timespec_diff_10us(&current_time, &h->last_send_time) < h->timeout) {
-            if (h->num_sent_i) {
-                h->num_sent_i--;
-                h->discard_next_recv_i = 1;
-            }
-        }
+        fprintf(stderr, "%-*s :", max_hostname_len, h->host);
 
         if (h->num_recv_i <= h->num_sent_i) {
             fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
@@ -1741,19 +1760,16 @@ void print_global_stats(void)
 
 ************************************************************/
 
-int send_ping(HOST_ENTRY* h)
+int send_ping(HOST_ENTRY* h, int index)
 {
     int n;
     int myseq;
     int ret = 1;
 
     clock_gettime(CLOCKID, &h->last_send_time);
-    myseq = seqmap_add(h->i, h->num_sent, &h->last_send_time);
+    myseq = seqmap_add(h->i, index, &h->last_send_time);
 
-#if defined(DEBUG) || defined(_DEBUG)
-    if (trace_flag)
-        printf("sending [%d] to %s\n", h->num_sent, h->host);
-#endif /* DEBUG || _DEBUG */
+    dbg_printf("%s [%d]: send ping\n", h->host, index);
 
     if (h->saddr.ss_family == AF_INET && socket4 >= 0) {
         n = socket_sendto_ping_ipv4(socket4, (struct sockaddr*)&h->saddr, h->saddr_len, myseq, ident4);
@@ -1767,6 +1783,7 @@ int send_ping(HOST_ENTRY* h)
         return 0;
     }
 
+    /* error sending? */
     if (
         (n < 0)
 #if defined(EHOSTDOWN)
@@ -1776,29 +1793,36 @@ int send_ping(HOST_ENTRY* h)
         if (verbose_flag) {
             print_warning("%s: error while sending ping: %s\n", h->host, strerror(errno));
         }
+        else {
+            dbg_printf("%s: error while sending ping: %s\n", h->host, strerror(errno));
+        }
 
+        h->num_sent++;
+        h->num_sent_i++;
         if (!loop_flag)
-            h->resp_times[h->num_sent] = RESP_ERROR;
+            h->resp_times[index] = RESP_ERROR;
 
         ret = 0;
     }
     else {
+        /* schedule timeout */
+        struct timespec timeout_time = current_time;
+        timespec_add_10us(&timeout_time, h->timeout);
+        host_add_timeout_event(h, index, &timeout_time);
+
         /* mark this trial as outstanding */
-        if (!loop_flag)
-            h->resp_times[h->num_sent] = RESP_WAITING;
+        if (!loop_flag) {
+            h->resp_times[index] = RESP_WAITING;
+        }
 
 #if defined(DEBUG) || defined(_DEBUG)
         if (sent_times_flag)
-            h->sent_times[h->num_sent] = timespec_diff(&h->last_send_time, &start_time);
+            h->sent_times[index] = timespec_diff(&h->last_send_time, &start_time);
 #endif
     }
 
-    h->num_sent++;
-    h->num_sent_i++;
-    h->waiting++;
     num_pingsent++;
     last_send_time = h->last_send_time;
-    h->discard_next_recv_i = 0;
 
     return (ret);
 }
@@ -1903,6 +1927,70 @@ int receive_packet(int socket,
 #endif
 
     return recv_len;
+}
+
+/* stats_add: update host statistics for a single packet that was received (or timed out)
+ * h: host entry to update
+ * index: if in count mode: index number for this ping packet (-1 otherwise)
+ * success: 1 if response received, 0 otherwise
+ * latency: response time, in ns
+ */
+void stats_add(HOST_ENTRY *h, int index, int success, int64_t latency)
+{
+    /* sent count - we update only on receive/timeout, so that we don't get
+     * weird loss percentage, just because a packet was note recived yet.
+     */
+    h->num_sent++;
+    h->num_sent_i++;
+
+    if(!success) {
+        if(!loop_flag && index>=0) {
+            h->resp_times[index] = RESP_TIMEOUT;
+        }
+        num_timeout++;
+        return;
+    }
+
+    /* received count */
+    h->num_recv++;
+    h->num_recv_i++;
+
+    /* maximum */
+    if (!h->max_reply || latency > h->max_reply) {
+        h->max_reply = latency;
+    }
+    if (!h->max_reply_i || latency > h->max_reply_i) {
+        h->max_reply_i = latency;
+    }
+
+    /* minimum */
+    if (!h->min_reply || latency < h->min_reply) {
+        h->min_reply = latency;
+    }
+    if (!h->min_reply_i || latency < h->min_reply_i) {
+        h->min_reply_i = latency;
+    }
+
+    /* total time (for average) */
+    h->total_time += latency;
+    h->total_time_i += latency;
+
+    /* response time per-packet (count mode) */
+    if(!loop_flag && index>=0) {
+        h->resp_times[index] = latency;
+    }
+}
+
+/* stats_reset_interval: reset interval statistics
+ * h: host entry to update
+ */
+void stats_reset_interval(HOST_ENTRY *h)
+{
+    h->num_sent_i = 0;
+    h->num_recv_i = 0;
+    h->max_reply_i = 0;
+    h->min_reply_i = 0;
+    h->total_time_i = 0;
 }
 
 int decode_icmp_ipv4(
@@ -2201,13 +2289,34 @@ int wait_for_reply(long wait_time)
         return 1;
     }
 
-    num_pingreceived++;
-
+    /* find corresponding host_entry */
     n = seqmap_value->host_nr;
     h = table[n];
     sent_time = &seqmap_value->ping_ts;
     this_count = seqmap_value->ping_count;
     this_reply = timespec_diff(&recv_time, sent_time);
+
+    /* update stats that include invalid replies */
+    h->num_recv_total++;
+    num_pingreceived++;
+
+    dbg_printf("received [%d] from %s\n", this_count, h->host);
+
+    /* discard duplicates */
+    if (!loop_flag && h->resp_times[this_count] >= 0) {
+        if (!per_recv_flag) {
+            fprintf(stderr, "%s : duplicate for [%d], %d bytes, %s ms",
+                h->host, this_count, result, sprint_tm(this_reply));
+
+            if (addr_cmp((struct sockaddr*)&response_addr, (struct sockaddr*)&h->saddr)) {
+                char buf[INET6_ADDRSTRLEN];
+                getnameinfo((struct sockaddr*)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+                fprintf(stderr, " [<- %s]", buf);
+            }
+            fprintf(stderr, "\n");
+        }
+        return 1;
+    }
 
     /* discard reply if delay is larger than timeout
      * (see also: github #32) */
@@ -2215,92 +2324,48 @@ int wait_for_reply(long wait_time)
         return 1;
     }
 
-    if (loop_flag || h->resp_times[this_count] == RESP_WAITING) {
-        /* only for non-duplicates: */
-        h->waiting = 0;
-        h->timeout = timeout;
-        h->num_recv++;
+    /* update stats */
+    stats_add(h, this_count, 1, this_reply);
+    // TODO: move to stats_add?
+    if (!max_reply || this_reply > max_reply)
+        max_reply = this_reply;
+    if (!min_reply || this_reply < min_reply)
+        min_reply = this_reply;
+    sum_replies += this_reply;
+    total_replies++;
+    
+    /* initialize timeout to initial timeout (without backoff) */
+    h->timeout = timeout;
 
-        if (h->discard_next_recv_i) {
-            h->discard_next_recv_i = 0;
-        }
-        else {
-            h->num_recv_i++;
-            if (!h->max_reply_i || this_reply > h->max_reply_i)
-                h->max_reply_i = this_reply;
-            if (!h->min_reply_i || this_reply < h->min_reply_i)
-                h->min_reply_i = this_reply;
-            h->total_time_i += this_reply;
-        }
+    /* remove timeout event */
+    struct event *timeout_event = host_get_timeout_event(h, this_count);
+    if(timeout_event) {
+        ev_remove(&event_queue_timeout, timeout_event);
+    }
+    
+    /* print "is alive" */
+    if (h->num_recv == 1) {
+        num_alive++;
+        if (verbose_flag || alive_flag) {
+            printf("%s", h->host);
 
-        if (!max_reply || this_reply > max_reply)
-            max_reply = this_reply;
-        if (!min_reply || this_reply < min_reply)
-            min_reply = this_reply;
-        if (!h->max_reply || this_reply > h->max_reply)
-            h->max_reply = this_reply;
-        if (!h->min_reply || this_reply < h->min_reply)
-            h->min_reply = this_reply;
-        sum_replies += this_reply;
-        h->total_time += this_reply;
-        total_replies++;
-        
-        if (h->num_recv == 1) {
-            num_alive++;
-            if (verbose_flag || alive_flag) {
-                printf("%s", h->host);
+            if (verbose_flag)
+                printf(" is alive");
 
-                if (verbose_flag)
-                    printf(" is alive");
+            if (elapsed_flag)
+                printf(" (%s ms)", sprint_tm(this_reply));
 
-                if (elapsed_flag)
-                    printf(" (%s ms)", sprint_tm(this_reply));
-
-                if (addr_cmp((struct sockaddr*)&response_addr, (struct sockaddr*)&h->saddr)) {
-                    char buf[INET6_ADDRSTRLEN];
-                    getnameinfo((struct sockaddr*)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
-                    fprintf(stderr, " [<- %s]", buf);
-                }
-
-                printf("\n");
+            if (addr_cmp((struct sockaddr*)&response_addr, (struct sockaddr*)&h->saddr)) {
+                char buf[INET6_ADDRSTRLEN];
+                getnameinfo((struct sockaddr*)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+                fprintf(stderr, " [<- %s]", buf);
             }
+
+            printf("\n");
         }
     }
 
-    /* received ping is cool, so process it */
-    h->num_recv_total++;
-
-#if defined(DEBUG) || defined(_DEBUG)
-    if (trace_flag)
-        printf("received [%d] from %s\n", this_count, h->host);
-#endif /* DEBUG || _DEBUG */
-
-    /* note reply time in array, probably */
-    if (!loop_flag) {
-        if ((this_count >= 0) && (this_count < trials)) {
-            if (h->resp_times[this_count] >= 0) {
-                if (!per_recv_flag) {
-                    fprintf(stderr, "%s : duplicate for [%d], %d bytes, %s ms",
-                        h->host, this_count, result, sprint_tm(this_reply));
-
-                    if (addr_cmp((struct sockaddr*)&response_addr, (struct sockaddr*)&h->saddr)) {
-                        char buf[INET6_ADDRSTRLEN];
-                        getnameinfo((struct sockaddr*)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
-                        fprintf(stderr, " [<- %s]", buf);
-                    }
-                    fprintf(stderr, "\n");
-                }
-            }
-            else
-                h->resp_times[this_count] = this_reply;
-        }
-        else {
-            /* count is out of bounds?? */
-            fprintf(stderr, "%s : duplicate for [%d], %d bytes, %s ms\n",
-                h->host, this_count, result, sprint_tm(this_reply));
-        }
-    }
-
+    /* print received ping (unless --quiet) */
     if (per_recv_flag) {
         if (timestamp_flag) {
             printf("[%lu.%09lu] ",
@@ -2308,8 +2373,8 @@ int wait_for_reply(long wait_time)
                 (unsigned long)recv_time.tv_nsec);
         }
         avg = h->total_time / h->num_recv;
-        printf("%s%s : [%d], %d bytes, %s ms",
-            h->host, h->pad, this_count, result, sprint_tm(this_reply));
+        printf("%-*s : [%d], %d bytes, %s ms",
+            max_hostname_len, h->host, this_count, result, sprint_tm(this_reply));
         printf(" (%s avg, ", sprint_tm(avg));
 
         if (h->num_recv <= h->num_sent) {
@@ -2330,12 +2395,7 @@ int wait_for_reply(long wait_time)
         printf("\n");
     }
 
-    /* remove this job, if we are done */
-    if ((count_flag && h->num_recv >= count) || (!loop_flag && !count_flag && h->num_recv)) {
-        remove_job(h);
-    }
-
-    return num_jobs;
+    return 1;
 }
 
 /************************************************************
@@ -2458,8 +2518,7 @@ void add_name(char* name)
 
   Description:
 
-  add address to linked list of targets to be pinged
-  assume memory for *name and *host is ours!!!
+  add single address to list of hosts to be pinged
 
 ************************************************************/
 
@@ -2468,19 +2527,17 @@ void add_addr(char* name, char* host, struct sockaddr* ipaddr, socklen_t ipaddr_
     HOST_ENTRY* p;
     int n;
     int64_t *i;
+    struct timespec ts;
 
-    p = (HOST_ENTRY*)malloc(sizeof(HOST_ENTRY));
+    p = (HOST_ENTRY*)calloc(1, sizeof(HOST_ENTRY));
     if (!p)
         crash_and_burn("can't allocate HOST_ENTRY");
-
-    memset((char*)p, 0, sizeof(HOST_ENTRY));
 
     p->name = strdup(name);
     p->host = strdup(host);
     memcpy(&p->saddr, ipaddr, ipaddr_len);
     p->saddr_len = ipaddr_len;
     p->timeout = timeout;
-    p->running = 1;
     p->min_reply = 0;
 
     if (netdata_flag) {
@@ -2521,39 +2578,15 @@ void add_addr(char* name, char* host, struct sockaddr* ipaddr, socklen_t ipaddr_
     }
 #endif /* DEBUG || _DEBUG */
 
+    /* allocate event storage */
+    p->event_storage_ping = (struct event *) calloc(event_storage_count, sizeof(struct event));
+    p->event_storage_timeout = (struct event *) calloc(event_storage_count, sizeof(struct event));
+
     /* schedule first ping */
-    p->ev_type = EV_TYPE_PING;
-    p->ev_time.tv_sec = 0;
-    p->ev_time.tv_nsec = 0;
-    ev_enqueue(p);
+    ts = current_time;
+    host_add_ping_event(p, 0, &ts);
 
     num_hosts++;
-}
-
-/************************************************************
-
-  Function: remove_job
-
-*************************************************************
-
-  Inputs:  HOST_ENTRY *h
-
-  Description:
-
-************************************************************/
-
-void remove_job(HOST_ENTRY* h)
-{
-#if defined(DEBUG) || defined(_DEBUG)
-    if (trace_flag)
-        printf("removing job for %s\n", h->host);
-#endif /* DEBUG || _DEBUG */
-
-    h->running = 0;
-    h->waiting = 0;
-    --num_jobs;
-
-    ev_remove(h);
 }
 
 /************************************************************
@@ -2738,64 +2771,86 @@ int addr_cmp(struct sockaddr* a, struct sockaddr* b)
     return 0;
 }
 
+void host_add_ping_event(HOST_ENTRY *h, int index, struct timespec *ts)
+{
+    struct event *event = &h->event_storage_ping[index % event_storage_count];
+    event->host = h;
+    event->ping_index = index;
+    event->ev_time = *ts;
+    ev_enqueue(&event_queue_ping, event);
+
+    dbg_printf("%s [%d]: add ping event in %ld ms\n",
+        event->host->host, index, timespec_diff_10us(&event->ev_time, &current_time) / 100);
+}
+
+void host_add_timeout_event(HOST_ENTRY *h, int index, struct timespec *ts)
+{
+    struct event *event = &h->event_storage_timeout[index % event_storage_count];
+    event->host = h;
+    event->ping_index = index;
+    event->ev_time = *ts;
+    ev_enqueue(&event_queue_timeout, event);
+
+    dbg_printf("%s [%d]: add timeout event in %ld ms\n",
+        event->host->host, index, timespec_diff_10us(&event->ev_time, &current_time) / 100);
+}
+
+struct event *host_get_timeout_event(HOST_ENTRY *h, int index)
+{
+    return &h->event_storage_timeout[index % event_storage_count];
+}
+
+
 /************************************************************
 
   Function: ev_enqueue
 
-  Enqueue a host that needs to be pinged, but not before the time
-  written in h->ev_time.
+  Enqueue an event
 
-  The queue is sorted, so that ev_first always points to the host
-  that should be pinged first.
+  The queue is sorted by event->ev_time, so that queue->first always points to
+  the earliest event.
 
   We start scanning the queue from the tail, because we assume
   that new events mostly get inserted with a event time higher
   than the others.
 
 *************************************************************/
-void ev_enqueue(HOST_ENTRY* h)
+void ev_enqueue(struct event_queue *queue, struct event* event)
 {
-    HOST_ENTRY* i;
-    HOST_ENTRY* i_prev;
-
-#if defined(DEBUG) || defined(_DEBUG)
-    if (trace_flag) {
-        long st = timespec_diff_10us(&h->ev_time, &current_time);
-        fprintf(stderr, "Enqueue: host=%s, when=%ld ms (%ld, %ld)\n", h->host, st / 100, h->ev_time.tv_sec, h->ev_time.tv_nsec);
-    }
-#endif
+    struct event* i;
+    struct event* i_prev;
 
     /* Empty list */
-    if (ev_last == NULL) {
-        h->ev_next = NULL;
-        h->ev_prev = NULL;
-        ev_first = h;
-        ev_last = h;
+    if (queue->last == NULL) {
+        event->ev_next = NULL;
+        event->ev_prev = NULL;
+        queue->first = event;
+        queue->last = event;
         return;
     }
 
     /* Insert on tail? */
-    if (timespec_diff(&h->ev_time, &ev_last->ev_time) >= 0) {
-        h->ev_next = NULL;
-        h->ev_prev = ev_last;
-        ev_last->ev_next = h;
-        ev_last = h;
+    if (timespec_diff(&event->ev_time, &queue->last->ev_time) >= 0) {
+        event->ev_next = NULL;
+        event->ev_prev = queue->last;
+        queue->last->ev_next = event;
+        queue->last = event;
         return;
     }
 
     /* Find insertion point */
-    i = ev_last;
+    i = queue->last;
     while (1) {
         i_prev = i->ev_prev;
-        if (i_prev == NULL || timespec_diff(&h->ev_time, &i_prev->ev_time) >= 0) {
-            h->ev_prev = i_prev;
-            h->ev_next = i;
-            i->ev_prev = h;
+        if (i_prev == NULL || timespec_diff(&event->ev_time, &i_prev->ev_time) >= 0) {
+            event->ev_prev = i_prev;
+            event->ev_next = i;
+            i->ev_prev = event;
             if (i_prev != NULL) {
-                i_prev->ev_next = h;
+                i_prev->ev_next = event;
             }
             else {
-                ev_first = h;
+                queue->first = event;
             }
             return;
         }
@@ -2808,15 +2863,15 @@ void ev_enqueue(HOST_ENTRY* h)
   Function: ev_dequeue
 
 *************************************************************/
-HOST_ENTRY* ev_dequeue()
+struct event *ev_dequeue(struct event_queue *queue)
 {
-    HOST_ENTRY* dequeued;
+    struct event *dequeued;
 
-    if (ev_first == NULL) {
+    if (queue->first == NULL) {
         return NULL;
     }
-    dequeued = ev_first;
-    ev_remove(dequeued);
+    dequeued = queue->first;
+    ev_remove(queue, dequeued);
 
     return dequeued;
 }
@@ -2826,22 +2881,22 @@ HOST_ENTRY* ev_dequeue()
   Function: ev_remove
 
 *************************************************************/
-void ev_remove(HOST_ENTRY* h)
+void ev_remove(struct event_queue *queue, struct event *event)
 {
-    if (ev_first == h) {
-        ev_first = h->ev_next;
+    if (queue->first == event) {
+        queue->first = event->ev_next;
     }
-    if (ev_last == h) {
-        ev_last = h->ev_prev;
+    if (queue->last == event) {
+        queue->last = event->ev_prev;
     }
-    if (h->ev_prev) {
-        h->ev_prev->ev_next = h->ev_next;
+    if (event->ev_prev) {
+        event->ev_prev->ev_next = event->ev_next;
     }
-    if (h->ev_next) {
-        h->ev_next->ev_prev = h->ev_prev;
+    if (event->ev_next) {
+        event->ev_next->ev_prev = event->ev_prev;
     }
-    h->ev_prev = NULL;
-    h->ev_next = NULL;
+    event->ev_prev = NULL;
+    event->ev_next = NULL;
 }
 
 /************************************************************

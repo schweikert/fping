@@ -7,6 +7,15 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 
+/* this requires variadic macros, part of C99 */
+#if (defined(DEBUG) || defined(_DEBUG))
+extern int trace_flag;
+#define dbg_printf(fmt, ...) do { if (trace_flag) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
+#else
+#define dbg_printf(fmt, ...)
+#endif
+
+
 /* fping.c */
 void crash_and_burn( char *message );
 void errno_crash_and_burn( char *message );

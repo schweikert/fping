@@ -19,8 +19,7 @@ $cmd1->stderr_is_eq("");
 # fping -v
 my $cmd2 = Test::Command->new(cmd => "fping -v");
 $cmd2->exit_is_num(0);
-$cmd2->stdout_like(qr{fping: Version \S+
-fping: comments to david\@schweikert\.ch\n});
+$cmd2->stdout_like(qr{fping: Version \S+});
 $cmd2->stderr_is_eq("");
 
 # fping with unknown option

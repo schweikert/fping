@@ -39,6 +39,7 @@
 #include "seqmap.h"
 #include "limits.h"
 #include "options.h"
+#include "fping.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -95,6 +96,8 @@ unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, struct ti
     current_id = seqmap_next_id;
     seqmap_next_id = (seqmap_next_id + 1) % SEQMAP_MAXSEQ;
 
+    dbg_printf("seqmap_add(host: %d, index: %d) -> %d\n", host_nr, ping_count, current_id);
+
     return current_id;
 }
 
@@ -112,6 +115,8 @@ SEQMAP_VALUE* seqmap_fetch(unsigned int id, struct timespec* now)
     if (now->tv_sec - value->ping_ts.tv_sec >= SEQMAP_TIMEOUT_IN_S) {
         return NULL;
     }
+
+    dbg_printf("seqmap_fetch(%d) -> host: %d, index: %d\n", id, value->host_nr, value->ping_count);
 
     return value;
 }

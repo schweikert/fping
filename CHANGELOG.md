@@ -3,10 +3,19 @@ fping 5.0 (unreleased)
 
 ## New features
 
+- Refactored event loop, now allowing for period (-p) to be smaller than
+  timeout (-t). The number of sent pings is now only incremented when the
+  response is received or when the timeout happens, so that the loss statistic
+  is always correct (especially important when using interval statistics (-Q)
+  (#193).
 - Improved precision of measurements from 10us to 1us (#136, thanks @tycho)
 
+
+fping 4.4 (2020-07-24)
+======================
 ## Bugfixes and other changes
 
+- Fix wrong ident used for normal (non-unprivileged) pings (#191, thanks @tycho)
 - Fix build with --disable-ipv6 (#187, thanks Polynomial-C)
 
 fping 4.3 (2020-07-11)

@@ -17,9 +17,7 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -v");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr{ping: Version [45]\.\d+(-rc\d+)?
-fping: comments to david\@schweikert\.ch
-});
+$cmd->stdout_like(qr{ping: Version [45]\.\d+(-rc\d+)?});
 $cmd->stderr_is_eq("");
 }
 

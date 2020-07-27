@@ -304,6 +304,7 @@ int hints_ai_family = AF_UNSPEC;
 #endif
 
 volatile sig_atomic_t status_snapshot = 0;
+volatile sig_atomic_t finish_requested = 0;
 
 unsigned int debugging = 0;
 
@@ -383,7 +384,7 @@ void print_per_system_splits(void);
 void print_netdata(void);
 void print_global_stats(void);
 void main_loop();
-void sigstatus();
+void signal_handler(int);
 void finish();
 const char* sprint_tm(int64_t t);
 void ev_enqueue(struct event_queue *queue, struct event *event);
@@ -433,6 +434,9 @@ int main(int argc, char** argv)
     uid_t uid;
     int tos = 0;
     struct optparse optparse_state;
+#ifdef USE_SIGACTION
+    struct sigaction act;
+#endif
 
     /* pre-parse -h/--help, so that we also can output help information
      * without trying to open the socket, which might fail */
@@ -1110,8 +1114,20 @@ int main(int argc, char** argv)
     init_ping_buffer_ipv6(ping_data_size);
 #endif
 
-    signal(SIGINT, finish);
-    signal(SIGQUIT, sigstatus);
+#ifdef USE_SIGACTION
+    memset(&act, 0, sizeof(act));
+    act.sa_handler = signal_handler;
+    sigemptyset(&act.sa_mask);
+    sigaddset(&act.sa_mask, SIGINT);
+    sigaddset(&act.sa_mask, SIGQUIT);
+    act.sa_flags = SA_RESTART;
+    if (sigaction(SIGQUIT, &act, NULL) || sigaction(SIGINT, &act, NULL)) {
+        crash_and_burn("failure to set signal handler");
+    }
+#else
+    signal(SIGINT, signal_handler);
+    signal(SIGQUIT, signal_handler);
+#endif
     setlinebuf(stdout);
 
     if (report_interval) {
@@ -1375,6 +1391,11 @@ void main_loop()
             break;
         }
 
+        /* end of loop was requested by interrupt signal handler */
+        if (finish_requested) {
+            break;
+        }
+
         /* Receive replies */
         /* (this is what sleeps during each loop iteration) */
         dbg_printf("waiting up to %ld ms\n", wait_time/100);
@@ -1405,21 +1426,30 @@ void main_loop()
 
 /************************************************************
 
-  Function: sigstatus
+  Function: signal_handler
 
 *************************************************************
 
-  Inputs:  void (none)
+  Inputs:  int signum
 
   Description:
 
   SIGQUIT signal handler - set flag and return
+  SIGINT signal handler - set flag and return
 
 ************************************************************/
 
-void sigstatus()
+void signal_handler(int signum)
 {
-    status_snapshot = 1;
+    switch (signum) {
+    case SIGINT:
+        finish_requested = 1;
+        break;
+
+    case SIGQUIT:
+        status_snapshot = 1;
+        break;
+    }
 }
 
 

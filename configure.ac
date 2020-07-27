@@ -73,6 +73,10 @@ AC_CHECK_FUNC(connect)
 if test $ac_cv_func_connect = no; then
     AC_CHECK_LIB(socket, connect)
 fi
+AC_CHECK_FUNC(sigaction)
+if test $ac_cv_func_sigaction = yes; then
+    AC_DEFINE([USE_SIGACTION],[1],[Define if sigaction is available.])
+fi
 
 AH_TOP([
 #ifndef CONFIG_H

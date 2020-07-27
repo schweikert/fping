@@ -434,6 +434,9 @@ int main(int argc, char** argv)
     uid_t uid;
     int tos = 0;
     struct optparse optparse_state;
+#ifdef USE_SIGACTION
+    struct sigaction act;
+#endif
 
     /* pre-parse -h/--help, so that we also can output help information
      * without trying to open the socket, which might fail */
@@ -1111,8 +1114,20 @@ int main(int argc, char** argv)
     init_ping_buffer_ipv6(ping_data_size);
 #endif
 
+#ifdef USE_SIGACTION
+    memset(&act, 0, sizeof(act));
+    act.sa_handler = signal_handler;
+    sigemptyset(&act.sa_mask);
+    sigaddset(&act.sa_mask, SIGINT);
+    sigaddset(&act.sa_mask, SIGQUIT);
+    act.sa_flags = SA_RESTART;
+    if (sigaction(SIGQUIT, &act, NULL) || sigaction(SIGINT, &act, NULL)) {
+        crash_and_burn("failure to set signal handler");
+    }
+#else
     signal(SIGINT, signal_handler);
     signal(SIGQUIT, signal_handler);
+#endif
     setlinebuf(stdout);
 
     if (report_interval) {

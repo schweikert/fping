@@ -205,13 +205,6 @@ char* icmp_unreach_str[16] = {
 
 struct event;
 typedef struct host_entry {
-    /* Each host can have an event attached: either the next time that a ping needs
-      * to be sent, or the timeout, if the last ping was sent */
-    struct host_entry* ev_prev; /* double linked list for the event-queue */
-    struct host_entry* ev_next; /* double linked list for the event-queue */
-    struct timespec ev_time; /* time, after which this event should happen */
-    int ev_type; /* event type */
-
     int i; /* index into array */
     char* name; /* name as given by user */
     char* host; /* text description of host */

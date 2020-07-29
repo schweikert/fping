@@ -47,7 +47,7 @@
 /* description of the data structure used:
  *
  * - we assume that no more than SEQMAP_MAXSEQ (65535) pings are sent in
- *   the timeout interval (SEQMAP_TIMEOUT_IN_S)
+ *   the timeout interval (SEQMAP_TIMEOUT_IN_NS)
  * - we store the values in an array with SEQMAP_MAXSEQ elements
  * - current sequence number % SEQMAP_MAXSEQ gives the current index
  * - when entering a value, we check that the current entry is expired
@@ -56,7 +56,7 @@
 static SEQMAP_VALUE* seqmap_map = NULL;
 static unsigned int seqmap_next_id = 0;
 
-#define SEQMAP_TIMEOUT_IN_S 10
+#define SEQMAP_TIMEOUT_IN_NS 10000000000
 #define SEQMAP_UNASSIGNED_HOST_NR UINT_MAX
 
 void seqmap_init()
@@ -67,7 +67,7 @@ void seqmap_init()
     }
 }
 
-unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, struct timespec* now)
+unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, int64_t timestamp)
 {
     unsigned int current_id;
     SEQMAP_VALUE* next_value;
@@ -80,17 +80,16 @@ unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, struct ti
     /* check if expired (note that unused seqmap values will have fields set to
      * 0, so will be seen as expired */
     next_value = &seqmap_map[seqmap_next_id];
-    if (next_value->ping_ts.tv_sec != 0 && (now->tv_sec - next_value->ping_ts.tv_sec) < SEQMAP_TIMEOUT_IN_S) {
-        fprintf(stderr, "fping error: not enough sequence numbers available! (expire_timeout=%d, host_nr=%d, ping_count=%d, seqmap_next_id=%d)\n",
-            SEQMAP_TIMEOUT_IN_S, host_nr, ping_count, seqmap_next_id);
+    if (timestamp - next_value->ping_ts < SEQMAP_TIMEOUT_IN_NS) {
+        fprintf(stderr, "fping error: not enough sequence numbers available! (expire_timeout=%ld, host_nr=%d, ping_count=%d, seqmap_next_id=%d)\n",
+            SEQMAP_TIMEOUT_IN_NS, host_nr, ping_count, seqmap_next_id);
         exit(4);
     }
 
     /* store the value */
     next_value->host_nr = host_nr;
     next_value->ping_count = ping_count;
-    next_value->ping_ts.tv_sec = now->tv_sec;
-    next_value->ping_ts.tv_nsec = now->tv_nsec;
+    next_value->ping_ts = timestamp;
 
     /* increase next id */
     current_id = seqmap_next_id;
@@ -101,7 +100,7 @@ unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, struct ti
     return current_id;
 }
 
-SEQMAP_VALUE* seqmap_fetch(unsigned int id, struct timespec* now)
+SEQMAP_VALUE* seqmap_fetch(unsigned int id, int64_t now)
 {
     SEQMAP_VALUE* value;
 
@@ -112,7 +111,9 @@ SEQMAP_VALUE* seqmap_fetch(unsigned int id, struct timespec* now)
     value = &seqmap_map[id];
 
     /* verify that value is not expired */
-    if (now->tv_sec - value->ping_ts.tv_sec >= SEQMAP_TIMEOUT_IN_S) {
+    if (now - value->ping_ts >= SEQMAP_TIMEOUT_IN_NS) {
+        dbg_printf("seqmap_fetch(%d) -> host: %d, index: %d -> DISCARDED %ld\n", id, value->host_nr, value->ping_count,
+                now - value->ping_ts);
         return NULL;
     }
 

@@ -9,8 +9,10 @@
 
 /* this requires variadic macros, part of C99 */
 #if (defined(DEBUG) || defined(_DEBUG))
+extern int64_t current_time_ns;
 extern int trace_flag;
-#define dbg_printf(fmt, ...) do { if (trace_flag) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
+#define dbg_printf(fmt, ...) do { if (trace_flag) { fprintf(stderr, "[%10.5f] ", (double)(current_time_ns / 1000)/1000000); fprintf(stderr, fmt, __VA_ARGS__); } } while (0)
+            
 #else
 #define dbg_printf(fmt, ...)
 #endif

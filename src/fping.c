@@ -210,20 +210,20 @@ typedef struct host_entry {
     char* host; /* text description of host */
     struct sockaddr_storage saddr; /* internet address */
     socklen_t saddr_len;
-    int timeout; /* time to wait for response */
+    int64_t timeout; /* time to wait for response */
     int64_t last_send_time; /* time of last packet sent */
     int num_sent; /* number of ping packets sent (for statistics) */
     int num_recv; /* number of pings received (duplicates ignored) */
     int num_recv_total; /* number of pings received, including duplicates */
-    int max_reply; /* longest response time */
-    int min_reply; /* shortest response time */
-    int total_time; /* sum of response times */
+    int64_t max_reply; /* longest response time */
+    int64_t min_reply; /* shortest response time */
+    int64_t total_time; /* sum of response times */
     /* _i -> splits (reset on every report interval) */
     int num_sent_i; /* number of ping packets sent */
     int num_recv_i; /* number of pings received */
-    int max_reply_i; /* longest response time */
-    int min_reply_i; /* shortest response time */
-    int total_time_i; /* sum of response times */
+    int64_t max_reply_i; /* longest response time */
+    int64_t min_reply_i; /* shortest response time */
+    int64_t total_time_i; /* sum of response times */
     int64_t* resp_times; /* individual response times */
 
     /* to avoid allocating two struct events each time that we send a ping, we
@@ -317,10 +317,10 @@ struct in6_addr src_addr6;
 #endif
 
 /* global stats */
-long max_reply = 0;
-long min_reply = 0;
-int total_replies = 0;
-double sum_replies = 0;
+int64_t max_reply = 0;
+int64_t min_reply = 0;
+int64_t total_replies = 0;
+int64_t sum_replies = 0;
 int max_hostname_len = 0;
 int num_hosts = 0; /* total number of hosts */
 int num_alive = 0, /* total number alive */
@@ -1729,7 +1729,7 @@ void print_global_stats(void)
 
     fprintf(stderr, " %s ms (min round trip time)\n", sprint_tm(min_reply));
     fprintf(stderr, " %s ms (avg round trip time)\n",
-        sprint_tm((int)(sum_replies / total_replies)));
+        sprint_tm(sum_replies / total_replies));
     fprintf(stderr, " %s ms (max round trip time)\n", sprint_tm(max_reply));
     fprintf(stderr, " %12.3f sec (elapsed real time)\n",
         (end_time - start_time) / 1e9);

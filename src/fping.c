@@ -2621,7 +2621,7 @@ void print_warning(char* format, ...)
 const char* sprint_tm(int64_t ns)
 {
     static char buf[10];
-    double t = (double)(ns / 1e6);
+    double t = (double)ns / 1e6;
 
     if (t < 0.0) {
         /* negative (unexpected) */

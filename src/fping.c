@@ -1579,7 +1579,8 @@ void print_netdata(void)
 {
     static int sent_charts = 0;
 
-    int i, avg;
+    int i;
+    int64_t avg;
     HOST_ENTRY* h;
 
     for (i = 0; i < num_hosts; i++) {
@@ -1623,9 +1624,9 @@ void print_netdata(void)
         printf("BEGIN fping.%s_latency\n", h->name);
         if (h->num_recv_i) {
             avg = h->total_time_i / h->num_recv_i;
-            printf("SET min = %d\n", h->min_reply_i);
-            printf("SET avg = %d\n", avg);
-            printf("SET max = %d\n", h->max_reply_i);
+            printf("SET min = %ld\n", h->min_reply_i);
+            printf("SET avg = %ld\n", avg);
+            printf("SET max = %ld\n", h->max_reply_i);
         }
         printf("END\n");
 

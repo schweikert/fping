@@ -2612,29 +2612,23 @@ void print_warning(char* format, ...)
 
 *************************************************************
 
-  Inputs:  int t
-
-  Returns:  char*
-
-  Description:
-
-  render time into a string with three digits of precision
-  input is in tens of microseconds
+  render nanosecond int64_t value into milliseconds string with three digits of
+  precision.
 
 ************************************************************/
 
 const char* sprint_tm(int64_t ns)
 {
     static char buf[10];
-    double t = (double)ns / 1e6;
+    double t = (double)(ns / 1e6);
 
     if (t < 0.0) {
         /* negative (unexpected) */
-        sprintf(buf, "%.2g", (double)t / 1e9);
+        sprintf(buf, "%.2g", t);
     }
     else if (t < 1.0) {
         /* <= 0.99 ms */
-        sprintf(buf, "%.6f", t);
+        sprintf(buf, "%.3f", t);
     }
     else if (t < 10.0) {
         /* 1.00 - 9.99 ms */
@@ -2646,10 +2640,10 @@ const char* sprint_tm(int64_t ns)
     }
     else if (t < 1000000.0) {
         /* 100 - 1'000'000 ms */
-        sprintf(buf, "%d", (int)t);
+        sprintf(buf, "%.0f", t);
     }
     else {
-        sprintf(buf, "%.2e", t);
+        sprintf(buf, "%.3e", t);
     }
 
     return (buf);

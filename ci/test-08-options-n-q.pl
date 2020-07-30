@@ -31,7 +31,12 @@ $cmd->stderr_is_eq("fping: use either one of -d or -n\n");
 {
 my $cmd = Test::Command->new(cmd => "fping -t100 -p 100 -o -c 5 8.8.8.7");
 $cmd->exit_is_num(1);
-$cmd->stdout_is_eq("");
+$cmd->stdout_is_eq("8.8.8.7 : [0], timed out (NaN avg, 100% loss)
+8.8.8.7 : [1], timed out (NaN avg, 100% loss)
+8.8.8.7 : [2], timed out (NaN avg, 100% loss)
+8.8.8.7 : [3], timed out (NaN avg, 100% loss)
+8.8.8.7 : [4], timed out (NaN avg, 100% loss)
+");
 $cmd->stderr_like(qr{^\s*8\.8\.8\.7 : xmt/rcv/%loss = 5/0/100%, outage\(ms\) = 50\d\s*$});
 }
 

@@ -1,13 +1,30 @@
 fping 5.0 (unreleased)
 ======================
 
+## Incompatible Changes
+
+- In non-quiet loop and count mode, a line is printed for every lost packet
+  (#175, thanks @kbucheli):
+
+  ```
+  $ fping -D -c2 8.8.8.8 8.8.8.7
+  [1596092373.18423] 8.8.8.8 : [0], 84 bytes, 12.8 ms (12.8 avg, 0% loss)
+  [1596092374.18223] 8.8.8.7 : [0], timed out (NaN avg, 100% loss)
+  [1596092374.18424] 8.8.8.8 : [1], 84 bytes, 12.3 ms (12.5 avg, 0% loss)
+  [1596092375.18344] 8.8.8.7 : [1], timed out (NaN avg, 100% loss)
+
+  8.8.8.8 : xmt/rcv/%loss = 2/2/0%, min/avg/max = 12.3/12.5/12.8
+  8.8.8.7 : xmt/rcv/%loss = 2/0/100%
+  ```
+
 ## New features
 
-- Refactored event loop, now allowing for period (-p) to be smaller than
-  timeout (-t). The number of sent pings is now only incremented when the
-  response is received or when the timeout happens, so that the loss statistic
-  is always correct (especially important when using interval statistics (-Q)
-  (#193).
+- The number of sent pings is only counted when the pings are received or have
+  timed out, ensuring that the loss ratio will be always correct. This makes it
+  possible, for example, to use loop mode (-l) with interval statistics (-Q)
+  and a timeout larger than period, without having the issue that initially
+  some pings would be reported as missing (#193)
+
 - Improved precision of measurements from 10us to 1us (#136, thanks @tycho)
 
 

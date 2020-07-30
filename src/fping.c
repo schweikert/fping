@@ -1262,6 +1262,29 @@ void main_loop()
 
             stats_add(h, event->ping_index, 0, -1);
 
+            if (per_recv_flag) {
+                if (timestamp_flag) {
+                    printf("[%10.5f] ", (double)current_time_ns / 1e9);
+                }
+                printf("%-*s : [%d], timed out",
+                    max_hostname_len, h->host, event->ping_index);
+                if(h->num_recv > 0) {
+                    printf(" (%s avg, ", sprint_tm(h->total_time / h->num_recv));
+                }
+                else {
+                    printf(" (NaN avg, ");
+                }
+                if (h->num_recv <= h->num_sent) {
+                    printf("%d%% loss)",
+                        ((h->num_sent - h->num_recv) * 100) / h->num_sent);
+                }
+                else {
+                    printf("%d%% return)",
+                        (h->num_recv_total * 100) / h->num_sent);
+                }
+                printf("\n");
+            }
+
             /* do we need to send a retry? */
             if (!loop_flag && !count_flag) {
                 if (h->num_sent < retry + 1) {
@@ -2348,7 +2371,7 @@ int wait_for_reply(int64_t wait_time)
     /* print received ping (unless --quiet) */
     if (per_recv_flag) {
         if (timestamp_flag) {
-            printf("[%10.5f] ", (double)(recv_time / 1000000)/1000);
+            printf("[%10.5f] ", (double)recv_time / 1e9);
         }
         avg = h->total_time / h->num_recv;
         printf("%-*s : [%d], %d bytes, %s ms",

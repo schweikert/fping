@@ -8,14 +8,20 @@ fping 5.0 (unreleased)
 
   ```
   $ fping -D -c2 8.8.8.8 8.8.8.7
-  [1596092373.18423] 8.8.8.8 : [0], 84 bytes, 12.8 ms (12.8 avg, 0% loss)
+  [1596092373.18423] 8.8.8.8 : [0], 64 bytes, 12.8 ms (12.8 avg, 0% loss)
   [1596092374.18223] 8.8.8.7 : [0], timed out (NaN avg, 100% loss)
-  [1596092374.18424] 8.8.8.8 : [1], 84 bytes, 12.3 ms (12.5 avg, 0% loss)
+  [1596092374.18424] 8.8.8.8 : [1], 64 bytes, 12.3 ms (12.5 avg, 0% loss)
   [1596092375.18344] 8.8.8.7 : [1], timed out (NaN avg, 100% loss)
 
   8.8.8.8 : xmt/rcv/%loss = 2/2/0%, min/avg/max = 12.3/12.5/12.8
   8.8.8.7 : xmt/rcv/%loss = 2/0/100%
   ```
+
+- The returned size in bytes now always excludes the IP header, so if before it
+  reported '84 bytes' e.g. when using 'fping -l', now it reports '64 bytes'.
+  This is to make the reported size consistent with ping(8) from iputils and
+  also with fping when pinging a IPv6 host (which never included the IPv6
+  header size).
 
 ## New features
 
@@ -27,6 +33,10 @@ fping 5.0 (unreleased)
 
 - Improved precision of measurements from 10us to 1us (#136, thanks @tycho)
 
+## Bugfixes and other changes
+
+- The reported size of received packets is now always correct on Linux even for
+  packets > 4096 bytes.
 
 fping 4.4 (2020-07-24)
 ======================

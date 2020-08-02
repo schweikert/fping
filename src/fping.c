@@ -95,6 +95,15 @@ extern "C" {
 #define AI_UNUSABLE 0
 #endif
 
+/* MSG_TRUNC available on Linux kernel 2.2+, makes recvmsg return the full
+ * length of the raw packet received, even if the buffer is smaller */
+#ifndef MSG_TRUNC
+#define MSG_TRUNC 0
+#define RECV_BUFSIZE 4096
+#else
+#define RECV_BUFSIZE 128
+#endif
+
 /*** externals ***/
 
 extern char* optarg;
@@ -1925,7 +1934,7 @@ int receive_packet(int64_t wait_time,
         return 0; /* timeout */
     }
 
-    recv_len = recvmsg(s, &recv_msghdr, 0);
+    recv_len = recvmsg(s, &recv_msghdr, MSG_TRUNC);
     if (recv_len <= 0) {
         return 0;
     }
@@ -1936,7 +1945,8 @@ int receive_packet(int64_t wait_time,
         struct timespec reply_timestamp_ts;
         for (cmsg = CMSG_FIRSTHDR(&recv_msghdr);
              cmsg != NULL;
-             cmsg = CMSG_NXTHDR(&recv_msghdr, cmsg)) {
+             cmsg = CMSG_NXTHDR(&recv_msghdr, cmsg))
+        {
             if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_TIMESTAMPNS) {
                 memcpy(&reply_timestamp_ts, CMSG_DATA(cmsg), sizeof(reply_timestamp_ts));
                 *reply_timestamp = timespec_ns(&reply_timestamp_ts);
@@ -2044,6 +2054,7 @@ int decode_icmp_ipv4(
 #endif
     }
 
+
     if (reply_buf_len < hlen + ICMP_MINLEN) {
         /* too short */
         if (verbose_flag) {
@@ -2051,7 +2062,7 @@ int decode_icmp_ipv4(
             getnameinfo((struct sockaddr*)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
             printf("received packet too short for ICMP (%d bytes from %s)\n", (int)reply_buf_len, buf);
         }
-        return 0;
+        return -1;
     }
 
     icp = (struct icmp*)(reply_buf + hlen);
@@ -2066,19 +2077,19 @@ int decode_icmp_ipv4(
         /* reply icmp packet (hlen + ICMP_MINLEN) followed by "sent packet" (ip + icmp headers) */
         if (reply_buf_len < hlen + ICMP_MINLEN + sizeof(struct ip) + ICMP_MINLEN) {
             /* discard ICMP message if we can't tell that it was caused by us (i.e. if the "sent packet" is not included). */
-            return 0;
+            return -1;
         }
 
         sent_icmp = (struct icmp*)(reply_buf + hlen + ICMP_MINLEN + sizeof(struct ip));
 
         if (sent_icmp->icmp_type != ICMP_ECHO || sent_icmp->icmp_id != ident4) {
             /* not caused by us */
-            return 0;
+            return -1;
         }
 
         seqmap_value = seqmap_fetch(ntohs(sent_icmp->icmp_seq), current_time_ns);
         if (seqmap_value == NULL) {
-            return 0;
+            return -1;
         }
 
         getnameinfo(response_addr, response_addr_len, addr_ascii, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
@@ -2117,13 +2128,13 @@ int decode_icmp_ipv4(
             break;
         }
 
-        return 0;
+        return -1;
     }
 
     *id = icp->icmp_id;
     *seq = ntohs(icp->icmp_seq);
 
-    return 1;
+    return hlen;
 }
 
 #ifdef IPV6
@@ -2222,7 +2233,7 @@ int decode_icmp_ipv6(
 int wait_for_reply(int64_t wait_time)
 {
     int result;
-    static char buffer[4096];
+    static char buffer[RECV_BUFSIZE];
     struct sockaddr_storage response_addr;
     int n, avg;
     HOST_ENTRY* h;
@@ -2251,21 +2262,23 @@ int wait_for_reply(int64_t wait_time)
 
     /* Process ICMP packet and retrieve id/seq */
     if (response_addr.ss_family == AF_INET) {
-        if (!decode_icmp_ipv4(
+        int ip_hlen = decode_icmp_ipv4(
                 (struct sockaddr*)&response_addr,
                 sizeof(response_addr),
                 buffer,
                 sizeof(buffer),
                 &id,
-                &seq)) {
+                &seq);
+        if (ip_hlen < 0) {
             return 1;
         }
         if (id != ident4) {
             return 1; /* packet received, but not the one we are looking for! */
         }
-        if (using_sock_dgram4) {
-            /* IP header is not included in read SOCK_DGRAM ICMP responses */
-            result += sizeof(struct ip);
+        if (!using_sock_dgram4) {
+            /* do not include IP header in returned size, to be consistent with ping(8) and also
+             * with fping with IPv6 hosts */
+            result -= ip_hlen;
         }
     }
 #ifdef IPV6

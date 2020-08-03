@@ -11,8 +11,3 @@ if [[ ! `ifconfig lo0` =~ 127\.0\.0\.2 ]]; then
     sudo ifconfig lo0 127.0.0.4/8 alias
     sudo ifconfig lo0 127.0.0.5/8 alias
 fi 
-
-if [[ ! $PATH =~ /Users/dws/checkouts/fping/src ]]; then
-    echo "# WARNING: must set PATH:"
-    echo PATH=/Users/dws/checkouts/fping/src:\$PATH
-fi

@@ -373,7 +373,7 @@ void errno_crash_and_burn(char* message);
 char* get_host_by_address(struct in_addr in);
 int send_ping(HOST_ENTRY* h, int index);
 void usage(int);
-int wait_for_reply(long);
+int wait_for_reply(int64_t);
 void print_per_system_stats(void);
 void print_per_system_splits(void);
 void print_netdata(void);
@@ -1273,7 +1273,7 @@ void main_loop()
 
             if (per_recv_flag) {
                 if (timestamp_flag) {
-                    printf("[%10.5f] ", (double)current_time_ns / 1e9);
+                    printf("[%.5f] ", (double)current_time_ns / 1e9);
                 }
                 printf("%-*s : [%d], timed out",
                     max_hostname_len, h->host, event->ping_index);
@@ -2384,7 +2384,7 @@ int wait_for_reply(int64_t wait_time)
     /* print received ping (unless --quiet) */
     if (per_recv_flag) {
         if (timestamp_flag) {
-            printf("[%10.5f] ", (double)recv_time / 1e9);
+            printf("[%.5f] ", (double)recv_time / 1e9);
         }
         avg = h->total_time / h->num_recv;
         printf("%-*s : [%d], %d bytes, %s ms",

@@ -6,6 +6,11 @@
 set -e
 set -x
 
+# skip on macos
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    exit 0
+fi
+
 make dist
 VERSION=$(ls fping-*.tar.gz | sed -e 's/^fping-//' | sed -e 's/\.tar\.gz$//')
 if [ -z "$VERSION" ]; then

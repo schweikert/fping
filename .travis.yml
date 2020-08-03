@@ -32,7 +32,6 @@ addons:
     branch_pattern: coverity_scan
     
 install:
-  - ci/build-1-autotools.sh
   - ci/build-2-test-command.sh
   - ci/build-3-prepare-macos.sh
 
@@ -56,6 +55,8 @@ jobs:
       name: test trusty
       os: linux
       dist: trusty
+      before_install:
+        - ci/build-1-autotools.sh
 
     - name: test xenial
       os: linux

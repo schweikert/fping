@@ -31,17 +31,9 @@ addons:
     build_command:   "ci/build-3-compile.sh"
     branch_pattern: coverity_scan
     
-install:
-  - ci/build-2-test-command.sh
-  - ci/build-3-prepare-macos.sh
-
 script:
   - ci/build-4-compile.sh
   - ci/run-tests.sh
-  - ci/deploy-bintray.sh
-
-after_success:
-  - ci/deploy-coveralls.sh
 
 stages:
   - test
@@ -55,20 +47,25 @@ jobs:
       name: test trusty
       os: linux
       dist: trusty
-      before_install:
+      install:
         - ci/build-1-autotools.sh
 
     - name: test xenial
       os: linux
       dist: xenial
+      after_success:
+        - ci/deploy-coveralls.sh
 
     - name: test macos
       os: osx
+      install:
+        - ci/build-2-test-command.sh
+        - ci/build-3-prepare-macos.sh
 
     #### STAGE: deploy
     - stage: deploy
       name: deploy
       os: linux
       dist: xenial
-      env:
-        - DO_DEPLOY=1
+      after_success:
+        - ci/deploy-bintray.sh

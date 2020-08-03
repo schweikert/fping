@@ -4,11 +4,6 @@
 
 set -e
 
-if [ -z "$DO_DEPLOY" ]; then
-    echo "skip deploy (\$DO_DEPLOY not set)"
-    exit 0
-fi
-
 VERSION=$(ls fping-*.tar.gz | sed -e 's/^fping-//' | sed -e 's/\.tar\.gz$//')
 if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+$ ]]; then
     REPO=release

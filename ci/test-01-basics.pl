@@ -14,8 +14,8 @@ use Test::More;
 # ping ::1
 SKIP: {
     #system("/sbin/ifconfig >&2");
-    if(system("/sbin/ifconfig | grep inet6") != 0) {
-        skip 'No IPv6 on this host', 3;
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
     }
     my $cmd = Test::Command->new(cmd => "fping ::1");
     $cmd->exit_is_num(0);

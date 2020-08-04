@@ -38,6 +38,9 @@ fping 5.0 (unreleased)
 - The reported size of received packets is now always correct on Linux even for
   packets > 4096 bytes.
 
+- Travis CI automated testing now also macos testing and additional ubuntu
+  distributions.
+
 fping 4.4 (2020-07-24)
 ======================
 ## Bugfixes and other changes

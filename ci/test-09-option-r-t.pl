@@ -19,8 +19,8 @@ $cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 3/3/0%.*});
 }
 
 SKIP: {
-    if(system("/sbin/ifconfig | grep inet6") != 0) {
-        skip 'No IPv6 on this host', 3;
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
     }
     my $cmd = Test::Command->new(cmd => "fping -q -R -c3 -p100 ::1");
     $cmd->exit_is_num(0);
@@ -86,8 +86,8 @@ $cmd->stderr_is_eq("");
 
 # fping -S
 SKIP: {
-    if(system("/sbin/ifconfig | grep inet6") != 0) {
-        skip 'No IPv6 on this host', 3;
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
     }
     my $cmd = Test::Command->new(cmd => "fping -S ::1 ::1");
     $cmd->exit_is_num(0);

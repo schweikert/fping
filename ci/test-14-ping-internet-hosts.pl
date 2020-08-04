@@ -59,23 +59,23 @@ $cmd->stderr_is_eq("");
 
 # fping -A -n (IPv6)
 SKIP: {
-    if(system("/sbin/ifconfig | grep inet6.*Scope:Global") != 0) {
-        skip 'No IPv6 on this host', 3;
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
     }
     my $cmd = Test::Command->new(cmd => "fping -6 -n -A dns.google");
     $cmd->exit_is_num(0);
-    $cmd->stdout_is_eq("dns.google (2001:4860:4860::8888) is alive\n");
+    $cmd->stdout_like(qr{^dns.google \(2001:4860:4860::88(44|88)\) is alive\n$});
     $cmd->stderr_is_eq("");
 }
 
 # fping -m
 SKIP: {
-    if(system("/sbin/ifconfig | grep inet6.*Scope:Global") != 0) {
-        skip 'No IPv6 on this host', 3;
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
     }
     my $cmd = Test::Command->new(cmd => "fping -A -m dns.google");
     $cmd->exit_is_num(0);
-    $cmd->stdout_is_eq("2001:4860:4860::8888 is alive\n8.8.8.8 is alive\n");
+    $cmd->stdout_like(qr{^.* is alive\n.* is alive\n.* is alive\n.* is alive\n});
     $cmd->stderr_is_eq("");
 }
 

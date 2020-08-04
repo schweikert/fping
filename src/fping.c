@@ -307,16 +307,16 @@ volatile sig_atomic_t finish_requested = 0;
 
 unsigned int debugging = 0;
 
-/* times get *100 because all times are calculated in 10 usec units, not ms */
+/* all time-related values are int64_t nanoseconds */
 unsigned int retry = DEFAULT_RETRY;
-unsigned int timeout = DEFAULT_TIMEOUT * 100;
-unsigned int interval = DEFAULT_INTERVAL * 100;
-unsigned int perhost_interval = DEFAULT_PERHOST_INTERVAL * 100;
+int64_t timeout = (int64_t) DEFAULT_TIMEOUT * 1000000;
+int64_t interval = (int64_t) DEFAULT_INTERVAL * 1000000;
+int64_t perhost_interval = (int64_t) DEFAULT_PERHOST_INTERVAL * 1000000;
 float backoff = DEFAULT_BACKOFF_FACTOR;
 unsigned int ping_data_size = DEFAULT_PING_DATA_SIZE;
 unsigned int count = 1, min_reachable = 0;
 unsigned int trials;
-unsigned int report_interval = 0;
+int64_t report_interval = 0;
 unsigned int ttl = 0;
 int src_addr_set = 0;
 struct in_addr src_addr;
@@ -557,7 +557,7 @@ int main(int argc, char** argv)
             if (opt_value_float < 0) {
                 usage(1);
             }
-            timeout = opt_value_float * 100;
+            timeout = opt_value_float * 1000000;
             timeout_flag = 1;
             break;
 
@@ -572,7 +572,7 @@ int main(int argc, char** argv)
             if (opt_value_float < 0) {
                 usage(1);
             }
-            interval = opt_value_float * 100;
+            interval = opt_value_float * 1000000;
             break;
 
         case 'p':
@@ -581,7 +581,7 @@ int main(int argc, char** argv)
             if (opt_value_float < 0) {
                 usage(1);
             }
-            perhost_interval = opt_value_float * 100;
+            perhost_interval = opt_value_float * 1000000;
 
             break;
 
@@ -623,7 +623,7 @@ int main(int argc, char** argv)
             if (opt_value_float < 0) {
                 usage(1);
             }
-            report_interval = opt_value_float * 100000;
+            report_interval = opt_value_float * 1e9;
 
             break;
 
@@ -822,7 +822,7 @@ int main(int argc, char** argv)
     }
 
 #ifdef FPING_SAFE_LIMITS
-    if ((interval < MIN_INTERVAL * 100 || perhost_interval < MIN_PERHOST_INTERVAL * 100)
+    if ((interval < (int64_t) MIN_INTERVAL * 1000000 || perhost_interval < (int64_t) MIN_PERHOST_INTERVAL * 1000000)
         && getuid()) {
         fprintf(stderr, "%s: these options are too risky for mere mortals.\n", prog);
         fprintf(stderr, "%s: You need -i >= %u and -p >= %u\n",
@@ -867,8 +867,8 @@ int main(int argc, char** argv)
     if (loop_flag || count_flag) {
         if (!timeout_flag) {
             timeout = perhost_interval;
-            if (timeout > AUTOTUNE_TIMEOUT_MAX * 100) {
-                timeout = AUTOTUNE_TIMEOUT_MAX * 100;
+            if (timeout > (int64_t) AUTOTUNE_TIMEOUT_MAX * 1000000) {
+                timeout = (int64_t) AUTOTUNE_TIMEOUT_MAX * 1000000;
             }
         }
     }
@@ -894,10 +894,10 @@ int main(int argc, char** argv)
         report_all_rtts_flag = 1;
 
     if (trace_flag) {
-        fprintf(stderr, "%s:\n  count: %u, retry: %u, interval: %u\n",
-            prog, count, retry, interval / 10);
-        fprintf(stderr, "  perhost_interval: %u, timeout: %u\n",
-            perhost_interval / 10, timeout / 10);
+        fprintf(stderr, "%s:\n  count: %u, retry: %u, interval: %.0f ms\n",
+            prog, count, retry, interval / 1e6);
+        fprintf(stderr, "  perhost_interval: %.0f ms, timeout: %.0f\n",
+            perhost_interval / 1e6, timeout / 1e6);
         fprintf(stderr, "  ping_data_size = %u, trials = %u\n",
             ping_data_size, trials);
 
@@ -1107,7 +1107,7 @@ int main(int argc, char** argv)
     setlinebuf(stdout);
 
     if (report_interval) {
-        next_report_time = current_time_ns + (int64_t)report_interval*10000;
+        next_report_time = current_time_ns + report_interval;
     }
 
     last_send_time = 0;
@@ -1317,7 +1317,7 @@ void main_loop()
         {
             /* Make sure that we don't ping more than once every "interval" */
             lt = current_time_ns - last_send_time;
-            if (lt < interval*10000)
+            if (lt < interval)
                 goto wait_for_reply;
 
             /* Dequeue the event */
@@ -1331,7 +1331,7 @@ void main_loop()
 
             /* Loop and count mode: schedule next ping */
             if (loop_flag || (count_flag && event->ping_index+1 < count)) {
-                host_add_ping_event(h, event->ping_index+1, event->ev_time + (int64_t)perhost_interval*10000);
+                host_add_ping_event(h, event->ping_index+1, event->ev_time + perhost_interval);
             }
         }
         
@@ -1345,14 +1345,14 @@ void main_loop()
                 wait_time_ns = 0;
             /* make sure that we wait enough, so that the inter-ping delay is
              * bigger than 'interval' */
-            if (wait_time_ns < interval*10000) {
+            if (wait_time_ns < interval) {
                 lt = current_time_ns - last_send_time;
-                if (lt < interval*10000) {
-                    wait_time_ns = interval*10000 - lt;
+                if (lt < interval) {
+                    wait_time_ns = interval - lt;
                 }
             }
 
-            dbg_printf("next ping event in %ld ms (%s)\n", wait_time_ns / 1000000, event_queue_ping.first->host->host);
+            dbg_printf("next ping event in %.0f ms (%s)\n", wait_time_ns / 1e6, event_queue_ping.first->host->host);
         }
 
         /* When is the next timeout event? */
@@ -1365,7 +1365,7 @@ void main_loop()
                 }
             }
             
-            dbg_printf("next timeout event in %ld ms (%s)\n", wait_time_timeout / 1000000, event_queue_timeout.first->host->host);
+            dbg_printf("next timeout event in %.0f ms (%s)\n", wait_time_timeout / 1e6, event_queue_timeout.first->host->host);
         }
 
         /* When is the next report due? */
@@ -1378,7 +1378,7 @@ void main_loop()
                 }
             }
 
-            dbg_printf("next report  event in %ld ms\n", wait_time_next_report / 1000000);
+            dbg_printf("next report  event in %0.f ms\n", wait_time_next_report / 1e6);
         }
 
         /* if wait_time is still -1, it means that we are waiting for nothing... */
@@ -1393,7 +1393,7 @@ void main_loop()
 
         /* Receive replies */
         /* (this is what sleeps during each loop iteration) */
-        dbg_printf("waiting up to %ld ms\n", wait_time_ns / 1000000);
+        dbg_printf("waiting up to %.0f ms\n", wait_time_ns / 1e6);
         if (wait_for_reply(wait_time_ns)) {
             while (wait_for_reply(0))
                 ; /* process other replies in the queue */
@@ -1414,7 +1414,7 @@ void main_loop()
                 print_per_system_splits();
 
             while (current_time_ns >= next_report_time) {
-                next_report_time += (int64_t)report_interval*10000;
+                next_report_time += report_interval;
             }
         }
     }
@@ -1572,7 +1572,7 @@ void print_per_system_stats(void)
 
                 if (outage_flag) {
                     /* Time outage total */
-                    outage_ms = (h->num_sent - h->num_recv) * perhost_interval / 100;
+                    outage_ms = (h->num_sent - h->num_recv) * perhost_interval / 1e6;
                     fprintf(stderr, ", outage(ms) = %d", outage_ms);
                 }
             }
@@ -1619,7 +1619,7 @@ void print_netdata(void)
         h = table[i];
 
         if (!sent_charts) {
-            printf("CHART fping.%s_packets '' 'FPing Packets for host %s' packets '%s' fping.packets line 110020 %d\n", h->name, h->host, h->name, report_interval / 100000);
+            printf("CHART fping.%s_packets '' 'FPing Packets for host %s' packets '%s' fping.packets line 110020 %.0f\n", h->name, h->host, h->name, report_interval / 1e9);
             printf("DIMENSION xmt sent absolute 1 1\n");
             printf("DIMENSION rcv received absolute 1 1\n");
         }
@@ -1630,7 +1630,7 @@ void print_netdata(void)
         printf("END\n");
 
         if (!sent_charts) {
-            printf("CHART fping.%s_quality '' 'FPing Quality for host %s' percentage '%s' fping.quality area 110010 %d\n", h->name, h->host, h->name, report_interval / 100000);
+            printf("CHART fping.%s_quality '' 'FPing Quality for host %s' percentage '%s' fping.quality area 110010 %.0f\n", h->name, h->host, h->name, report_interval / 1e9);
             printf("DIMENSION returned '' absolute 1 1\n");
             /* printf("DIMENSION lost '' absolute 1 1\n"); */
         }
@@ -1647,7 +1647,7 @@ void print_netdata(void)
         printf("END\n");
 
         if (!sent_charts) {
-            printf("CHART fping.%s_latency '' 'FPing Latency for host %s' ms '%s' fping.latency area 110000 %d\n", h->name, h->host, h->name, report_interval / 100000);
+            printf("CHART fping.%s_latency '' 'FPing Latency for host %s' ms '%s' fping.latency area 110000 %.0f\n", h->name, h->host, h->name, report_interval / 1e9);
             printf("DIMENSION min minimum absolute 1 1000000\n");
             printf("DIMENSION max maximum absolute 1 1000000\n");
             printf("DIMENSION avg average absolute 1 1000000\n");
@@ -1705,7 +1705,7 @@ void print_per_system_splits(void)
 
             if (outage_flag) {
                 /* Time outage  */
-                outage_ms_i = (h->num_sent_i - h->num_recv_i) * perhost_interval / 100;
+                outage_ms_i = (h->num_sent_i - h->num_recv_i) * perhost_interval / 1e6;
                 fprintf(stderr, ", outage(ms) = %d", outage_ms_i);
             }
         }
@@ -1834,7 +1834,7 @@ int send_ping(HOST_ENTRY* h, int index)
     }
     else {
         /* schedule timeout */
-        host_add_timeout_event(h, index, current_time_ns + (int64_t)h->timeout*10000);
+        host_add_timeout_event(h, index, current_time_ns + h->timeout);
 
         /* mark this trial as outstanding */
         if (!loop_flag) {
@@ -2336,7 +2336,7 @@ int wait_for_reply(int64_t wait_time)
 
     /* discard reply if delay is larger than timeout
      * (see also: github #32) */
-    if (this_reply > (int64_t)(h->timeout)*10000) {
+    if (this_reply > h->timeout) {
         return 1;
     }
 
@@ -2718,8 +2718,8 @@ void host_add_ping_event(HOST_ENTRY *h, int index, int64_t ev_time)
     event->ev_time = ev_time;
     ev_enqueue(&event_queue_ping, event);
 
-    dbg_printf("%s [%d]: add ping event in %ld ms\n",
-        event->host->host, index, (ev_time - current_time_ns) / 1000000);
+    dbg_printf("%s [%d]: add ping event in %.0f ms\n",
+        event->host->host, index, (ev_time - current_time_ns) / 1e6);
 }
 
 void host_add_timeout_event(HOST_ENTRY *h, int index, int64_t ev_time)
@@ -2730,8 +2730,8 @@ void host_add_timeout_event(HOST_ENTRY *h, int index, int64_t ev_time)
     event->ev_time = ev_time;
     ev_enqueue(&event_queue_timeout, event);
 
-    dbg_printf("%s [%d]: add timeout event in %ld ms\n",
-        event->host->host, index, (ev_time - current_time_ns) / 1000000);
+    dbg_printf("%s [%d]: add timeout event in %.0f ms\n",
+        event->host->host, index, (ev_time - current_time_ns) / 1e6);
 }
 
 struct event *host_get_timeout_event(HOST_ENTRY *h, int index)
@@ -2874,11 +2874,11 @@ void usage(int is_error)
     fprintf(out, "   -M, --dontfrag     set the Don't Fragment flag\n");
     fprintf(out, "   -O, --tos=N        set the type of service (tos) flag on the ICMP packets\n");
     fprintf(out, "   -p, --period=MSEC  interval between ping packets to one target (in ms)\n");
-    fprintf(out, "                      (in loop and count modes, default: %d ms)\n", perhost_interval / 100);
+    fprintf(out, "                      (in loop and count modes, default: %.0f ms)\n", perhost_interval / 1e6);
     fprintf(out, "   -r, --retry=N      number of retries (default: %d)\n", DEFAULT_RETRY);
     fprintf(out, "   -R, --random       random packet data (to foil link data compression)\n");
     fprintf(out, "   -S, --src=IP       set source address\n");
-    fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (default: %d ms,\n", timeout/100);
+    fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (default: %.0f ms,\n", timeout / 1e6);
     fprintf(out, "                      except with -l/-c/-C, where it's the -p period up to 2000 ms)\n");
     fprintf(out, "\n");
     fprintf(out, "Output options:\n");
@@ -2887,7 +2887,7 @@ void usage(int is_error)
     fprintf(out, "   -C, --vcount=N     same as -c, report results in verbose format\n");
     fprintf(out, "   -D, --timestamp    print timestamp before each output line\n");
     fprintf(out, "   -e, --elapsed      show elapsed time on return packets\n");
-    fprintf(out, "   -i, --interval=MSEC  interval between sending ping packets (default: %d ms)\n", interval / 100);
+    fprintf(out, "   -i, --interval=MSEC  interval between sending ping packets (default: %.0f ms)\n", interval / 1e6);
     fprintf(out, "   -n, --name         show targets by name (-d is equivalent)\n");
     fprintf(out, "   -N, --netdata      output compatible for netdata (-l -Q are required)\n");
     fprintf(out, "   -o, --outage       show the accumulated outage time (lost packets * packet interval)\n");

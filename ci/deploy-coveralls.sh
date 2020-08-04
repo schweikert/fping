@@ -2,8 +2,6 @@
 
 set -xe
 
-set
-
 if [ "$TRAVIS_DIST" = "trusty" ]; then
     echo "skip coveralls on trusty because coveralls errors out due to python issues"
     exit 0

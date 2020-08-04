@@ -14,6 +14,9 @@ env:
      #   via the "travis encrypt" command using the project repo's public key
     - secure: "C9ZJ9LYnuowRdF4D66KLfquimvu8GtRGIafwvCcGYKReEy8phlBdFsHlybkMBNYJNTJSM0j6wyo1lKTVGHxmpQDimjR7kmxUtawbhuJ5qOCBtFqNVh9lRQi7hC4+UOhvRsIcbV8HAJM5u/5RxGOfXCePK3a2DtiYv1d2NHToZN8="
 
+notifications:
+  webhooks: https://coveralls.io/webhook
+
 compiler:
   - gcc
 
@@ -34,6 +37,7 @@ addons:
 script:
   - ci/build-4-compile.sh
   - ci/run-tests.sh
+  - ci/deploy-coveralls.sh
 
 stages:
   - test
@@ -47,20 +51,35 @@ jobs:
       name: test trusty
       os: linux
       dist: trusty
+      env:
+        - SKIP_IPV6=1
       install:
         - ci/build-1-autotools.sh
 
     - name: test xenial
       os: linux
       dist: xenial
-      after_success:
-        - ci/deploy-coveralls.sh
+      env:
+        - SKIP_IPV6=1
+
+    - name: test bionic
+      os: linux
+      dist: bionic
+      env:
+        - SKIP_IPV6=1
+
+    - name: test bionic lxd arm64
+      os: linux
+      dist: bionic
+      arch: arm64
 
     - name: test macos
       os: osx
       install:
         - ci/build-2-test-command.sh
         - ci/build-3-prepare-macos.sh
+      env:
+        - SKIP_IPV6=1
 
     #### STAGE: deploy
     - stage: deploy

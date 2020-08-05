@@ -1,4 +1,4 @@
-fping 5.0 (unreleased)
+fping 5.0 (2020-08-05)
 ======================
 
 ## Incompatible Changes

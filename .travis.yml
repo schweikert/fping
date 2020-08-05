@@ -26,13 +26,6 @@ addons:
     packages:
       - libcap2-bin
       - libtest-command-perl
-  coverity_scan:
-    project:
-      name: "schweikert/fping"
-      description: "Build submitted via Travis CI"
-    notification_email: david@schweikert.ch
-    build_command:   "ci/build-3-compile.sh"
-    branch_pattern: coverity_scan
     
 script:
   - ci/build-4-compile.sh
@@ -43,6 +36,7 @@ stages:
   - test
   - name: deploy
     if: branch = master OR branch = v4.x
+  - name: coverity
 
 jobs:
   include:
@@ -88,3 +82,11 @@ jobs:
       dist: xenial
       after_success:
         - ci/deploy-bintray.sh
+
+    #### STAGE: coverity
+    - stage: coverity
+      name: coverity
+      os: linux
+      dist: xenial
+      script:
+        - ci/deploy-coverity.sh

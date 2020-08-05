@@ -81,6 +81,8 @@ jobs:
       name: deploy
       os: linux
       dist: xenial
+      env:
+        - SKIP_IPV6=1
       after_success:
         - ci/deploy-bintray.sh
 

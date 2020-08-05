@@ -37,7 +37,7 @@ stages:
   - name: deploy
     if: branch = master OR branch = v4.x
   - name: coverity
-    if: branch = master OR branch = v4.x OR branch = coverity_scan
+    if: branch = master OR branch = coverity_scan
 
 jobs:
   include:

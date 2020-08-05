@@ -30,6 +30,8 @@ addons:
 script:
   - ci/build-4-compile.sh
   - ci/run-tests.sh
+
+after_success:
   - ci/deploy-coveralls.sh
 
 stages:
@@ -91,5 +93,6 @@ jobs:
       name: coverity
       os: linux
       dist: xenial
+      after_success:
       script:
         - ci/deploy-coverity.sh

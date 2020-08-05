@@ -1252,7 +1252,7 @@ void add_range(char* start, char* end)
 
 void main_loop()
 {
-    long lt;
+    int64_t lt;
     int64_t wait_time_ns;
     struct event *event;
     struct host_entry *h;
@@ -2237,7 +2237,7 @@ int wait_for_reply(int64_t wait_time)
     struct sockaddr_storage response_addr;
     int n, avg;
     HOST_ENTRY* h;
-    long this_reply;
+    int64_t this_reply;
     int this_count;
     int64_t recv_time=0;
     SEQMAP_VALUE* seqmap_value;

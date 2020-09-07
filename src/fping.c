@@ -315,6 +315,7 @@ int64_t perhost_interval = (int64_t) DEFAULT_PERHOST_INTERVAL * 1000000;
 float backoff = DEFAULT_BACKOFF_FACTOR;
 unsigned int ping_data_size = DEFAULT_PING_DATA_SIZE;
 unsigned int count = 1, min_reachable = 0;
+unsigned int fwmark = 0;
 unsigned int trials;
 int64_t report_interval = 0;
 unsigned int ttl = 0;
@@ -480,6 +481,7 @@ int main(int argc, char** argv)
         { "ttl", 'H', OPTPARSE_REQUIRED },
         { "interval", 'i', OPTPARSE_REQUIRED },
         { "iface", 'I', OPTPARSE_REQUIRED },
+        { "fwmark", 'k', OPTPARSE_REQUIRED },
         { "loop", 'l', OPTPARSE_NONE },
         { "all", 'm', OPTPARSE_NONE },
         { "dontfrag", 'M', OPTPARSE_NONE },
@@ -598,6 +600,15 @@ int main(int argc, char** argv)
 
             count_flag = 1;
             report_all_rtts_flag = 1;
+            break;
+
+        case 'k':
+            if (!(fwmark = (unsigned int)strtol(optparse_state.optarg, NULL, 0)))
+                usage(1);
+
+            if(-1 == setsockopt(socket4, SOL_SOCKET, SO_MARK, &fwmark, sizeof fwmark))
+                perror("fwmark");
+
             break;
 
         case 'b':
@@ -2880,6 +2891,7 @@ void usage(int is_error)
     fprintf(out, "   -S, --src=IP       set source address\n");
     fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (default: %.0f ms,\n", timeout / 1e6);
     fprintf(out, "                      except with -l/-c/-C, where it's the -p period up to 2000 ms)\n");
+    fprintf(out, "   -k, --fwmark=FWMARK set the routing mark\n");
     fprintf(out, "\n");
     fprintf(out, "Output options:\n");
     fprintf(out, "   -a, --alive        show targets that are alive\n");

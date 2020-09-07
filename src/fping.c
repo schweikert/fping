@@ -315,7 +315,9 @@ int64_t perhost_interval = (int64_t) DEFAULT_PERHOST_INTERVAL * 1000000;
 float backoff = DEFAULT_BACKOFF_FACTOR;
 unsigned int ping_data_size = DEFAULT_PING_DATA_SIZE;
 unsigned int count = 1, min_reachable = 0;
+#ifdef SO_MARK
 unsigned int fwmark = 0;
+#endif
 unsigned int trials;
 int64_t report_interval = 0;
 unsigned int ttl = 0;
@@ -481,7 +483,9 @@ int main(int argc, char** argv)
         { "ttl", 'H', OPTPARSE_REQUIRED },
         { "interval", 'i', OPTPARSE_REQUIRED },
         { "iface", 'I', OPTPARSE_REQUIRED },
+#ifdef SO_MARK
         { "fwmark", 'k', OPTPARSE_REQUIRED },
+#endif
         { "loop", 'l', OPTPARSE_NONE },
         { "all", 'm', OPTPARSE_NONE },
         { "dontfrag", 'M', OPTPARSE_NONE },
@@ -602,14 +606,22 @@ int main(int argc, char** argv)
             report_all_rtts_flag = 1;
             break;
 
+#ifdef SO_MARK
         case 'k':
             if (!(fwmark = (unsigned int)strtol(optparse_state.optarg, NULL, 0)))
                 usage(1);
 
-            if(-1 == setsockopt(socket4, SOL_SOCKET, SO_MARK, &fwmark, sizeof fwmark))
-                perror("fwmark");
+            if (socket4 >= 0)
+                if(-1 == setsockopt(socket4, SOL_SOCKET, SO_MARK, &fwmark, sizeof fwmark))
+                    perror("fwmark ipv4");
 
+#ifdef IPV6
+            if (socket6 >= 0)
+                if(-1 == setsockopt(socket6, SOL_SOCKET, SO_MARK, &fwmark, sizeof fwmark))
+                    perror("fwmark ipv6");
+#endif
             break;
+#endif
 
         case 'b':
             if (!sscanf(optparse_state.optarg, "%u", &ping_data_size))
@@ -2891,7 +2903,9 @@ void usage(int is_error)
     fprintf(out, "   -S, --src=IP       set source address\n");
     fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (default: %.0f ms,\n", timeout / 1e6);
     fprintf(out, "                      except with -l/-c/-C, where it's the -p period up to 2000 ms)\n");
+#ifdef SO_MARK
     fprintf(out, "   -k, --fwmark=FWMARK set the routing mark\n");
+#endif
     fprintf(out, "\n");
     fprintf(out, "Output options:\n");
     fprintf(out, "   -a, --alive        show targets that are alive\n");

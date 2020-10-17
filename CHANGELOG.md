@@ -1,3 +1,9 @@
+fping 4.5 (UNRELEASED)
+======================
+## Bugfixes and other changes
+
+- Bind to source only when option was set (#198, thanks @dinoex)
+
 fping 4.4 (2020-07-24)
 ======================
 ## Bugfixes and other changes

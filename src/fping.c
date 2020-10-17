@@ -397,6 +397,42 @@ void update_current_time();
 
 /************************************************************
 
+  Function: p_setsockopt
+
+*************************************************************
+
+  Inputs:  p_uid: privileged uid. Others as per setsockopt(2)
+
+  Description:
+
+  Elevates privileges to p_uid when required, calls
+  setsockopt, and drops privileges back.
+
+************************************************************/
+
+int p_setsockopt(uid_t p_uid, int sockfd, int level, int optname,
+	const void *optval, socklen_t optlen)
+{
+    const uid_t saved_uid = geteuid();
+    int res;
+
+    if (p_uid != saved_uid && seteuid(p_uid)) {
+	perror("cannot elevate privileges for setsockopt");
+    }
+
+    res = setsockopt(sockfd, level, optname, optval, optlen);
+
+    if (p_uid != saved_uid && seteuid(saved_uid)) {
+	perror("fatal error: could not drop privileges after setsockopt");
+	/* continuing would be a security hole */
+	exit(4);
+    }
+
+    return res;
+}
+
+/************************************************************
+
   Function: main
 
 *************************************************************
@@ -412,7 +448,7 @@ void update_current_time();
 int main(int argc, char** argv)
 {
     int c;
-    uid_t uid;
+    const uid_t suid = geteuid();
     int tos = 0;
     struct optparse optparse_state;
 #ifdef USE_SIGACTION
@@ -448,9 +484,9 @@ int main(int argc, char** argv)
     memset(&src_addr6, 0, sizeof(src_addr6));
 #endif
 
-    if ((uid = getuid())) {
-        /* drop privileges */
-        if (setuid(getuid()) == -1)
+    if (!suid && suid != getuid()) {
+        /* *temporarily* drop privileges */
+        if (seteuid(getuid()) == -1)
             perror("cannot setuid");
     }
 
@@ -740,14 +776,14 @@ int main(int argc, char** argv)
         case 'I':
 #ifdef SO_BINDTODEVICE
             if (socket4 >= 0) {
-                if (setsockopt(socket4, SOL_SOCKET, SO_BINDTODEVICE, optparse_state.optarg, strlen(optparse_state.optarg))) {
+                if (p_setsockopt(suid, socket4, SOL_SOCKET, SO_BINDTODEVICE, optparse_state.optarg, strlen(optparse_state.optarg))) {
                     perror("binding to specific interface (SO_BINTODEVICE)");
                     exit(1);
                 }
             }
 #ifdef IPV6
             if (socket6 >= 0) {
-                if (setsockopt(socket6, SOL_SOCKET, SO_BINDTODEVICE, optparse_state.optarg, strlen(optparse_state.optarg))) {
+                if (p_setsockopt(suid, socket6, SOL_SOCKET, SO_BINDTODEVICE, optparse_state.optarg, strlen(optparse_state.optarg))) {
                     perror("binding to specific interface (SO_BINTODEVICE), IPV6");
                     exit(1);
                 }
@@ -794,6 +830,13 @@ int main(int argc, char** argv)
             exit(1);
             break;
         }
+    }
+
+    /* permanetly drop privileges */
+    if (suid != getuid() && setuid(getuid())) {
+	perror("fatal: failed to permanently drop privileges");
+	/* continuing would be a security hole */
+	exit(4);
     }
 
     /* validate various option settings */

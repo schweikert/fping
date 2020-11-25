@@ -2301,6 +2301,22 @@ int wait_for_reply(int64_t wait_time)
         return 1;
     }
 
+    /* Check that src address is one of the hosts we pinged before */
+    int found = 0;
+    for (int i = 0; i < num_hosts; i++) {
+        HOST_ENTRY *h = table[i];
+        if (!addr_cmp((struct sockaddr*)&response_addr, (struct sockaddr*)&h->saddr)) {
+            found = 1;
+            break;
+        }
+    }
+    if (!found) {
+        // char buf[INET6_ADDRSTRLEN];
+        // getnameinfo((struct sockaddr*)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+        // fprintf(stderr, "ignoring response from %s\n", buf);
+        return 1; /* packet received, but not from a host we pinged */        
+    }
+
     seqmap_value = seqmap_fetch(seq, current_time_ns);
     if (seqmap_value == NULL) {
         return 1;

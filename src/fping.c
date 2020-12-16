@@ -832,7 +832,7 @@ int main(int argc, char** argv)
         }
     }
 
-    /* permanetly drop privileges */
+    /* permanently drop privileges */
     if (suid != getuid() && setuid(getuid())) {
 	perror("fatal: failed to permanently drop privileges");
 	/* continuing would be a security hole */

@@ -341,6 +341,7 @@ int num_timeout = 0, /* number of times select timed out */
     num_othericmprcvd = 0; /* total non-echo-reply ICMP received */
 
 struct timespec current_time; /* current time (pseudo) */
+struct timespec current_realtime; /* current time (CLOCK_REALTIME) */
 int64_t current_time_ns;
 int64_t start_time;
 int64_t end_time;
@@ -394,6 +395,7 @@ void host_add_timeout_event(HOST_ENTRY *h, int index, int64_t ev_time);
 struct event *host_get_timeout_event(HOST_ENTRY *h, int index);
 void stats_add(HOST_ENTRY *h, int index, int success, int64_t latency);
 void update_current_time();
+void update_current_real_time();
 
 /************************************************************
 
@@ -1503,6 +1505,20 @@ void update_current_time()
     current_time_ns = timespec_ns(&current_time);
 }
 
+/************************************************************
+
+  Function: update_current_real_time
+    
+*************************************************************/
+
+void update_current_real_time()
+{
+    if(clock_gettime(CLOCK_REALTIME, &current_realtime) == -1)
+    {
+	clock_gettime(CLOCKID, &current_realtime);
+    }
+}
+
 
 /************************************************************
 
@@ -1734,7 +1750,8 @@ void print_per_system_splits(void)
         fprintf(stderr, "\n");
 
     update_current_time();
-    curr_tm = localtime((time_t*)&current_time.tv_sec);
+    update_current_real_time();
+    curr_tm = localtime((time_t*)&current_realtime.tv_sec);
     fprintf(stderr, "[%2.2d:%2.2d:%2.2d]\n", curr_tm->tm_hour,
         curr_tm->tm_min, curr_tm->tm_sec);
 

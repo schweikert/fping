@@ -54,7 +54,7 @@ rm -rf $RPM_BUILD_ROOT
 %post
 if [ -x /usr/sbin/setcap ]; then
     /bin/chmod 0755 /usr/sbin/fping*
-    /usr/sbin/setcap cap_net_raw+ep /usr/sbin/fping*
+    /usr/sbin/setcap cap_net_raw,cap_net_admin+ep /usr/sbin/fping*
 fi
 
 %changelog

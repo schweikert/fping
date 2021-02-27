@@ -395,7 +395,7 @@ void host_add_timeout_event(HOST_ENTRY *h, int index, int64_t ev_time);
 struct event *host_get_timeout_event(HOST_ENTRY *h, int index);
 void stats_add(HOST_ENTRY *h, int index, int success, int64_t latency);
 void update_current_time();
-void update_current_real_time();
+void update_current_realtime();
 
 /************************************************************
 
@@ -1507,11 +1507,11 @@ void update_current_time()
 
 /************************************************************
 
-  Function: update_current_real_time
+  Function: update_current_realtime
     
 *************************************************************/
 
-void update_current_real_time()
+void update_current_realtime()
 {
     if(clock_gettime(CLOCK_REALTIME, &current_realtime) == -1)
     {
@@ -1750,7 +1750,7 @@ void print_per_system_splits(void)
         fprintf(stderr, "\n");
 
     update_current_time();
-    update_current_real_time();
+    update_current_realtime();
     curr_tm = localtime((time_t*)&current_realtime.tv_sec);
     fprintf(stderr, "[%2.2d:%2.2d:%2.2d]\n", curr_tm->tm_hour,
         curr_tm->tm_min, curr_tm->tm_sec);

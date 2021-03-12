@@ -123,7 +123,7 @@ extern int h_errno;
 #endif
 
 #if !defined(CLOCKID)
-#if defined(CLOCK_MONOTONIC)
+#if defined(CLOCK_MONOTONIC) && !defined(__APPLE__) && !defined(__OpenBSD__) && !defined(__FreeBSD__)
 #define CLOCKID CLOCK_MONOTONIC
 #else
 #define CLOCKID CLOCK_REALTIME

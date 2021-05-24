@@ -352,7 +352,7 @@ int generate_flag = 0; /* flag for IP list generation */
 int verbose_flag, quiet_flag, stats_flag, unreachable_flag, alive_flag;
 int elapsed_flag, version_flag, count_flag, loop_flag, netdata_flag;
 int per_recv_flag, report_all_rtts_flag, name_flag, addr_flag, backoff_flag, rdns_flag;
-int multif_flag, timeout_flag;
+int multif_flag, timeout_flag, fast_reachable;
 int outage_flag = 0;
 int timestamp_flag = 0;
 int random_data_flag = 0;
@@ -535,6 +535,7 @@ int main(int argc, char** argv)
         { "unreach", 'u', OPTPARSE_NONE },
         { "version", 'v', OPTPARSE_NONE },
         { "reachable", 'x', OPTPARSE_REQUIRED },
+        { "fast-reachable", 'X', OPTPARSE_REQUIRED },
 #if defined(DEBUG) || defined(_DEBUG)
         { NULL, 'z', OPTPARSE_REQUIRED },
 #endif
@@ -748,6 +749,13 @@ int main(int argc, char** argv)
             if (!(min_reachable = (unsigned int)atoi(optparse_state.optarg)))
                 usage(1);
             break;
+
+        case 'X':
+            if (!(min_reachable = (unsigned int)atoi(optparse_state.optarg)))
+                usage(1);
+            fast_reachable = 1;
+            break;
+
 
         case 'f':
             filename = optparse_state.optarg;
@@ -2405,6 +2413,9 @@ int wait_for_reply(int64_t wait_time)
     /* print "is alive" */
     if (h->num_recv == 1) {
         num_alive++;
+        if (fast_reachable && num_alive >= min_reachable)
+                finish_requested = 1;
+
         if (verbose_flag || alive_flag) {
             printf("%s", h->host);
 
@@ -2940,5 +2951,6 @@ void usage(int is_error)
     fprintf(out, "   -u, --unreach      show targets that are unreachable\n");
     fprintf(out, "   -v, --version      show version\n");
     fprintf(out, "   -x, --reachable=N  shows if >=N hosts are reachable or not\n");
+    fprintf(out, "   -X, --fast-reachable=N  exits true immediately when N hosts are found\n");
     exit(is_error);
 }

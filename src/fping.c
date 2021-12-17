@@ -1735,8 +1735,8 @@ void print_per_system_splits(void)
 
     update_current_time();
     curr_tm = localtime((time_t*)&current_time.tv_sec);
-    fprintf(stderr, "[%2.2d:%2.2d:%2.2d]\n", curr_tm->tm_hour,
-        curr_tm->tm_min, curr_tm->tm_sec);
+    fprintf(stderr, "[%2.2d:%2.2d:%2.2d %d.%d.%d]\n", curr_tm->tm_hour, curr_tm->tm_min,
+        curr_tm->tm_sec, curr_tm->tm_mday, curr_tm->tm_mon + 1, curr_tm->tm_year + 1900);
 
     for (i = 0; i < num_hosts; i++) {
         h = table[i];
@@ -1767,6 +1767,8 @@ void print_per_system_splits(void)
         fprintf(stderr, "\n");
         h->num_sent_i = h->num_recv_i = h->max_reply_i = h->min_reply_i = h->total_time_i = 0;
     }
+
+    fprintf(stderr, "\n");
 }
 
 /************************************************************

@@ -94,5 +94,5 @@ $cmd->stderr_like(qr{^(|(8.8.8.7: error while sending ping: No route to host\n)+
 my $elapsed = tv_interval($t0);
 # 0.1 + 0.2 + 0.4 + 0.8 = 1.5
 cmp_ok($elapsed, '>=', 1.5);
-cmp_ok($elapsed, '<', 1.8);
+cmp_ok($elapsed, '<', 1.9);
 }

@@ -1699,9 +1699,9 @@ void print_netdata(void)
         printf("BEGIN fping.%s_latency\n", h->name);
         if (h->num_recv_i) {
             avg = h->total_time_i / h->num_recv_i;
-            printf("SET min = %ld\n", h->min_reply_i);
-            printf("SET avg = %ld\n", avg);
-            printf("SET max = %ld\n", h->max_reply_i);
+            printf("SET min = %" PRId64 "\n", h->min_reply_i);
+            printf("SET avg = %" PRId64 "\n", avg);
+            printf("SET max = %" PRId64 "\n", h->max_reply_i);
         }
         printf("END\n");
 

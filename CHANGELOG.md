@@ -1,5 +1,19 @@
-fping 5.1 (UNRELEASED)
+fping 5.1 (2021-12-31)
 ======================
+
+## Bugfixes and other changes
+
+- Use setcap to specify specific files in fping.spec (#232, thanks @zdyxry)
+- Netdata: use host instead name as family label (#226, thanks @k0ste)
+- Netdata: use formatstring macro PRId64 (#229, thanks @gsnw)
+- Allow -4 option to be given multiple times (#215, thanks @normanr)
+- Documentation fix (#208, thanks @timgates42)
+- Retain privileges until after privileged setsockopt (#200, thanks @simetnicbr)
+- Set bind to source only when option is set (#198, thanks @dinoex)
+- Update Azure test pipeline (#197, thanks @gsnw)
+- Fix getnameinfo not called properly for IPv4 (#227, thanks @aafbsd)
+- Fixed wrong timestamp under Free- and OpenBSD and macOS (#217, thanks @gsnw)
+
 
 fping 5.0 (2020-08-05)
 ======================

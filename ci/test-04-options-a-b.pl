@@ -85,14 +85,17 @@ $cmd->stderr_is_eq("");
 }
 
 # fping -B
-{
-my $t0 = [gettimeofday];
-my $cmd = Test::Command->new(cmd => "fping  -t 100 -r 3 -B 2  8.8.8.7");
-$cmd->exit_is_num(1);
-$cmd->stdout_is_eq("8.8.8.7 is unreachable\n");
-$cmd->stderr_like(qr{^(|(8.8.8.7: error while sending ping: No route to host\n)+)$});
-my $elapsed = tv_interval($t0);
-# 0.1 + 0.2 + 0.4 + 0.8 = 1.5
-cmp_ok($elapsed, '>=', 1.5);
-cmp_ok($elapsed, '<', 1.9);
+SKIP: {
+    if($^O eq 'darwin') {
+        skip 'timing test not reliable on macOS', 5;
+    }
+    my $t0 = [gettimeofday];
+    my $cmd = Test::Command->new(cmd => "fping  -t 100 -r 3 -B 2  8.8.8.7");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("8.8.8.7 is unreachable\n");
+    $cmd->stderr_like(qr{^(|(8.8.8.7: error while sending ping: No route to host\n)+)$});
+    my $elapsed = tv_interval($t0);
+    # 0.1 + 0.2 + 0.4 + 0.8 = 1.5
+    cmp_ok($elapsed, '>=', 1.5);
+    cmp_ok($elapsed, '<', 1.9);
 }

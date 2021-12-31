@@ -122,8 +122,11 @@ extern int h_errno;
 #define CLOCKID CLOCK_REALTIME
 #endif
 
+/* CLOCK_MONTONIC starts under macOS, OpenBSD and FreeBSD with undefined positive point and can not be use
+ * see github PR #217
+ */
 #if !defined(CLOCKID)
-#if defined(CLOCK_MONOTONIC)
+#if defined(CLOCK_MONOTONIC) && !defined(__APPLE__) && !defined(__OpenBSD__) && !defined(__FreeBSD__)
 #define CLOCKID CLOCK_MONOTONIC
 #else
 #define CLOCKID CLOCK_REALTIME

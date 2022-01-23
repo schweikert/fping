@@ -1,0 +1,104 @@
+name: Test
+on: [push, pull_request]
+jobs:
+  Test-Linux:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04, ubuntu-20.04]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq 
+          sudo apt-get install libcap2-bin libtest-command-perl lcov
+
+      - name: Build
+        run: |
+          ci/build-4-compile.sh
+
+      - name: Test
+        run: |
+          set -ex
+          PATH=`pwd`/src:$PATH
+          # avoid pinging internet hosts because it doesn't
+          # work with GitHub Actions being hosted in Azure.
+          prove $(ls ci/test-*.pl|grep -v internet-hosts)
+          ci/run-lcov.sh
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: lcov.info
+          flag-name: ${{ matrix.os }}
+          parallel: true
+
+
+
+  Test-Mac:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          brew install automake lcov
+          ci/build-2-test-command.sh
+          ci/build-3-prepare-macos.sh
+
+      - name: Build
+        run: |
+          ci/build-4-compile.sh
+
+      - name: Test
+        run: |
+          set -ex
+          PATH=`pwd`/src:$PATH
+          export SKIP_IPV6=1
+          prove $(ls ci/test-*.pl|grep -v internet-hosts)
+          ci/run-lcov.sh
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: lcov.info
+          flag-name: macos
+
+  Coveralls-Finish:
+    needs: [Test-Linux, Test-Mac]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
+
+  Release-Tarball:
+    needs: [Test-Linux, Test-Mac]
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq 
+          sudo apt-get install libcap2-bin libtest-command-perl
+
+      - name: Build
+        run: |
+          ci/build-1-autotools.sh
+          ci/build-4-compile.sh
+          ci/test-tarball.sh
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: dist
+          path: fping-*.tar.gz

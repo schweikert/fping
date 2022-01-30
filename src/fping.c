@@ -2931,10 +2931,11 @@ void usage(int is_error)
     fprintf(out, "   -a, --alive        show targets that are alive\n");
     fprintf(out, "   -A, --addr         show targets by address\n");
     fprintf(out, "   -C, --vcount=N     same as -c, report results in verbose format\n");
+    fprintf(out, "   -d, --rdns         show targets by name (force reverse-DNS lookup)\n");
     fprintf(out, "   -D, --timestamp    print timestamp before each output line\n");
     fprintf(out, "   -e, --elapsed      show elapsed time on return packets\n");
     fprintf(out, "   -i, --interval=MSEC  interval between sending ping packets (default: %.0f ms)\n", interval / 1e6);
-    fprintf(out, "   -n, --name         show targets by name (-d is equivalent)\n");
+    fprintf(out, "   -n, --name         show targets by name (reverse-DNS lookup for target IPs)\n");
     fprintf(out, "   -N, --netdata      output compatible for netdata (-l -Q are required)\n");
     fprintf(out, "   -o, --outage       show the accumulated outage time (lost packets * packet interval)\n");
     fprintf(out, "   -q, --quiet        quiet (don't show per-target/per-ping results)\n");

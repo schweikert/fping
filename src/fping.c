@@ -2939,7 +2939,7 @@ void usage(int is_error)
     fprintf(out, "   -N, --netdata      output compatible for netdata (-l -Q are required)\n");
     fprintf(out, "   -o, --outage       show the accumulated outage time (lost packets * packet interval)\n");
     fprintf(out, "   -q, --quiet        quiet (don't show per-target/per-ping results)\n");
-    fprintf(out, "   -Q, --squiet=SECS  same as -q, but show summary every n seconds\n");
+    fprintf(out, "   -Q, --squiet=SECS  same as -q, but add interval summary every SECS seconds\n");
     fprintf(out, "   -s, --stats        print final stats\n");
     fprintf(out, "   -u, --unreach      show targets that are unreachable\n");
     fprintf(out, "   -v, --version      show version\n");

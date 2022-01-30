@@ -178,7 +178,8 @@ show ICMP error messages.
 
 =item B<-Q>, B<--squiet>=I<SECS>
 
-Like B<-q>, but show summary results every n seconds.
+Like B<-q>, but additionally show interval summary results every I<SECS>
+seconds.
 
 =item B<-r>, B<--retry>=I<N>
 

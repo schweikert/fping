@@ -102,6 +102,11 @@ user. Regular users should pipe in the file via stdin:
 
  $ fping < targets_file
 
+=item B<-F>, B<--full>
+
+Print full per host statistics since fping start instead of per interval
+statistics in regular status reports enabled by B<-Q> I<SECS>.
+
 =item B<-g>, B<--generate> I<addr/mask>
 
 Generate a target list from a supplied IP netmask, or a starting and ending IP.

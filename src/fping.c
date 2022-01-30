@@ -359,6 +359,7 @@ int multif_flag, timeout_flag;
 int outage_flag = 0;
 int timestamp_flag = 0;
 int random_data_flag = 0;
+int full_stats_flag = 0;
 #if defined(DEBUG) || defined(_DEBUG)
 int randomly_lose_flag, trace_flag, print_per_system_flag;
 int lose_factor;
@@ -514,6 +515,7 @@ int main(int argc, char** argv)
         { "timestamp", 'D', OPTPARSE_NONE },
         { "elapsed", 'e', OPTPARSE_NONE },
         { "file", 'f', OPTPARSE_REQUIRED },
+        { "full", 'F', OPTPARSE_NONE },
         { "generate", 'g', OPTPARSE_NONE },
         { "help", 'h', OPTPARSE_NONE },
         { "ttl", 'H', OPTPARSE_REQUIRED },
@@ -825,6 +827,10 @@ int main(int argc, char** argv)
 
         case 'o':
             outage_flag = 1;
+            break;
+
+        case 'F':
+            full_stats_flag = 1;
             break;
 
         case '?':
@@ -1577,6 +1583,50 @@ void finish()
 
 /************************************************************
 
+  Function: print_host_stats
+
+*************************************************************
+
+  Inputs:  HOST_ENTRY* h
+
+  Description:
+
+  Print cumulative statistics for the given host h.
+
+************************************************************/
+
+void print_host_stats(HOST_ENTRY* h)
+{
+    int avg, outage_ms;
+
+    if (h->num_recv <= h->num_sent) {
+        fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
+            h->num_sent, h->num_recv, h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
+
+        if (outage_flag) {
+            /* Time outage total */
+            outage_ms = (h->num_sent - h->num_recv) * perhost_interval / 1e6;
+            fprintf(stderr, ", outage(ms) = %d", outage_ms);
+        }
+    }
+    else {
+        fprintf(stderr, " xmt/rcv/%%return = %d/%d/%d%%",
+            h->num_sent, h->num_recv,
+            h->num_sent > 0 ? ((h->num_recv * 100) / h->num_sent) : 0);
+    }
+
+    if (h->num_recv) {
+        avg = h->total_time / h->num_recv;
+        fprintf(stderr, ", min/avg/max = %s", sprint_tm(h->min_reply));
+        fprintf(stderr, "/%s", sprint_tm(avg));
+        fprintf(stderr, "/%s", sprint_tm(h->max_reply));
+    }
+
+    fprintf(stderr, "\n");
+}
+
+/************************************************************
+
   Function: print_per_system_stats
 
 *************************************************************
@@ -1590,7 +1640,7 @@ void finish()
 
 void print_per_system_stats(void)
 {
-    int i, j, avg, outage_ms;
+    int i, j;
     HOST_ENTRY* h;
     int64_t resp;
 
@@ -1612,30 +1662,7 @@ void print_per_system_stats(void)
             fprintf(stderr, "\n");
         }
         else {
-            if (h->num_recv <= h->num_sent) {
-                fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
-                    h->num_sent, h->num_recv, h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
-
-                if (outage_flag) {
-                    /* Time outage total */
-                    outage_ms = (h->num_sent - h->num_recv) * perhost_interval / 1e6;
-                    fprintf(stderr, ", outage(ms) = %d", outage_ms);
-                }
-            }
-            else {
-                fprintf(stderr, " xmt/rcv/%%return = %d/%d/%d%%",
-                    h->num_sent, h->num_recv,
-                    h->num_sent > 0 ? ((h->num_recv * 100) / h->num_sent) : 0);
-            }
-
-            if (h->num_recv) {
-                avg = h->total_time / h->num_recv;
-                fprintf(stderr, ", min/avg/max = %s", sprint_tm(h->min_reply));
-                fprintf(stderr, "/%s", sprint_tm(avg));
-                fprintf(stderr, "/%s", sprint_tm(h->max_reply));
-            }
-
-            fprintf(stderr, "\n");
+            print_host_stats(h);
         }
     }
 }
@@ -1716,6 +1743,51 @@ void print_netdata(void)
 
 /************************************************************
 
+  Function: print_host_splits
+
+*************************************************************
+
+  Inputs:  HOST_ENTRY* h
+
+  Description:
+
+  Print host interval statistics accumulated since the last
+  such report and reset the interval counters.
+
+************************************************************/
+
+void print_host_splits(HOST_ENTRY* h)
+{
+    int avg, outage_ms_i;
+
+    if (h->num_recv_i <= h->num_sent_i) {
+        fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
+            h->num_sent_i, h->num_recv_i, h->num_sent_i > 0 ? ((h->num_sent_i - h->num_recv_i) * 100) / h->num_sent_i : 0);
+
+        if (outage_flag) {
+            /* Time outage  */
+            outage_ms_i = (h->num_sent_i - h->num_recv_i) * perhost_interval / 1e6;
+            fprintf(stderr, ", outage(ms) = %d", outage_ms_i);
+        }
+    }
+    else {
+        fprintf(stderr, " xmt/rcv/%%return = %d/%d/%d%%",
+            h->num_sent_i, h->num_recv_i, h->num_sent_i > 0 ? ((h->num_recv_i * 100) / h->num_sent_i) : 0);
+    }
+
+    if (h->num_recv_i) {
+        avg = h->total_time_i / h->num_recv_i;
+        fprintf(stderr, ", min/avg/max = %s", sprint_tm(h->min_reply_i));
+        fprintf(stderr, "/%s", sprint_tm(avg));
+        fprintf(stderr, "/%s", sprint_tm(h->max_reply_i));
+    }
+
+    fprintf(stderr, "\n");
+    h->num_sent_i = h->num_recv_i = h->max_reply_i = h->min_reply_i = h->total_time_i = 0;
+}
+
+/************************************************************
+
   Function: print_per_system_splits
 
 *************************************************************
@@ -1729,7 +1801,7 @@ void print_netdata(void)
 
 void print_per_system_splits(void)
 {
-    int i, avg, outage_ms_i;
+    int i;
     HOST_ENTRY* h;
     struct tm* curr_tm;
 
@@ -1744,31 +1816,12 @@ void print_per_system_splits(void)
     for (i = 0; i < num_hosts; i++) {
         h = table[i];
         fprintf(stderr, "%-*s :", max_hostname_len, h->host);
-
-        if (h->num_recv_i <= h->num_sent_i) {
-            fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
-                h->num_sent_i, h->num_recv_i, h->num_sent_i > 0 ? ((h->num_sent_i - h->num_recv_i) * 100) / h->num_sent_i : 0);
-
-            if (outage_flag) {
-                /* Time outage  */
-                outage_ms_i = (h->num_sent_i - h->num_recv_i) * perhost_interval / 1e6;
-                fprintf(stderr, ", outage(ms) = %d", outage_ms_i);
-            }
+        if (full_stats_flag) {
+            print_host_stats(h);
         }
         else {
-            fprintf(stderr, " xmt/rcv/%%return = %d/%d/%d%%",
-                h->num_sent_i, h->num_recv_i, h->num_sent_i > 0 ? ((h->num_recv_i * 100) / h->num_sent_i) : 0);
+            print_host_splits(h);
         }
-
-        if (h->num_recv_i) {
-            avg = h->total_time_i / h->num_recv_i;
-            fprintf(stderr, ", min/avg/max = %s", sprint_tm(h->min_reply_i));
-            fprintf(stderr, "/%s", sprint_tm(avg));
-            fprintf(stderr, "/%s", sprint_tm(h->max_reply_i));
-        }
-
-        fprintf(stderr, "\n");
-        h->num_sent_i = h->num_recv_i = h->max_reply_i = h->min_reply_i = h->total_time_i = 0;
     }
 }
 
@@ -2934,6 +2987,7 @@ void usage(int is_error)
     fprintf(out, "   -d, --rdns         show targets by name (force reverse-DNS lookup)\n");
     fprintf(out, "   -D, --timestamp    print timestamp before each output line\n");
     fprintf(out, "   -e, --elapsed      show elapsed time on return packets\n");
+    fprintf(out, "   -F, --full         stats since beginning (not per interval) with -Q\n");
     fprintf(out, "   -i, --interval=MSEC  interval between sending ping packets (default: %.0f ms)\n", interval / 1e6);
     fprintf(out, "   -n, --name         show targets by name (reverse-DNS lookup for target IPs)\n");
     fprintf(out, "   -N, --netdata      output compatible for netdata (-l -Q are required)\n");

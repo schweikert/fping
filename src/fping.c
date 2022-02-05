@@ -380,6 +380,7 @@ void usage(int);
 int wait_for_reply(int64_t);
 void print_per_system_stats(void);
 void print_per_system_splits(void);
+void stats_reset_interval(HOST_ENTRY *h);
 void print_netdata(void);
 void print_global_stats(void);
 void main_loop();
@@ -1783,7 +1784,7 @@ void print_host_splits(HOST_ENTRY* h)
     }
 
     fprintf(stderr, "\n");
-    h->num_sent_i = h->num_recv_i = h->max_reply_i = h->min_reply_i = h->total_time_i = 0;
+    stats_reset_interval(h);
 }
 
 /************************************************************

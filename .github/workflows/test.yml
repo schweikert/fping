@@ -17,7 +17,9 @@ jobs:
 
       - name: Build
         run: |
+          ci/build-1-autotools.sh
           ci/build-4-compile.sh
+          ci/test-tarball.sh
 
       - name: Test
         run: |
@@ -68,6 +70,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: lcov.info
           flag-name: macos
+          parallel: true
 
   Coveralls-Finish:
     needs: [Test-Linux, Test-Mac]

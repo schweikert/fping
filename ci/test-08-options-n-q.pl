@@ -59,27 +59,27 @@ $cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 3/3/0%, min/avg/max = \d\.\d
 
 # fping -Q
 {
-my $cmd = Test::Command->new(cmd => "fping -Q 1 -p 450 -c 6 127.0.0.1");
+my $cmd = Test::Command->new(cmd => "fping -Q 1 -p 550 -c 5 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("");
 $cmd->stderr_like(qr{\[\d+:\d+:\d+\]
-127\.0\.0\.1 : xmt/rcv/%loss = 3/3/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
 \[\d+:\d+:\d+\]
 127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
-127\.0\.0\.1 : xmt/rcv/%loss = 6/6/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+127\.0\.0\.1 : xmt/rcv/%loss = 5/5/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
 });
 }
 
 # fping -Q -F
 {
-my $cmd = Test::Command->new(cmd => "fping -Q 1 -F -p 450 -c 6 127.0.0.1");
+my $cmd = Test::Command->new(cmd => "fping -Q 1 -F -p 550 -c 5 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("");
 $cmd->stderr_like(qr{\[\d+:\d+:\d+\]
-127\.0\.0\.1 : xmt/rcv/%loss = 3/3/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
 \[\d+:\d+:\d+\]
+127\.0\.0\.1 : xmt/rcv/%loss = 4/4/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
 127\.0\.0\.1 : xmt/rcv/%loss = 5/5/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
-127\.0\.0\.1 : xmt/rcv/%loss = 6/6/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
 });
 }
 

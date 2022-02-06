@@ -1,4 +1,4 @@
-fping 5.1 (2021-12-31)
+fping 5.1 (2022-02-06)
 ======================
 
 ## Bugfixes and other changes
@@ -13,6 +13,8 @@ fping 5.1 (2021-12-31)
 - Update Azure test pipeline (#197, thanks @gsnw)
 - Fix getnameinfo not called properly for IPv4 (#227, thanks @aafbsd)
 - Fixed wrong timestamp under Free- and OpenBSD and macOS (#217, thanks @gsnw)
+- Documentation updates (#240, thanks @auerswal)
+- Updated autotools (autoconf 2.71, automake 1.16.5, libtool 2.4.6)
 
 
 fping 5.0 (2020-08-05)

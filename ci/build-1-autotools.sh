@@ -1,12 +1,15 @@
-#!/bin/bash -e
+#!/bin/bash
+
+set -e
+set -x
 
 if [[ "$OSTYPE" == "darwin"* ]]; then
     exit 0
 fi
 
-AUTOCONF=http://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz
-AUTOMAKE=http://ftp.gnu.org/gnu/automake/automake-1.14.1.tar.gz
-LIBTOOL=http://alpha.gnu.org/gnu/libtool/libtool-2.4.2.418.tar.gz
+AUTOCONF=http://ftp.gnu.org/gnu/autoconf/autoconf-2.71.tar.gz
+AUTOMAKE=http://ftp.gnu.org/gnu/automake/automake-1.16.5.tar.gz
+LIBTOOL=http://ftp.gnu.org/gnu/libtool/libtool-2.4.6.tar.gz
 PREFIX=$(pwd)/ci/build
 PATH=$(pwd)/ci/build/bin:$PATH
 

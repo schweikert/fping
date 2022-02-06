@@ -60,8 +60,6 @@ extern "C" {
 #include <stddef.h>
 #include <string.h>
 
-#include <time.h>
-
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>

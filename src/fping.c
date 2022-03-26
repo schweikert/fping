@@ -463,6 +463,9 @@ int main(int argc, char** argv)
         usage(0);
     }
 
+    /* enable error messages during socket creation */
+    verbose_flag = 1;
+
     socket4 = open_ping_socket_ipv4(&socktype4);
 #ifdef __linux__
     /* We only treat SOCK_DGRAM differently on Linux, where the IPv4 header
@@ -493,7 +496,6 @@ int main(int argc, char** argv)
 
     optparse_init(&optparse_state, argv);
     ident4 = ident6 = htons(getpid() & 0xFFFF);
-    verbose_flag = 1;
     backoff_flag = 1;
     opterr = 1;
 

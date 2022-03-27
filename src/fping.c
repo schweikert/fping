@@ -1195,7 +1195,7 @@ void add_cidr(char* addr)
 
     /* parse address (IPv4 only) */
     memset(&addr_hints, 0, sizeof(struct addrinfo));
-    addr_hints.ai_family = AF_UNSPEC;
+    addr_hints.ai_family = hints_ai_family;
     addr_hints.ai_flags = AI_NUMERICHOST;
     ret = getaddrinfo(addr, NULL, &addr_hints, &addr_res);
     if (ret) {
@@ -1241,7 +1241,7 @@ void add_range(char* start, char* end)
 
     /* parse start address (IPv4 only) */
     memset(&addr_hints, 0, sizeof(struct addrinfo));
-    addr_hints.ai_family = AF_UNSPEC;
+    addr_hints.ai_family = hints_ai_family;
     addr_hints.ai_flags = AI_NUMERICHOST;
     ret = getaddrinfo(start, NULL, &addr_hints, &addr_res);
     if (ret) {
@@ -1253,11 +1253,12 @@ void add_range(char* start, char* end)
         fprintf(stderr, "%s: -g works only with IPv4 addresses\n", prog);
         exit(1);
     }
+    hints_ai_family = addr_res->ai_family;
     start_long = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
 
     /* parse end address (IPv4 only) */
     memset(&addr_hints, 0, sizeof(struct addrinfo));
-    addr_hints.ai_family = AF_UNSPEC;
+    addr_hints.ai_family = hints_ai_family;
     addr_hints.ai_flags = AI_NUMERICHOST;
     ret = getaddrinfo(end, NULL, &addr_hints, &addr_res);
     if (ret) {

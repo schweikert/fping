@@ -1206,6 +1206,7 @@ void add_cidr(char* addr)
         exit(1);
     }
     net_addr = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
+    freeaddrinfo(addr_res);
 
     /* check mask */
     if (mask < 1 || mask > 32) {
@@ -1234,8 +1235,6 @@ void add_cidr(char* addr)
         inet_ntop(AF_INET, &in_addr_tmp, buffer, sizeof(buffer));
         add_name(buffer);
     }
-
-    freeaddrinfo(addr_res);
 }
 
 void add_range(char* start, char* end)

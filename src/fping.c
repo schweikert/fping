@@ -387,6 +387,7 @@ void ev_enqueue(struct event_queue *queue, struct event *event);
 struct event *ev_dequeue(struct event_queue *queue);
 void ev_remove(struct event_queue *queue, struct event *event);
 void add_cidr(char*);
+void add_cidr_ipv4(unsigned long, unsigned long);
 void add_range(char*, char*);
 void add_addr_range_ipv4(unsigned long, unsigned long);
 void print_warning(char* fmt, ...);
@@ -1177,12 +1178,10 @@ void add_cidr(char* addr)
     char* addr_end;
     char* mask_str;
     unsigned long mask;
-    unsigned long bitmask;
     int ret;
     struct addrinfo addr_hints;
     struct addrinfo* addr_res;
     unsigned long net_addr;
-    unsigned long net_last;
 
     /* Split address from mask */
     addr_end = strchr(addr, '/');
@@ -1202,16 +1201,25 @@ void add_cidr(char* addr)
         fprintf(stderr, "%s, can't parse address %s: %s\n", prog, addr, gai_strerror(ret));
         exit(1);
     }
-    if (addr_res->ai_family != AF_INET) {
+    if  (addr_res->ai_family == AF_INET) {
+        net_addr = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
+        freeaddrinfo(addr_res);
+        add_cidr_ipv4(net_addr, mask);
+    } else {
+        freeaddrinfo(addr_res);
         fprintf(stderr, "%s: -g works only with IPv4 addresses\n", prog);
         exit(1);
     }
-    net_addr = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
-    freeaddrinfo(addr_res);
+}
+
+void add_cidr_ipv4(unsigned long net_addr, unsigned long mask)
+{
+    unsigned long bitmask;
+    unsigned long net_last;
 
     /* check mask */
     if (mask < 1 || mask > 32) {
-        fprintf(stderr, "%s: netmask must be between 1 and 32 (is: %s)\n", prog, mask_str);
+        fprintf(stderr, "%s: netmask must be between 1 and 32 (is: %lu)\n", prog, mask);
         exit(1);
     }
 
@@ -1248,13 +1256,14 @@ void add_range(char* start, char* end)
         fprintf(stderr, "%s: can't parse address %s: %s\n", prog, start, gai_strerror(ret));
         exit(1);
     }
-    if (addr_res->ai_family != AF_INET) {
+    hints_ai_family = addr_res->ai_family;
+    if (addr_res->ai_family == AF_INET) {
+        start_long = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
+    } else {
         freeaddrinfo(addr_res);
         fprintf(stderr, "%s: -g works only with IPv4 addresses\n", prog);
         exit(1);
     }
-    hints_ai_family = addr_res->ai_family;
-    start_long = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
 
     /* parse end address (IPv4 only) */
     memset(&addr_hints, 0, sizeof(struct addrinfo));
@@ -1265,15 +1274,15 @@ void add_range(char* start, char* end)
         fprintf(stderr, "%s: can't parse address %s: %s\n", prog, end, gai_strerror(ret));
         exit(1);
     }
-    if (addr_res->ai_family != AF_INET) {
+    if (addr_res->ai_family == AF_INET) {
+        end_long = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
+        freeaddrinfo(addr_res);
+        add_addr_range_ipv4(start_long, end_long);
+    } else {
         freeaddrinfo(addr_res);
         fprintf(stderr, "%s: -g works only with IPv4 addresses\n", prog);
         exit(1);
     }
-    end_long = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
-    freeaddrinfo(addr_res);
-
-    add_addr_range_ipv4(start_long, end_long);
 }
 
 void add_addr_range_ipv4(unsigned long start_long, unsigned long end_long)

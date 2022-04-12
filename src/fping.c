@@ -1672,7 +1672,7 @@ void print_netdata(void)
         h = table[i];
 
         if (!sent_charts) {
-            printf("CHART fping.%s_packets '' 'FPing Packets for host %s' packets '%s' fping.packets line 110020 %.0f\n", h->name, h->host, h->host, report_interval / 1e9);
+            printf("CHART fping.%s_packets '' 'FPing Packets' packets '%s' fping.packets line 110020 %.0f\n", h->name, h->host, report_interval / 1e9);
             printf("DIMENSION xmt sent absolute 1 1\n");
             printf("DIMENSION rcv received absolute 1 1\n");
         }
@@ -1683,7 +1683,7 @@ void print_netdata(void)
         printf("END\n");
 
         if (!sent_charts) {
-            printf("CHART fping.%s_quality '' 'FPing Quality for host %s' percentage '%s' fping.quality area 110010 %.0f\n", h->name, h->host, h->host, report_interval / 1e9);
+            printf("CHART fping.%s_quality '' 'FPing Quality' percentage '%s' fping.quality area 110010 %.0f\n", h->name, h->host, report_interval / 1e9);
             printf("DIMENSION returned '' absolute 1 1\n");
             /* printf("DIMENSION lost '' absolute 1 1\n"); */
         }
@@ -1700,7 +1700,7 @@ void print_netdata(void)
         printf("END\n");
 
         if (!sent_charts) {
-            printf("CHART fping.%s_latency '' 'FPing Latency for host %s' ms '%s' fping.latency area 110000 %.0f\n", h->name, h->host, h->host, report_interval / 1e9);
+            printf("CHART fping.%s_latency '' 'FPing Latency' ms '%s' fping.latency area 110000 %.0f\n", h->name, h->host, report_interval / 1e9);
             printf("DIMENSION min minimum absolute 1 1000000\n");
             printf("DIMENSION max maximum absolute 1 1000000\n");
             printf("DIMENSION avg average absolute 1 1000000\n");

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 84;
+use Test::Command tests => 136;
 use Test::More;
 use File::Temp;
 
@@ -115,26 +115,113 @@ SKIP: {
     $cmd->stderr_like(qr{can't parse address 127\.0\.0\.1:.*(not supported|not known)});
 }
 
-# fping -g (range - no IPv6 generator)
+# fping -6 -g (IPv6 address family with one address in IPv6 range)
 SKIP: {
     if($ENV{SKIP_IPV6}) {
         skip 'Skip IPv6 tests', 3;
     }
     my $cmd = Test::Command->new(cmd => "fping -6 -g ::1 ::1");
-    $cmd->exit_is_num(1);
-    $cmd->stdout_is_eq("");
-    $cmd->stderr_is_eq("fping: -g works only with IPv4 addresses\n");
+    $cmd->exit_is_num(0);
+    $cmd->stdout_is_eq("::1 is alive\n");
+    $cmd->stderr_is_eq("");
 }
 
-# fping -6 -g (range - no IPv6 generator)
+# fping -g (IPv6 range - low value in lower 64 bits)
 SKIP: {
     if($ENV{SKIP_IPV6}) {
         skip 'Skip IPv6 tests', 3;
     }
     my $cmd = Test::Command->new(cmd => "fping -g ::1 ::1");
+    $cmd->exit_is_num(0);
+    $cmd->stdout_is_eq("::1 is alive\n");
+    $cmd->stderr_is_eq("");
+}
+
+# fping -g (IPv6 range - low values in lower 64 bits)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -t 100 -r 0 -g fe80::1 fe80::2");
+    $cmd->stdout_like(qr{fe80::1 is (alive|unreachable)\n});
+    $cmd->stdout_like(qr{fe80::2 is (alive|unreachable)\n});
+    $cmd->stderr_is_eq("");
+}
+
+# fping -g (IPv6 range - high value in lower 64 bits)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 2;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -t 100 -r 0 -g fe80::ffff:ffff:ffff:ffff fe80::ffff:ffff:ffff:ffff");
+    $cmd->stdout_like(qr{fe80::ffff:ffff:ffff:ffff is (alive|unreachable)\n});
+    $cmd->stderr_is_eq("");
+}
+
+# fping -g (IPv6 range - high values in lower 64 bits)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -t 100 -r 0 -g fe80::ffff:ffff:ffff:fffe fe80::ffff:ffff:ffff:ffff");
+    $cmd->stdout_like(qr{fe80::ffff:ffff:ffff:fffe is (alive|unreachable)\n});
+    $cmd->stdout_like(qr{fe80::ffff:ffff:ffff:ffff is (alive|unreachable)\n});
+    $cmd->stderr_is_eq("");
+}
+
+# fping -g (IPv6 range - higher and lower 64 bits in use)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -t 100 -r 0 -g fe80::ffff:ffff:ffff:ffff fe80:0:0:1::");
+    $cmd->stdout_like(qr{fe80::ffff:ffff:ffff:ffff is (alive|unreachable)\n});
+    $cmd->stdout_like(qr{fe80:0:0:1:: is (alive|unreachable)\n});
+    $cmd->stderr_is_eq("");
+}
+
+# fping -g (empty IPv6 range)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -g fe80::2 fe80::1");
     $cmd->exit_is_num(1);
     $cmd->stdout_is_eq("");
-    $cmd->stderr_is_eq("fping: -g works only with IPv4 addresses\n");
+    $cmd->stderr_is_eq("");
+}
+
+# fping -g (too large IPv6 range - in most significant 64 bits)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -g fe80:: fe80:0:1::");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_is_eq("fping: -g parameter generates too many addresses\n");
+}
+
+# fping -g (too large IPv6 range - in least significant 64 bits)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -g fe80:: fe80::1:0:0");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_is_eq("fping: -g parameter generates too many addresses\n");
+}
+
+# fping -g (too large IPv6 range - need to check both 64 bit parts)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -g fe80::ffff:ffff:fff0:0 fe80:0:0:1::");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_is_eq("fping: -g parameter generates too many addresses\n");
 }
 
 # fping -g (range - mixed address families: start IPv4, end IPv6)
@@ -156,7 +243,40 @@ SKIP: {
     my $cmd = Test::Command->new(cmd => "fping -g ::1 127.0.0.1");
     $cmd->exit_is_num(1);
     $cmd->stdout_is_eq("");
-    $cmd->stderr_is_eq("fping: -g works only with IPv4 addresses\n");
+    $cmd->stderr_like(qr{can't parse address 127\.0\.0\.1:.*(not supported|not known)});
+}
+
+# fping -g (no scoped IPv6 addresses in range - both)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -g fe80::1%eth42 fe80::2%eth42");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_is_eq("fping: -g does not support scoped IPv6 addresses\n");
+}
+
+# fping -g (no scoped IPv6 addresses in range - start)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+         skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -g fe80::1%eth42 fe80::2");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_is_eq("fping: -g does not support scoped IPv6 addresses\n");
+}
+
+# fping -g (no scoped IPv6 addresses in range - end)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -g fe80::1 fe80::2%eth42");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_is_eq("fping: -g does not support scoped IPv6 addresses\n");
 }
 
 # fping -g (cidr)
@@ -237,26 +357,94 @@ SKIP: {
     $cmd->stderr_like(qr{can't parse address 127\.0\.0\.1:.*(not supported|not known)});
 }
 
-# fping -g (cidr - no IPv6 generator)
+# fping -g (cidr IPv6)
 SKIP: {
     if($ENV{SKIP_IPV6}) {
         skip 'Skip IPv6 tests', 3;
     }
     my $cmd = Test::Command->new(cmd => "fping -g ::1/128");
-    $cmd->exit_is_num(1);
-    $cmd->stdout_is_eq("");
-    $cmd->stderr_is_eq("fping: -g works only with IPv4 addresses\n");
+    $cmd->exit_is_num(0);
+    $cmd->stdout_is_eq("::1 is alive\n");
+    $cmd->stderr_is_eq("");
 }
 
-# fping -6 -g (cidr - no IPv6 generator)
+# fping -6 -g (cidr IPv6)
 SKIP: {
     if($ENV{SKIP_IPV6}) {
         skip 'Skip IPv6 tests', 3;
     }
     my $cmd = Test::Command->new(cmd => "fping -6 -g ::1/128");
+    $cmd->exit_is_num(0);
+    $cmd->stdout_is_eq("::1 is alive\n");
+    $cmd->stderr_is_eq("");
+}
+
+# fping -g (cidr IPv6)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -t 100 -r 0 -g fe80::/127");
+    $cmd->stdout_like(qr{fe80:: is (alive|unreachable)\n});
+    $cmd->stdout_like(qr{fe80::1 is (alive|unreachable)\n});
+    $cmd->stderr_is_eq("");
+}
+
+# fping -g (cidr IPv6)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 5;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -t 100 -r 0 -g fe80::cafe:1:2:30/126");
+    $cmd->stdout_like(qr{fe80::cafe:1:2:30 is (alive|unreachable)\n});
+    $cmd->stdout_like(qr{fe80::cafe:1:2:31 is (alive|unreachable)\n});
+    $cmd->stdout_like(qr{fe80::cafe:1:2:32 is (alive|unreachable)\n});
+    $cmd->stdout_like(qr{fe80::cafe:1:2:33 is (alive|unreachable)\n});
+    $cmd->stderr_is_eq("");
+}
+
+# fping -g (too short cidr IPv6 prefix)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -g fe80::/64");
     $cmd->exit_is_num(1);
     $cmd->stdout_is_eq("");
-    $cmd->stderr_is_eq("fping: -g works only with IPv4 addresses\n");
+    $cmd->stderr_is_eq("fping: netmask must be between 65 and 128 (is: 64)\n");
+}
+
+# fping -g (too long cidr IPv6 prefix)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -g ::1/129");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_is_eq("fping: netmask must be between 65 and 128 (is: 129)\n");
+}
+
+# fping -g (too many addresses in cidr IPv6 prefix)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -g fe80::/65");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_is_eq("fping: -g parameter generates too many addresses\n");
+}
+
+# fping -g (no scoped IPv6 addresses in cidr IPv6 prefix)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -g fe80::1%eth42/128");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_is_eq("fping: -g does not support scoped IPv6 addresses\n");
 }
 
 # fping -H

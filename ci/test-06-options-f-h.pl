@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 136;
+use Test::Command tests => 135;
 use Test::More;
 use File::Temp;
 
@@ -177,7 +177,6 @@ SKIP: {
     my $cmd = Test::Command->new(cmd => "fping -t 100 -r 0 -g fe80::ffff:ffff:ffff:ffff fe80:0:0:1::");
     $cmd->stdout_like(qr{fe80::ffff:ffff:ffff:ffff is (alive|unreachable)\n});
     $cmd->stdout_like(qr{fe80:0:0:1:: is (alive|unreachable)\n});
-    $cmd->stderr_is_eq("");
 }
 
 # fping -g (empty IPv6 range)

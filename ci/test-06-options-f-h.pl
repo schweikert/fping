@@ -172,7 +172,7 @@ SKIP: {
 # fping -g (IPv6 range - higher and lower 64 bits in use)
 SKIP: {
     if($ENV{SKIP_IPV6}) {
-        skip 'Skip IPv6 tests', 3;
+        skip 'Skip IPv6 tests', 2;
     }
     my $cmd = Test::Command->new(cmd => "fping -t 100 -r 0 -g fe80::ffff:ffff:ffff:ffff fe80:0:0:1::");
     $cmd->stdout_like(qr{fe80::ffff:ffff:ffff:ffff is (alive|unreachable)\n});

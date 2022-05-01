@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 45;
+use Test::Command tests => 48;
 use File::Temp;
 
 #  -f file    read list of targets from a file ( - means stdin) (only if no -g specified)
@@ -122,6 +122,14 @@ my $cmd = Test::Command->new(cmd => "fping -g 127.0.0.2/0");
 $cmd->exit_is_num(1);
 $cmd->stdout_is_eq("");
 $cmd->stderr_is_eq("fping: netmask must be between 1 and 32 (is: 0)\n");
+}
+
+# fping -g (cidr - too many addresses)
+{
+my $cmd = Test::Command->new(cmd => "fping -g 127.0.0.2/8");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_is_eq("fping: -g parameter generates too many addresses\n");
 }
 
 # fping -H

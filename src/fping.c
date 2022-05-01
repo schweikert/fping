@@ -388,6 +388,7 @@ struct event *ev_dequeue(struct event_queue *queue);
 void ev_remove(struct event_queue *queue, struct event *event);
 void add_cidr(char*);
 void add_range(char*, char*);
+void add_addr_range_ipv4(unsigned long, unsigned long);
 void print_warning(char* fmt, ...);
 int addr_cmp(struct sockaddr* a, struct sockaddr* b);
 void host_add_ping_event(HOST_ENTRY *h, int index, int64_t ev_time);
@@ -1227,14 +1228,7 @@ void add_cidr(char* addr)
         net_addr++;
     }
 
-    /* add all hosts in that network (net_addr and net_last inclusive) */
-    for (; net_addr <= net_last; net_addr++) {
-        struct in_addr in_addr_tmp;
-        char buffer[20];
-        in_addr_tmp.s_addr = htonl(net_addr);
-        inet_ntop(AF_INET, &in_addr_tmp, buffer, sizeof(buffer));
-        add_name(buffer);
-    }
+    add_addr_range_ipv4(net_addr, net_last);
 }
 
 void add_range(char* start, char* end)
@@ -1278,6 +1272,11 @@ void add_range(char* start, char* end)
     end_long = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
     freeaddrinfo(addr_res);
 
+    add_addr_range_ipv4(start_long, end_long);
+}
+
+void add_addr_range_ipv4(unsigned long start_long, unsigned long end_long)
+{
     if (end_long > start_long + MAX_GENERATE) {
         fprintf(stderr, "%s: -g parameter generates too many addresses\n", prog);
         exit(1);

@@ -273,6 +273,9 @@ line arguments, and 4 for a system call failure.
 
 =head1 RESTRICTIONS
 
+The number of addresses that can be generated using the C<-g>, C<--generate>
+option is limited to a compile-time constant.
+
 If fping was configured with C<--enable-safe-limits>, the following values are
 not allowed for non-root users:
 

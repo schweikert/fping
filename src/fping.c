@@ -2087,7 +2087,7 @@ int decode_icmp_ipv4(
     if (!using_sock_dgram4) {
         struct ip* ip = (struct ip*)reply_buf;
 
-#if defined(__alpha__) && __STDC__ && !defined(__GLIBC__)
+#if defined(__alpha__) && __STDC__ && !defined(__GLIBC__) && !defined(__NetBSD__)
         /* The alpha headers are decidedly broken.
          * Using an ANSI compiler, it provides ip_vhl instead of ip_hl and
          * ip_v.  So, to get ip_hl, we mask off the bottom four bits.

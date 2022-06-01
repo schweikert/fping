@@ -151,7 +151,7 @@ to print hostnames in the output.
 
 =item B<-N>, B<--netdata>
 
-Format output for netdata (-l -Q are required). See: L<https://www.netdata.cloud/>
+Format output for netdata (-l -Q are required). See: L<https://netdata.cloud/>
 
 =item B<-o>, B<--outage>
 

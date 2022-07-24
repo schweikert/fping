@@ -2075,7 +2075,6 @@ void stats_reset_interval(HOST_ENTRY *h)
 
 int decode_icmp_ipv4(
     struct sockaddr* response_addr,
-    size_t response_addr_len,
     char* reply_buf,
     size_t reply_buf_len,
     unsigned short* id,
@@ -2308,7 +2307,6 @@ int wait_for_reply(int64_t wait_time)
     if (response_addr.ss_family == AF_INET) {
         int ip_hlen = decode_icmp_ipv4(
                 (struct sockaddr*)&response_addr,
-                sizeof(response_addr),
                 buffer,
                 sizeof(buffer),
                 &id,

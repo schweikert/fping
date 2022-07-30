@@ -232,6 +232,11 @@ Print B<fping> version information.
 Given a list of hosts, this mode checks if number of reachable hosts is >= N
 and exits true in that case.
 
+=item B<-X>, B<--fast-reachable>=I<N>
+
+Given a list of hosts, this mode immediately exits true once N alive hosts
+have been found.
+
 =back
 
 =head1 EXAMPLES

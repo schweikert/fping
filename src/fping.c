@@ -1962,15 +1962,13 @@ int receive_packet(int64_t wait_time,
         reply_buf,
         reply_buf_len
     };
-    struct msghdr recv_msghdr = {
-        reply_src_addr,
-        reply_src_addr_len,
-        &msg_iov,
-        1,
-        &msg_control,
-        sizeof(msg_control),
-        0
-    };
+    struct msghdr recv_msghdr = {0};
+    recv_msghdr.msg_name = reply_src_addr;
+    recv_msghdr.msg_namelen = reply_src_addr_len;
+    recv_msghdr.msg_iov = &msg_iov;
+    recv_msghdr.msg_iovlen = 1;
+    recv_msghdr.msg_control = &msg_control;
+    recv_msghdr.msg_controllen = sizeof(msg_control);
 #if HAVE_SO_TIMESTAMPNS
     struct cmsghdr *cmsg;
 #endif

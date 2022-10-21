@@ -34,17 +34,17 @@
 extern "C" {
 #endif /* __cplusplus */
 
-#include "config.h"
 #include "fping.h"
+#include "config.h"
 #include "options.h"
 #include "optparse.h"
 
-#include <inttypes.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <signal.h>
 #include <stdarg.h>
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <time.h>
 
 #include "seqmap.h"
@@ -104,7 +104,7 @@ extern "C" {
 
 /*** externals ***/
 
-extern char* optarg;
+extern char *optarg;
 extern int optind, opterr;
 #ifndef h_errno
 extern int h_errno;
@@ -170,7 +170,7 @@ extern int h_errno;
 
 /* Long names for ICMP packet types */
 #define ICMP_TYPE_STR_MAX 18
-char* icmp_type_str[19] = {
+char *icmp_type_str[19] = {
     "ICMP Echo Reply", /* 0 */
     "",
     "",
@@ -192,7 +192,7 @@ char* icmp_type_str[19] = {
     "ICMP Mask Reply" /* 18 */
 };
 
-char* icmp_unreach_str[16] = {
+char *icmp_unreach_str[16] = {
     "ICMP Network Unreachable", /* 0 */
     "ICMP Host Unreachable", /* 1 */
     "ICMP Protocol Unreachable", /* 2 */
@@ -216,8 +216,8 @@ char* icmp_unreach_str[16] = {
 struct event;
 typedef struct host_entry {
     int i; /* index into array */
-    char* name; /* name as given by user */
-    char* host; /* text description of host */
+    char *name; /* name as given by user */
+    char *host; /* text description of host */
     struct sockaddr_storage saddr; /* internet address */
     socklen_t saddr_len;
     int64_t timeout; /* time to wait for response */
@@ -234,7 +234,7 @@ typedef struct host_entry {
     int64_t max_reply_i; /* longest response time */
     int64_t min_reply_i; /* shortest response time */
     int64_t total_time_i; /* sum of response times */
-    int64_t* resp_times; /* individual response times */
+    int64_t *resp_times; /* individual response times */
 
     /* to avoid allocating two struct events each time that we send a ping, we
      * preallocate here two struct events for each ping that we might send for
@@ -278,7 +278,7 @@ struct event_queue {
 
 /*** globals ***/
 
-HOST_ENTRY** table = NULL; /* array of pointers to items in the list */
+HOST_ENTRY **table = NULL; /* array of pointers to items in the list */
 
 /* we keep two separate queues: a ping queue, for when the next ping should be
  * sent, and a timeout queue. the reason for having two separate queues is that
@@ -289,7 +289,7 @@ HOST_ENTRY** table = NULL; /* array of pointers to items in the list */
 struct event_queue event_queue_ping;
 struct event_queue event_queue_timeout;
 
-char* prog;
+char *prog;
 int ident4 = 0; /* our icmp identity field */
 int ident6 = 0;
 int socket4 = -1;
@@ -310,9 +310,9 @@ unsigned int debugging = 0;
 
 /* all time-related values are int64_t nanoseconds */
 unsigned int retry = DEFAULT_RETRY;
-int64_t timeout = (int64_t) DEFAULT_TIMEOUT * 1000000;
-int64_t interval = (int64_t) DEFAULT_INTERVAL * 1000000;
-int64_t perhost_interval = (int64_t) DEFAULT_PERHOST_INTERVAL * 1000000;
+int64_t timeout = (int64_t)DEFAULT_TIMEOUT * 1000000;
+int64_t interval = (int64_t)DEFAULT_INTERVAL * 1000000;
+int64_t perhost_interval = (int64_t)DEFAULT_PERHOST_INTERVAL * 1000000;
 float backoff = DEFAULT_BACKOFF_FACTOR;
 unsigned int ping_data_size = DEFAULT_PING_DATA_SIZE;
 unsigned int count = 1, min_reachable = 0;
@@ -362,17 +362,17 @@ int randomly_lose_flag, trace_flag, print_per_system_flag;
 int lose_factor;
 #endif /* DEBUG || _DEBUG */
 
-char* filename = NULL; /* file containing hosts to ping */
+char *filename = NULL; /* file containing hosts to ping */
 
 /*** forward declarations ***/
 
-void add_name(char* name);
-void add_addr(char* name, char* host, struct sockaddr* ipaddr, socklen_t ipaddr_len);
-char* na_cat(char* name, struct in_addr ipaddr);
-void crash_and_burn(char* message);
-void errno_crash_and_burn(char* message);
-char* get_host_by_address(struct in_addr in);
-int send_ping(HOST_ENTRY* h, int index);
+void add_name(char *name);
+void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_len);
+char *na_cat(char *name, struct in_addr ipaddr);
+void crash_and_burn(char *message);
+void errno_crash_and_burn(char *message);
+char *get_host_by_address(struct in_addr in);
+int send_ping(HOST_ENTRY *h, int index);
 void usage(int);
 int wait_for_reply(int64_t);
 void print_per_system_stats(void);
@@ -382,14 +382,14 @@ void print_global_stats(void);
 void main_loop();
 void signal_handler(int);
 void finish();
-const char* sprint_tm(int64_t t);
+const char *sprint_tm(int64_t t);
 void ev_enqueue(struct event_queue *queue, struct event *event);
 struct event *ev_dequeue(struct event_queue *queue);
 void ev_remove(struct event_queue *queue, struct event *event);
-void add_cidr(char*);
-void add_range(char*, char*);
-void print_warning(char* fmt, ...);
-int addr_cmp(struct sockaddr* a, struct sockaddr* b);
+void add_cidr(char *);
+void add_range(char *, char *);
+void print_warning(char *fmt, ...);
+int addr_cmp(struct sockaddr *a, struct sockaddr *b);
 void host_add_ping_event(HOST_ENTRY *h, int index, int64_t ev_time);
 void host_add_timeout_event(HOST_ENTRY *h, int index, int64_t ev_time);
 struct event *host_get_timeout_event(HOST_ENTRY *h, int index);
@@ -412,21 +412,21 @@ void update_current_time();
 ************************************************************/
 
 int p_setsockopt(uid_t p_uid, int sockfd, int level, int optname,
-	const void *optval, socklen_t optlen)
+    const void *optval, socklen_t optlen)
 {
     const uid_t saved_uid = geteuid();
     int res;
 
     if (p_uid != saved_uid && seteuid(p_uid)) {
-	perror("cannot elevate privileges for setsockopt");
+        perror("cannot elevate privileges for setsockopt");
     }
 
     res = setsockopt(sockfd, level, optname, optval, optlen);
 
     if (p_uid != saved_uid && seteuid(saved_uid)) {
-	perror("fatal error: could not drop privileges after setsockopt");
-	/* continuing would be a security hole */
-	exit(4);
+        perror("fatal error: could not drop privileges after setsockopt");
+        /* continuing would be a security hole */
+        exit(4);
     }
 
     return res;
@@ -446,7 +446,7 @@ int p_setsockopt(uid_t p_uid, int sockfd, int level, int optname,
 
 ************************************************************/
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     int c;
     const uid_t suid = geteuid();
@@ -459,7 +459,7 @@ int main(int argc, char** argv)
     /* pre-parse -h/--help, so that we also can output help information
      * without trying to open the socket, which might fail */
     prog = argv[0];
-    if(argc == 2 && ( strcmp(argv[1],"-h")==0 || strcmp(argv[1],"--help")==0 )) {
+    if (argc == 2 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)) {
         usage(0);
     }
 
@@ -835,20 +835,22 @@ int main(int argc, char** argv)
 
     /* permanently drop privileges */
     if (suid != getuid() && setuid(getuid())) {
-	perror("fatal: failed to permanently drop privileges");
-	/* continuing would be a security hole */
-	exit(4);
+        perror("fatal: failed to permanently drop privileges");
+        /* continuing would be a security hole */
+        exit(4);
     }
 
     /* validate various option settings */
 
 #ifndef IPV6
     if (socket4 < 0) {
-#else
-    if ((socket4 < 0 && socket6 < 0) || (hints_ai_family == AF_INET6 && socket6 < 0)) {
-#endif
         crash_and_burn("can't create socket (must run as root?)");
     }
+#else
+    if ((socket4 < 0 && socket6 < 0) || (hints_ai_family == AF_INET6 && socket6 < 0)) {
+        crash_and_burn("can't create socket (must run as root?)");
+    }
+#endif
 
     if (ttl > 255) {
         fprintf(stderr, "%s: ttl %u out of range\n", prog, ttl);
@@ -866,7 +868,7 @@ int main(int argc, char** argv)
     }
 
 #ifdef FPING_SAFE_LIMITS
-    if ((interval < (int64_t) MIN_INTERVAL * 1000000 || perhost_interval < (int64_t) MIN_PERHOST_INTERVAL * 1000000)
+    if ((interval < (int64_t)MIN_INTERVAL * 1000000 || perhost_interval < (int64_t)MIN_PERHOST_INTERVAL * 1000000)
         && getuid()) {
         fprintf(stderr, "%s: these options are too risky for mere mortals.\n", prog);
         fprintf(stderr, "%s: You need -i >= %u and -p >= %u\n",
@@ -911,8 +913,8 @@ int main(int argc, char** argv)
     if (loop_flag || count_flag) {
         if (!timeout_flag) {
             timeout = perhost_interval;
-            if (timeout > (int64_t) AUTOTUNE_TIMEOUT_MAX * 1000000) {
-                timeout = (int64_t) AUTOTUNE_TIMEOUT_MAX * 1000000;
+            if (timeout > (int64_t)AUTOTUNE_TIMEOUT_MAX * 1000000) {
+                timeout = (int64_t)AUTOTUNE_TIMEOUT_MAX * 1000000;
             }
         }
     }
@@ -1028,11 +1030,11 @@ int main(int argc, char** argv)
     argc -= optparse_state.optind;
 
     /* calculate how many ping can be in-flight per host */
-    if(count_flag) {
+    if (count_flag) {
         event_storage_count = count;
     }
-    else if(loop_flag) {
-        if(perhost_interval > timeout) {
+    else if (loop_flag) {
+        if (perhost_interval > timeout) {
             event_storage_count = 1;
         }
         else {
@@ -1060,7 +1062,7 @@ int main(int argc, char** argv)
         }
     }
     else if (filename) {
-        FILE* ping_file;
+        FILE *ping_file;
         char line[132];
         char host[132];
 
@@ -1116,8 +1118,8 @@ int main(int argc, char** argv)
     /* allocate and initialize array to map host nr to host_entry */
     {
         struct event *cursor = event_queue_ping.first;
-        int i= 0;
-        table = (HOST_ENTRY**)calloc(num_hosts, sizeof(HOST_ENTRY *));
+        int i = 0;
+        table = (HOST_ENTRY **)calloc(num_hosts, sizeof(HOST_ENTRY *));
         if (!table)
             crash_and_burn("Can't malloc array of hosts");
         /* initialize table of hosts. we know that we have ping events scheduled
@@ -1166,20 +1168,20 @@ int main(int argc, char** argv)
     return 0;
 }
 
-static inline int64_t timespec_ns(struct timespec* a)
+static inline int64_t timespec_ns(struct timespec *a)
 {
-    return ((int64_t) a->tv_sec * 1000000000) + a->tv_nsec;
+    return ((int64_t)a->tv_sec * 1000000000) + a->tv_nsec;
 }
 
-void add_cidr(char* addr)
+void add_cidr(char *addr)
 {
-    char* addr_end;
-    char* mask_str;
+    char *addr_end;
+    char *mask_str;
     unsigned long mask;
     unsigned long bitmask;
     int ret;
     struct addrinfo addr_hints;
-    struct addrinfo* addr_res;
+    struct addrinfo *addr_res;
     unsigned long net_addr;
     unsigned long net_last;
 
@@ -1205,7 +1207,7 @@ void add_cidr(char* addr)
         fprintf(stderr, "%s: -g works only with IPv4 addresses\n", prog);
         exit(1);
     }
-    net_addr = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
+    net_addr = ntohl(((struct sockaddr_in *)addr_res->ai_addr)->sin_addr.s_addr);
 
     /* check mask */
     if (mask < 1 || mask > 32) {
@@ -1238,10 +1240,10 @@ void add_cidr(char* addr)
     freeaddrinfo(addr_res);
 }
 
-void add_range(char* start, char* end)
+void add_range(char *start, char *end)
 {
     struct addrinfo addr_hints;
-    struct addrinfo* addr_res;
+    struct addrinfo *addr_res;
     unsigned long start_long;
     unsigned long end_long;
     int ret;
@@ -1260,7 +1262,7 @@ void add_range(char* start, char* end)
         fprintf(stderr, "%s: -g works only with IPv4 addresses\n", prog);
         exit(1);
     }
-    start_long = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
+    start_long = ntohl(((struct sockaddr_in *)addr_res->ai_addr)->sin_addr.s_addr);
 
     /* parse end address (IPv4 only) */
     memset(&addr_hints, 0, sizeof(struct addrinfo));
@@ -1276,7 +1278,7 @@ void add_range(char* start, char* end)
         fprintf(stderr, "%s: -g works only with IPv4 addresses\n", prog);
         exit(1);
     }
-    end_long = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
+    end_long = ntohl(((struct sockaddr_in *)addr_res->ai_addr)->sin_addr.s_addr);
     freeaddrinfo(addr_res);
 
     if (end_long > start_long + MAX_GENERATE) {
@@ -1305,9 +1307,7 @@ void main_loop()
         dbg_printf("%s", "# main_loop\n");
 
         /* timeout event ? */
-        if (event_queue_timeout.first &&
-            event_queue_timeout.first->ev_time - current_time_ns <= 0)
-        {
+        if (event_queue_timeout.first && event_queue_timeout.first->ev_time - current_time_ns <= 0) {
             event = ev_dequeue(&event_queue_timeout);
             h = event->host;
 
@@ -1321,7 +1321,7 @@ void main_loop()
                 }
                 printf("%-*s : [%d], timed out",
                     max_hostname_len, h->host, event->ping_index);
-                if(h->num_recv > 0) {
+                if (h->num_recv > 0) {
                     printf(" (%s avg, ", sprint_tm(h->total_time / h->num_recv));
                 }
                 else {
@@ -1356,9 +1356,7 @@ void main_loop()
         }
 
         /* ping event ? */
-        if (event_queue_ping.first &&
-            event_queue_ping.first->ev_time - current_time_ns <= 0)
-        {
+        if (event_queue_ping.first && event_queue_ping.first->ev_time - current_time_ns <= 0) {
             /* Make sure that we don't ping more than once every "interval" */
             lt = current_time_ns - last_send_time;
             if (lt < interval)
@@ -1374,12 +1372,12 @@ void main_loop()
             send_ping(h, event->ping_index);
 
             /* Loop and count mode: schedule next ping */
-            if (loop_flag || (count_flag && event->ping_index+1 < count)) {
-                host_add_ping_event(h, event->ping_index+1, event->ev_time + perhost_interval);
+            if (loop_flag || (count_flag && event->ping_index + 1 < count)) {
+                host_add_ping_event(h, event->ping_index + 1, event->ev_time + perhost_interval);
             }
         }
-        
-        wait_for_reply:
+
+    wait_for_reply:
 
         /* When is the next ping next event? */
         wait_time_ns = -1;
@@ -1402,13 +1400,13 @@ void main_loop()
         /* When is the next timeout event? */
         if (event_queue_timeout.first) {
             int64_t wait_time_timeout = event_queue_timeout.first->ev_time - current_time_ns;
-            if(wait_time_ns < 0 || wait_time_timeout < wait_time_ns) {
+            if (wait_time_ns < 0 || wait_time_timeout < wait_time_ns) {
                 wait_time_ns = wait_time_timeout;
                 if (wait_time_ns < 0) {
                     wait_time_ns = 0;
                 }
             }
-            
+
             dbg_printf("next timeout event in %.0f ms (%s)\n", wait_time_timeout / 1e6, event_queue_timeout.first->host->host);
         }
 
@@ -1426,7 +1424,7 @@ void main_loop()
         }
 
         /* if wait_time is still -1, it means that we are waiting for nothing... */
-        if(wait_time_ns == -1) {
+        if (wait_time_ns == -1) {
             break;
         }
 
@@ -1504,7 +1502,6 @@ void update_current_time()
     current_time_ns = timespec_ns(&current_time);
 }
 
-
 /************************************************************
 
   Function: finish
@@ -1522,7 +1519,7 @@ void update_current_time()
 void finish()
 {
     int i;
-    HOST_ENTRY* h;
+    HOST_ENTRY *h;
 
     update_current_time();
     end_time = current_time_ns;
@@ -1556,11 +1553,12 @@ void finish()
         print_global_stats();
 
     if (min_reachable) {
-        if ((num_hosts-num_unreachable) >= min_reachable) {
-            printf("Enough hosts reachable (required: %d, reachable: %d)\n", min_reachable, num_hosts-num_unreachable);
+        if ((num_hosts - num_unreachable) >= min_reachable) {
+            printf("Enough hosts reachable (required: %d, reachable: %d)\n", min_reachable, num_hosts - num_unreachable);
             exit(0);
-        } else {
-            printf("Not enough hosts reachable (required: %d, reachable: %d)\n", min_reachable, num_hosts-num_unreachable);
+        }
+        else {
+            printf("Not enough hosts reachable (required: %d, reachable: %d)\n", min_reachable, num_hosts - num_unreachable);
             exit(1);
         }
     }
@@ -1589,7 +1587,7 @@ void finish()
 void print_per_system_stats(void)
 {
     int i, j, avg, outage_ms;
-    HOST_ENTRY* h;
+    HOST_ENTRY *h;
     int64_t resp;
 
     if (verbose_flag || per_recv_flag)
@@ -1657,7 +1655,7 @@ void print_netdata(void)
 
     int i;
     int64_t avg;
-    HOST_ENTRY* h;
+    HOST_ENTRY *h;
 
     for (i = 0; i < num_hosts; i++) {
         h = table[i];
@@ -1728,14 +1726,14 @@ void print_netdata(void)
 void print_per_system_splits(void)
 {
     int i, avg, outage_ms_i;
-    HOST_ENTRY* h;
-    struct tm* curr_tm;
+    HOST_ENTRY *h;
+    struct tm *curr_tm;
 
     if (verbose_flag || per_recv_flag)
         fprintf(stderr, "\n");
 
     update_current_time();
-    curr_tm = localtime((time_t*)&current_time.tv_sec);
+    curr_tm = localtime((time_t *)&current_time.tv_sec);
     fprintf(stderr, "[%2.2d:%2.2d:%2.2d]\n", curr_tm->tm_hour,
         curr_tm->tm_min, curr_tm->tm_sec);
 
@@ -1831,7 +1829,7 @@ void print_global_stats(void)
 
 ************************************************************/
 
-int send_ping(HOST_ENTRY* h, int index)
+int send_ping(HOST_ENTRY *h, int index)
 {
     int n;
     int myseq;
@@ -1844,11 +1842,11 @@ int send_ping(HOST_ENTRY* h, int index)
     dbg_printf("%s [%d]: send ping\n", h->host, index);
 
     if (h->saddr.ss_family == AF_INET && socket4 >= 0) {
-        n = socket_sendto_ping_ipv4(socket4, (struct sockaddr*)&h->saddr, h->saddr_len, myseq, ident4);
+        n = socket_sendto_ping_ipv4(socket4, (struct sockaddr *)&h->saddr, h->saddr_len, myseq, ident4);
     }
 #ifdef IPV6
     else if (h->saddr.ss_family == AF_INET6 && socket6 >= 0) {
-        n = socket_sendto_ping_ipv6(socket6, (struct sockaddr*)&h->saddr, h->saddr_len, myseq, ident6);
+        n = socket_sendto_ping_ipv6(socket6, (struct sockaddr *)&h->saddr, h->saddr_len, myseq, ident6);
     }
 #endif
     else {
@@ -1861,7 +1859,7 @@ int send_ping(HOST_ENTRY* h, int index)
 #if defined(EHOSTDOWN)
         && errno != EHOSTDOWN
 #endif
-        ) {
+    ) {
         if (verbose_flag) {
             print_warning("%s: error while sending ping: %s\n", h->host, strerror(errno));
         }
@@ -1892,7 +1890,7 @@ int send_ping(HOST_ENTRY* h, int index)
     return (ret);
 }
 
-int socket_can_read(struct timeval* timeout)
+int socket_can_read(struct timeval *timeout)
 {
     int nfound;
     fd_set readset;
@@ -1906,9 +1904,11 @@ int socket_can_read(struct timeval* timeout)
 
 select_again:
     FD_ZERO(&readset);
-    if(socket4 >= 0) FD_SET(socket4, &readset);
+    if (socket4 >= 0)
+        FD_SET(socket4, &readset);
 #ifdef IPV6
-    if(socket6 >= 0) FD_SET(socket6, &readset);
+    if (socket6 >= 0)
+        FD_SET(socket6, &readset);
 #endif
 
     nfound = select(socketmax + 1, &readset, NULL, NULL, timeout);
@@ -1937,10 +1937,10 @@ select_again:
 }
 
 int receive_packet(int64_t wait_time,
-    int64_t* reply_timestamp,
-    struct sockaddr* reply_src_addr,
+    int64_t *reply_timestamp,
+    struct sockaddr *reply_src_addr,
     size_t reply_src_addr_len,
-    char* reply_buf,
+    char *reply_buf,
     size_t reply_buf_len)
 {
     struct timeval to;
@@ -1961,7 +1961,7 @@ int receive_packet(int64_t wait_time,
         0
     };
 #if HAVE_SO_TIMESTAMPNS
-    struct cmsghdr* cmsg;
+    struct cmsghdr *cmsg;
 #endif
 
     /* Wait for a socket to become ready */
@@ -1989,8 +1989,7 @@ int receive_packet(int64_t wait_time,
         struct timespec reply_timestamp_ts;
         for (cmsg = CMSG_FIRSTHDR(&recv_msghdr);
              cmsg != NULL;
-             cmsg = CMSG_NXTHDR(&recv_msghdr, cmsg))
-        {
+             cmsg = CMSG_NXTHDR(&recv_msghdr, cmsg)) {
             if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_TIMESTAMPNS) {
                 memcpy(&reply_timestamp_ts, CMSG_DATA(cmsg), sizeof(reply_timestamp_ts));
                 *reply_timestamp = timespec_ns(&reply_timestamp_ts);
@@ -2023,8 +2022,8 @@ void stats_add(HOST_ENTRY *h, int index, int success, int64_t latency)
     h->num_sent++;
     h->num_sent_i++;
 
-    if(!success) {
-        if(!loop_flag && index>=0) {
+    if (!success) {
+        if (!loop_flag && index >= 0) {
             h->resp_times[index] = RESP_TIMEOUT;
         }
         num_timeout++;
@@ -2056,7 +2055,7 @@ void stats_add(HOST_ENTRY *h, int index, int success, int64_t latency)
     h->total_time_i += latency;
 
     /* response time per-packet (count mode) */
-    if(!loop_flag && index>=0) {
+    if (!loop_flag && index >= 0) {
         h->resp_times[index] = latency;
     }
 }
@@ -2074,18 +2073,18 @@ void stats_reset_interval(HOST_ENTRY *h)
 }
 
 int decode_icmp_ipv4(
-    struct sockaddr* response_addr,
+    struct sockaddr *response_addr,
     size_t response_addr_len,
-    char* reply_buf,
+    char *reply_buf,
     size_t reply_buf_len,
-    unsigned short* id,
-    unsigned short* seq)
+    unsigned short *id,
+    unsigned short *seq)
 {
-    struct icmp* icp;
+    struct icmp *icp;
     int hlen = 0;
 
     if (!using_sock_dgram4) {
-        struct ip* ip = (struct ip*)reply_buf;
+        struct ip *ip = (struct ip *)reply_buf;
 
 #if defined(__alpha__) && __STDC__ && !defined(__GLIBC__) && !defined(__NetBSD__)
         /* The alpha headers are decidedly broken.
@@ -2098,25 +2097,24 @@ int decode_icmp_ipv4(
 #endif
     }
 
-
     if (reply_buf_len < hlen + ICMP_MINLEN) {
         /* too short */
         if (verbose_flag) {
             char buf[INET6_ADDRSTRLEN];
-            getnameinfo( response_addr, sizeof( struct sockaddr_in ), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+            getnameinfo(response_addr, response_addr_len, buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
             printf("received packet too short for ICMP (%d bytes from %s)\n", (int)reply_buf_len, buf);
         }
         return -1;
     }
 
-    icp = (struct icmp*)(reply_buf + hlen);
+    icp = (struct icmp *)(reply_buf + hlen);
 
     if (icp->icmp_type != ICMP_ECHOREPLY) {
         /* Handle other ICMP packets */
-        struct icmp* sent_icmp;
-        SEQMAP_VALUE* seqmap_value;
+        struct icmp *sent_icmp;
+        SEQMAP_VALUE *seqmap_value;
         char addr_ascii[INET6_ADDRSTRLEN];
-        HOST_ENTRY* h;
+        HOST_ENTRY *h;
 
         /* reply icmp packet (hlen + ICMP_MINLEN) followed by "sent packet" (ip + icmp headers) */
         if (reply_buf_len < hlen + ICMP_MINLEN + sizeof(struct ip) + ICMP_MINLEN) {
@@ -2124,7 +2122,7 @@ int decode_icmp_ipv4(
             return -1;
         }
 
-        sent_icmp = (struct icmp*)(reply_buf + hlen + ICMP_MINLEN + sizeof(struct ip));
+        sent_icmp = (struct icmp *)(reply_buf + hlen + ICMP_MINLEN + sizeof(struct ip));
 
         if (sent_icmp->icmp_type != ICMP_ECHO || sent_icmp->icmp_id != ident4) {
             /* not caused by us */
@@ -2136,7 +2134,7 @@ int decode_icmp_ipv4(
             return -1;
         }
 
-        getnameinfo(response_addr, sizeof( struct sockaddr_in ), addr_ascii, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+        getnameinfo(response_addr, sizeof(struct sockaddr_in), addr_ascii, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
 
         switch (icp->icmp_type) {
         case ICMP_UNREACH:
@@ -2183,32 +2181,32 @@ int decode_icmp_ipv4(
 
 #ifdef IPV6
 int decode_icmp_ipv6(
-    struct sockaddr* response_addr,
+    struct sockaddr *response_addr,
     size_t response_addr_len,
-    char* reply_buf,
+    char *reply_buf,
     size_t reply_buf_len,
-    unsigned short* id,
-    unsigned short* seq)
+    unsigned short *id,
+    unsigned short *seq)
 {
-    struct icmp6_hdr* icp;
+    struct icmp6_hdr *icp;
 
     if (reply_buf_len < sizeof(struct icmp6_hdr)) {
         if (verbose_flag) {
             char buf[INET6_ADDRSTRLEN];
-            getnameinfo((struct sockaddr*)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+            getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
             printf("received packet too short for ICMP (%d bytes from %s)\n", (int)reply_buf_len, buf);
         }
         return 0; /* too short */
     }
 
-    icp = (struct icmp6_hdr*)reply_buf;
+    icp = (struct icmp6_hdr *)reply_buf;
 
     if (icp->icmp6_type != ICMP6_ECHO_REPLY) {
         /* Handle other ICMP packets */
-        struct icmp6_hdr* sent_icmp;
-        SEQMAP_VALUE* seqmap_value;
+        struct icmp6_hdr *sent_icmp;
+        SEQMAP_VALUE *seqmap_value;
         char addr_ascii[INET6_ADDRSTRLEN];
-        HOST_ENTRY* h;
+        HOST_ENTRY *h;
 
         /* reply icmp packet (ICMP_MINLEN) followed by "sent packet" (ip + icmp headers) */
         if (reply_buf_len < ICMP_MINLEN + sizeof(struct ip) + ICMP_MINLEN) {
@@ -2216,7 +2214,7 @@ int decode_icmp_ipv6(
             return 0;
         }
 
-        sent_icmp = (struct icmp6_hdr*)(reply_buf + sizeof(struct icmp6_hdr) + sizeof(struct ip));
+        sent_icmp = (struct icmp6_hdr *)(reply_buf + sizeof(struct icmp6_hdr) + sizeof(struct ip));
 
         if (sent_icmp->icmp6_type != ICMP_ECHO || sent_icmp->icmp6_id != ident6) {
             /* not caused by us */
@@ -2280,39 +2278,40 @@ int wait_for_reply(int64_t wait_time)
     static char buffer[RECV_BUFSIZE];
     struct sockaddr_storage response_addr;
     int n, avg;
-    HOST_ENTRY* h;
+    HOST_ENTRY *h;
     int64_t this_reply;
     int this_count;
-    int64_t recv_time=0;
-    SEQMAP_VALUE* seqmap_value;
+    int64_t recv_time = 0;
+    SEQMAP_VALUE *seqmap_value;
     unsigned short id;
     unsigned short seq;
 
     /* Receive packet */
     result = receive_packet(wait_time, /* max. wait time, in ns */
         &recv_time, /* reply_timestamp */
-        (struct sockaddr*)&response_addr, /* reply_src_addr */
+        (struct sockaddr *)&response_addr, /* reply_src_addr */
         sizeof(response_addr), /* reply_src_addr_len */
         buffer, /* reply_buf */
         sizeof(buffer) /* reply_buf_len */
-        );
+    );
 
     if (result <= 0) {
         return 0;
     }
 
     update_current_time();
-    if(recv_time==0) recv_time = current_time_ns;
+    if (recv_time == 0)
+        recv_time = current_time_ns;
 
     /* Process ICMP packet and retrieve id/seq */
     if (response_addr.ss_family == AF_INET) {
         int ip_hlen = decode_icmp_ipv4(
-                (struct sockaddr*)&response_addr,
-                sizeof(response_addr),
-                buffer,
-                sizeof(buffer),
-                &id,
-                &seq);
+            (struct sockaddr *)&response_addr,
+            sizeof(response_addr),
+            buffer,
+            sizeof(buffer),
+            &id,
+            &seq);
         if (ip_hlen < 0) {
             return 1;
         }
@@ -2328,7 +2327,7 @@ int wait_for_reply(int64_t wait_time)
 #ifdef IPV6
     else if (response_addr.ss_family == AF_INET6) {
         if (!decode_icmp_ipv6(
-                (struct sockaddr*)&response_addr,
+                (struct sockaddr *)&response_addr,
                 sizeof(response_addr),
                 buffer,
                 sizeof(buffer),
@@ -2368,9 +2367,9 @@ int wait_for_reply(int64_t wait_time)
             fprintf(stderr, "%s : duplicate for [%d], %d bytes, %s ms",
                 h->host, this_count, result, sprint_tm(this_reply));
 
-            if (addr_cmp((struct sockaddr*)&response_addr, (struct sockaddr*)&h->saddr)) {
+            if (addr_cmp((struct sockaddr *)&response_addr, (struct sockaddr *)&h->saddr)) {
                 char buf[INET6_ADDRSTRLEN];
-                getnameinfo((struct sockaddr*)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+                getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
                 fprintf(stderr, " [<- %s]", buf);
             }
             fprintf(stderr, "\n");
@@ -2393,16 +2392,16 @@ int wait_for_reply(int64_t wait_time)
         min_reply = this_reply;
     sum_replies += this_reply;
     total_replies++;
-    
+
     /* initialize timeout to initial timeout (without backoff) */
     h->timeout = timeout;
 
     /* remove timeout event */
     struct event *timeout_event = host_get_timeout_event(h, this_count);
-    if(timeout_event) {
+    if (timeout_event) {
         ev_remove(&event_queue_timeout, timeout_event);
     }
-    
+
     /* print "is alive" */
     if (h->num_recv == 1) {
         num_alive++;
@@ -2415,9 +2414,9 @@ int wait_for_reply(int64_t wait_time)
             if (elapsed_flag)
                 printf(" (%s ms)", sprint_tm(this_reply));
 
-            if (addr_cmp((struct sockaddr*)&response_addr, (struct sockaddr*)&h->saddr)) {
+            if (addr_cmp((struct sockaddr *)&response_addr, (struct sockaddr *)&h->saddr)) {
                 char buf[INET6_ADDRSTRLEN];
-                getnameinfo((struct sockaddr*)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+                getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
                 fprintf(stderr, " [<- %s]", buf);
             }
 
@@ -2444,9 +2443,9 @@ int wait_for_reply(int64_t wait_time)
                 (h->num_recv_total * 100) / h->num_sent);
         }
 
-        if (addr_cmp((struct sockaddr*)&response_addr, (struct sockaddr*)&h->saddr)) {
+        if (addr_cmp((struct sockaddr *)&response_addr, (struct sockaddr *)&h->saddr)) {
             char buf[INET6_ADDRSTRLEN];
-            getnameinfo((struct sockaddr*)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+            getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
             fprintf(stderr, " [<- %s]", buf);
         }
 
@@ -2472,11 +2471,11 @@ int wait_for_reply(int64_t wait_time)
 
 ************************************************************/
 
-void add_name(char* name)
+void add_name(char *name)
 {
     struct addrinfo *res0, *res, hints;
     int ret_ga;
-    char* printname;
+    char *printname;
     char namebuf[256];
     char addrbuf[256];
 
@@ -2516,7 +2515,7 @@ void add_name(char* name)
             int do_rdns = rdns_flag ? 1 : 0;
             if (name_flag) {
                 /* Was it a numerical address? Only then do a rdns-query */
-                struct addrinfo* nres;
+                struct addrinfo *nres;
                 hints.ai_flags = AI_NUMERICHOST;
                 if (getaddrinfo(name, NULL, &hints, &nres) == 0) {
                     do_rdns = 1;
@@ -2548,7 +2547,7 @@ void add_name(char* name)
             }
 
             if (name_flag || rdns_flag) {
-                char nameaddrbuf[512+3];
+                char nameaddrbuf[512 + 3];
                 snprintf(nameaddrbuf, sizeof(nameaddrbuf) / sizeof(char), "%s (%s)", printname, addrbuf);
                 add_addr(name, nameaddrbuf, res->ai_addr, res->ai_addrlen);
             }
@@ -2580,13 +2579,13 @@ void add_name(char* name)
 
 ************************************************************/
 
-void add_addr(char* name, char* host, struct sockaddr* ipaddr, socklen_t ipaddr_len)
+void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_len)
 {
-    HOST_ENTRY* p;
+    HOST_ENTRY *p;
     int n;
     int64_t *i;
 
-    p = (HOST_ENTRY*)calloc(1, sizeof(HOST_ENTRY));
+    p = (HOST_ENTRY *)calloc(1, sizeof(HOST_ENTRY));
     if (!p)
         crash_and_burn("can't allocate HOST_ENTRY");
 
@@ -2598,7 +2597,7 @@ void add_addr(char* name, char* host, struct sockaddr* ipaddr, socklen_t ipaddr_
     p->min_reply = 0;
 
     if (netdata_flag) {
-        char* s = p->name;
+        char *s = p->name;
         while (*s) {
             if (!isalnum(*s))
                 *s = '_';
@@ -2611,7 +2610,7 @@ void add_addr(char* name, char* host, struct sockaddr* ipaddr, socklen_t ipaddr_
 
     /* array for response time results */
     if (!loop_flag) {
-        i = (int64_t*)malloc(trials * sizeof(int64_t));
+        i = (int64_t *)malloc(trials * sizeof(int64_t));
         if (!i)
             crash_and_burn("can't allocate resp_times array");
 
@@ -2622,8 +2621,8 @@ void add_addr(char* name, char* host, struct sockaddr* ipaddr, socklen_t ipaddr_
     }
 
     /* allocate event storage */
-    p->event_storage_ping = (struct event *) calloc(event_storage_count, sizeof(struct event));
-    p->event_storage_timeout = (struct event *) calloc(event_storage_count, sizeof(struct event));
+    p->event_storage_ping = (struct event *)calloc(event_storage_count, sizeof(struct event));
+    p->event_storage_timeout = (struct event *)calloc(event_storage_count, sizeof(struct event));
 
     /* schedule first ping */
     host_add_ping_event(p, 0, current_time_ns);
@@ -2643,7 +2642,7 @@ void add_addr(char* name, char* host, struct sockaddr* ipaddr, socklen_t ipaddr_
 
 ************************************************************/
 
-void crash_and_burn(char* message)
+void crash_and_burn(char *message)
 {
     if (verbose_flag)
         fprintf(stderr, "%s: %s\n", prog, message);
@@ -2663,7 +2662,7 @@ void crash_and_burn(char* message)
 
 ************************************************************/
 
-void errno_crash_and_burn(char* message)
+void errno_crash_and_burn(char *message)
 {
     fprintf(stderr, "%s: %s : %s\n", prog, message, strerror(errno));
     exit(4);
@@ -2677,7 +2676,7 @@ void errno_crash_and_burn(char* message)
 
 *************************************************************/
 
-void print_warning(char* format, ...)
+void print_warning(char *format, ...)
 {
     va_list args;
     if (!quiet_flag) {
@@ -2698,7 +2697,7 @@ void print_warning(char* format, ...)
 
 ************************************************************/
 
-const char* sprint_tm(int64_t ns)
+const char *sprint_tm(int64_t ns)
 {
     static char buf[10];
     double t = (double)ns / 1e6;
@@ -2735,19 +2734,19 @@ const char* sprint_tm(int64_t ns)
   Function: addr_cmp
 
 *************************************************************/
-int addr_cmp(struct sockaddr* a, struct sockaddr* b)
+int addr_cmp(struct sockaddr *a, struct sockaddr *b)
 {
     if (a->sa_family != b->sa_family) {
         return a->sa_family - b->sa_family;
     }
     else {
         if (a->sa_family == AF_INET) {
-            return ((struct sockaddr_in*)a)->sin_addr.s_addr - ((struct sockaddr_in*)b)->sin_addr.s_addr;
+            return ((struct sockaddr_in *)a)->sin_addr.s_addr - ((struct sockaddr_in *)b)->sin_addr.s_addr;
         }
         else if (a->sa_family == AF_INET6) {
-            return memcmp(&((struct sockaddr_in6*)a)->sin6_addr,
-                &((struct sockaddr_in6*)b)->sin6_addr,
-                sizeof(((struct sockaddr_in6*)a)->sin6_addr));
+            return memcmp(&((struct sockaddr_in6 *)a)->sin6_addr,
+                &((struct sockaddr_in6 *)b)->sin6_addr,
+                sizeof(((struct sockaddr_in6 *)a)->sin6_addr));
         }
     }
 
@@ -2783,7 +2782,6 @@ struct event *host_get_timeout_event(HOST_ENTRY *h, int index)
     return &h->event_storage_timeout[index % event_storage_count];
 }
 
-
 /************************************************************
 
   Function: ev_enqueue
@@ -2798,10 +2796,10 @@ struct event *host_get_timeout_event(HOST_ENTRY *h, int index)
   than the others.
 
 *************************************************************/
-void ev_enqueue(struct event_queue *queue, struct event* event)
+void ev_enqueue(struct event_queue *queue, struct event *event)
 {
-    struct event* i;
-    struct event* i_prev;
+    struct event *i;
+    struct event *i_prev;
 
     /* Empty list */
     if (queue->last == NULL) {
@@ -2896,7 +2894,7 @@ void ev_remove(struct event_queue *queue, struct event *event)
 
 void usage(int is_error)
 {
-    FILE* out = is_error ? stderr : stdout;
+    FILE *out = is_error ? stderr : stdout;
     fprintf(out, "Usage: %s [options] [targets...]\n", prog);
     fprintf(out, "\n");
     fprintf(out, "Probing options:\n");

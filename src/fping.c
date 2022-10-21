@@ -2134,7 +2134,7 @@ int decode_icmp_ipv4(
             return -1;
         }
 
-        getnameinfo(response_addr, sizeof(struct sockaddr_in), addr_ascii, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+        getnameinfo(response_addr, response_addr_len, addr_ascii, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
 
         switch (icp->icmp_type) {
         case ICMP_UNREACH:
@@ -2193,7 +2193,7 @@ int decode_icmp_ipv6(
     if (reply_buf_len < sizeof(struct icmp6_hdr)) {
         if (verbose_flag) {
             char buf[INET6_ADDRSTRLEN];
-            getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+            getnameinfo(response_addr, response_addr_len, buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
             printf("received packet too short for ICMP (%d bytes from %s)\n", (int)reply_buf_len, buf);
         }
         return 0; /* too short */

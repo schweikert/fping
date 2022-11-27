@@ -97,10 +97,7 @@ Show elapsed (round-trip) time of packets.
 
 =item B<-f>, B<--file>
 
-Read list of targets from a file.  This option can only be used by the root
-user. Regular users should pipe in the file via stdin:
-
- $ fping < targets_file
+Read list of targets from a file.
 
 =item B<-g>, B<--generate> I<addr/mask>
 

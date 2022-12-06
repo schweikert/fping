@@ -1730,40 +1730,40 @@ void print_per_system_splits(void)
     struct tm *curr_tm;
 
     if (verbose_flag || per_recv_flag)
-        fprintf(stderr, "\n");
+        fprintf(stdout, "\n");
 
     update_current_time();
     curr_tm = localtime((time_t *)&current_time.tv_sec);
-    fprintf(stderr, "[%2.2d:%2.2d:%2.2d]\n", curr_tm->tm_hour,
+    fprintf(stdout, "[%2.2d:%2.2d:%2.2d]\n", curr_tm->tm_hour,
         curr_tm->tm_min, curr_tm->tm_sec);
 
     for (i = 0; i < num_hosts; i++) {
         h = table[i];
-        fprintf(stderr, "%-*s :", max_hostname_len, h->host);
+        fprintf(stdout, "%-*s :", max_hostname_len, h->host);
 
         if (h->num_recv_i <= h->num_sent_i) {
-            fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
+            fprintf(stdout, " xmt/rcv/%%loss = %d/%d/%d%%",
                 h->num_sent_i, h->num_recv_i, h->num_sent_i > 0 ? ((h->num_sent_i - h->num_recv_i) * 100) / h->num_sent_i : 0);
 
             if (outage_flag) {
                 /* Time outage  */
                 outage_ms_i = (h->num_sent_i - h->num_recv_i) * perhost_interval / 1e6;
-                fprintf(stderr, ", outage(ms) = %d", outage_ms_i);
+                fprintf(stdout, ", outage(ms) = %d", outage_ms_i);
             }
         }
         else {
-            fprintf(stderr, " xmt/rcv/%%return = %d/%d/%d%%",
+            fprintf(stdout, " xmt/rcv/%%return = %d/%d/%d%%",
                 h->num_sent_i, h->num_recv_i, h->num_sent_i > 0 ? ((h->num_recv_i * 100) / h->num_sent_i) : 0);
         }
 
         if (h->num_recv_i) {
             avg = h->total_time_i / h->num_recv_i;
-            fprintf(stderr, ", min/avg/max = %s", sprint_tm(h->min_reply_i));
-            fprintf(stderr, "/%s", sprint_tm(avg));
-            fprintf(stderr, "/%s", sprint_tm(h->max_reply_i));
+            fprintf(stdout, ", min/avg/max = %s", sprint_tm(h->min_reply_i));
+            fprintf(stdout, "/%s", sprint_tm(avg));
+            fprintf(stdout, "/%s", sprint_tm(h->max_reply_i));
         }
 
-        fprintf(stderr, "\n");
+        fprintf(stdout, "\n");
         h->num_sent_i = h->num_recv_i = h->max_reply_i = h->min_reply_i = h->total_time_i = 0;
     }
 }

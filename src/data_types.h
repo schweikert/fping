@@ -29,9 +29,9 @@ typedef struct host_entry {
     int64_t *resp_times; /* individual response times */
 
     int top_view_print_pos;
-    int top_view_last_timeouts;
-    int top_view_last_timeouts_count;
-    int top_view_last_timeouts_seq;
+    int64_t top_view_last_timeouts;
+    int64_t top_view_last_timeouts_count;
+    int64_t top_view_last_timeouts_seq;
     char last_timeout_time[100];
 
     /* to avoid allocating two struct events each time that we send a ping, we

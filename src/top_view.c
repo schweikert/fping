@@ -12,7 +12,10 @@ static int next_view_pos = 1;
 
 extern int64_t perhost_interval;
 
-static void pos_printf(uint8_t col, uint8_t row, char* format, ...)
+
+static void pos_printf(uint8_t col, uint8_t row, char* format, ...) __attribute__ ((format (printf, 3, 4)));
+
+static void pos_printf(uint8_t col, uint8_t row, char* format, ...) 
 {
 
     int pos = 0;
@@ -39,10 +42,17 @@ static void line_clear(uint8_t col)
 
     pos += sprintf(&out_buffer[pos], "\033[%d;%df\033[2K", col, 1);
 
-    //pos += vsnprintf(&out_buffer[pos], sizeof(out_buffer) - pos, format, argp);
-
     puts( out_buffer );
 }
+
+
+void top_view_end( void ){
+    // Cursor deaktivieren
+    puts( "\033[?25h");
+}
+
+
+
 
 #define HOST_POS 2
 #define SEND_POS 20
@@ -55,10 +65,6 @@ static void line_clear(uint8_t col)
 
 
 
-void top_view_end( void ){
-    // Cursor deaktivieren
-    puts( "\033[?25h");
-}
 
 static void print_top_view_init( void ){
     if ( print_top_view_init_printed == 1 ) return;
@@ -74,7 +80,7 @@ static void print_top_view_init( void ){
 
     puts( out_buffer );
 
-    pos_printf( 2 , 10 , "fping top view ( period : %d ms )", ( perhost_interval / 1000 / 1000 ));
+    pos_printf( 2 , 10 , "fping top view ( period : %"PRIi64" ms )", ( perhost_interval / 1000 / 1000 ));
 
     pos_printf( 4 , HOST_POS , "host");
     pos_printf( 4 , SEND_POS , "send");
@@ -90,7 +96,7 @@ static void print_top_view_init( void ){
 
 
 
-void print_top_view( HOST_ENTRY *h, int timeout ){
+void print_top_view( HOST_ENTRY *h, int timeout ) {
 
     print_top_view_init();
 
@@ -107,7 +113,7 @@ void print_top_view( HOST_ENTRY *h, int timeout ){
         h->top_view_last_timeouts++;
         h->top_view_last_timeouts_seq = h->top_view_last_timeouts;
 
-        sprintf(h->last_timeout_time, "%d ms         ", h->top_view_last_timeouts * ( perhost_interval / 1000 / 1000 ) );
+        sprintf(h->last_timeout_time, "%"PRIi64" ms         ", h->top_view_last_timeouts * ( perhost_interval / 1000 / 1000 ) );
 
     }else{
 
@@ -125,14 +131,10 @@ void print_top_view( HOST_ENTRY *h, int timeout ){
     pos_printf( 5 + h->top_view_print_pos, SEND_POS , "%d", h->num_sent);
     pos_printf( 5 + h->top_view_print_pos, RECV_POS , "%d", h->num_recv);
     pos_printf( 5 + h->top_view_print_pos, LOST_POS , "%d", (  h->num_sent - h->num_recv ));
-    pos_printf( 5 + h->top_view_print_pos, TIMEOUT_TOTAL_POS , "%d", h->top_view_last_timeouts_count);
+    pos_printf( 5 + h->top_view_print_pos, TIMEOUT_TOTAL_POS , "%"PRIi64, h->top_view_last_timeouts_count);
 
-    pos_printf( 5 + h->top_view_print_pos, TIMEOUT_SEQ_POS , "%d", h->top_view_last_timeouts_seq);
+    pos_printf( 5 + h->top_view_print_pos, TIMEOUT_SEQ_POS , "%"PRIi64, h->top_view_last_timeouts_seq);
     pos_printf( 5 + h->top_view_print_pos, TIMEOUT_TIME_POS , "%s", h->last_timeout_time);
-
-
-    //pos_printf( 5 + h->top_view_print_pos, 2 , "%*d  %*d  lost: %*d  %s ", , h->last_timeout_time );
-
     
 
 

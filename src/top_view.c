@@ -96,13 +96,13 @@ static void print_top_view_init( void ){
 
 
 
-void print_top_view( HOST_ENTRY *h, int timeout ) {
+void top_view_print( HOST_ENTRY *h, int timeout ) {
 
     print_top_view_init();
 
     if ( h->top_view_print_pos == 0 ){
         h->top_view_print_pos = next_view_pos++;
-        sprintf(h->last_timeout_time, "0 ms" );
+        sprintf(h->top_view_last_timeout_time, "0 ms" );
 
     }
 
@@ -113,7 +113,7 @@ void print_top_view( HOST_ENTRY *h, int timeout ) {
         h->top_view_last_timeouts++;
         h->top_view_last_timeouts_seq = h->top_view_last_timeouts;
 
-        sprintf(h->last_timeout_time, "%"PRIi64" ms         ", h->top_view_last_timeouts * ( perhost_interval / 1000 / 1000 ) );
+        sprintf(h->top_view_last_timeout_time, "%"PRIi64" ms         ", h->top_view_last_timeouts * ( perhost_interval / 1000 / 1000 ) );
 
     }else{
 
@@ -134,7 +134,7 @@ void print_top_view( HOST_ENTRY *h, int timeout ) {
     pos_printf( 5 + h->top_view_print_pos, TIMEOUT_TOTAL_POS , "%"PRIi64, h->top_view_last_timeouts_count);
 
     pos_printf( 5 + h->top_view_print_pos, TIMEOUT_SEQ_POS , "%"PRIi64, h->top_view_last_timeouts_seq);
-    pos_printf( 5 + h->top_view_print_pos, TIMEOUT_TIME_POS , "%s", h->last_timeout_time);
+    pos_printf( 5 + h->top_view_print_pos, TIMEOUT_TIME_POS , "%s", h->top_view_last_timeout_time);
     
 
 

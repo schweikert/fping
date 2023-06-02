@@ -1322,7 +1322,7 @@ void main_loop()
                     }
                     printf("\n");
                 }else{
-                    print_top_view( h, 1 );
+                    top_view_print( h, 1 );
                 }
             }
 
@@ -2455,7 +2455,7 @@ int wait_for_reply(int64_t wait_time)
 
             printf("\n");
         }else{
-            print_top_view( h, 0 );
+            top_view_print( h, 0 );
         }
     }
 

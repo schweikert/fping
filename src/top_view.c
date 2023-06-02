@@ -54,14 +54,15 @@ void top_view_end( void ){
 
 
 
-#define HOST_POS 2
-#define SEND_POS 20
-#define RECV_POS 30
-#define LOST_POS 40
-#define TIMEOUT_POS 50
+#define HOST_POS          2
+#define SEND_POS          20
+#define RECV_POS          30
+#define LOST_POS          40
+#define TIMEOUT_POS       50
 #define TIMEOUT_TOTAL_POS 60
-#define TIMEOUT_SEQ_POS 70
-#define TIMEOUT_TIME_POS 80
+#define TIMEOUT_SEQ_POS   70
+#define TIMEOUT_TIME_POS  80
+#define ICMP_MSG_POS      90
 
 
 
@@ -90,6 +91,9 @@ static void print_top_view_init( void ){
     pos_printf( 4 , TIMEOUT_TOTAL_POS , "total");
     pos_printf( 4 , TIMEOUT_SEQ_POS , "seq");
     pos_printf( 4 , TIMEOUT_TIME_POS , "time");
+    pos_printf( 4 , ICMP_MSG_POS , "ICMP msg");
+
+    
 
     
 }
@@ -126,15 +130,16 @@ void top_view_print( HOST_ENTRY *h, int timeout ) {
 
     line_clear( 5 + h->top_view_print_pos );
     
-    pos_printf( 5 + h->top_view_print_pos, HOST_POS , "%s", h->host);
-
-    pos_printf( 5 + h->top_view_print_pos, SEND_POS , "%d", h->num_sent);
-    pos_printf( 5 + h->top_view_print_pos, RECV_POS , "%d", h->num_recv);
-    pos_printf( 5 + h->top_view_print_pos, LOST_POS , "%d", (  h->num_sent - h->num_recv ));
+    pos_printf( 5 + h->top_view_print_pos, HOST_POS          , "%s", h->host);
+    pos_printf( 5 + h->top_view_print_pos, SEND_POS          , "%d", h->num_sent);
+    pos_printf( 5 + h->top_view_print_pos, RECV_POS          , "%d", h->num_recv);
+    pos_printf( 5 + h->top_view_print_pos, LOST_POS          , "%d", (  h->num_sent - h->num_recv ));
     pos_printf( 5 + h->top_view_print_pos, TIMEOUT_TOTAL_POS , "%"PRIi64, h->top_view_last_timeouts_count);
+    pos_printf( 5 + h->top_view_print_pos, TIMEOUT_SEQ_POS   , "%"PRIi64, h->top_view_last_timeouts_seq);
+    pos_printf( 5 + h->top_view_print_pos, TIMEOUT_TIME_POS  , "%s", h->top_view_last_timeout_time);
+    pos_printf( 5 + h->top_view_print_pos, ICMP_MSG_POS      , "%s", h->top_view_icmp_message);
 
-    pos_printf( 5 + h->top_view_print_pos, TIMEOUT_SEQ_POS , "%"PRIi64, h->top_view_last_timeouts_seq);
-    pos_printf( 5 + h->top_view_print_pos, TIMEOUT_TIME_POS , "%s", h->top_view_last_timeout_time);
+    
     
 
 

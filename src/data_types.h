@@ -28,11 +28,15 @@ typedef struct host_entry {
     int64_t total_time_i; /* sum of response times */
     int64_t *resp_times; /* individual response times */
 
+    
+
     int     top_view_print_pos;               /* line where the host is printed */
     int64_t top_view_last_timeouts;           /* timeout Counter */
     int64_t top_view_last_timeouts_count;     /* how many timeout occurred */
     int64_t top_view_last_timeouts_seq;       /* how many packets where lost till the next answer arrived */
     char    top_view_last_timeout_time[100];  /* buffer to print how long the last timeout was ( packets * period ) */
+
+    char    top_view_icmp_message[200];  /* buffer to print how long the last timeout was ( packets * period ) */
 
     /* to avoid allocating two struct events each time that we send a ping, we
      * preallocate here two struct events for each ping that we might send for

@@ -2136,16 +2136,31 @@ int decode_icmp_ipv4(
         switch (icp->icmp_type) {
         case ICMP_UNREACH:
             h = table[seqmap_value->host_nr];
-            if (icp->icmp_code > ICMP_UNREACH_MAXTYPE) {
-                print_warning("ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
-                    addr_ascii, h->host);
-            }
-            else {
-                print_warning("%s from %s for ICMP Echo sent to %s",
-                    icmp_unreach_str[icp->icmp_code], addr_ascii, h->host);
-            }
 
-            print_warning("\n");
+            if ( top_view == 0 ){
+
+                if (icp->icmp_code > ICMP_UNREACH_MAXTYPE) {
+                    print_warning("ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
+                        addr_ascii, h->host);
+                }
+                else {
+                    print_warning("%s from %s for ICMP Echo sent to %s",
+                        icmp_unreach_str[icp->icmp_code], addr_ascii, h->host);
+                }
+
+                print_warning("\n");
+            }else{
+                
+                if (icp->icmp_code > ICMP_UNREACH_MAXTYPE) {
+                    sprintf( h->top_view_icmp_message,"ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
+                        addr_ascii, h->host);
+                }
+                else {
+                    sprintf( h->top_view_icmp_message,"%s from %s for ICMP Echo sent to %s",
+                        icmp_unreach_str[icp->icmp_code], addr_ascii, h->host);
+                }
+
+            }
             num_othericmprcvd++;
             break;
 

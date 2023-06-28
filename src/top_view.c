@@ -104,6 +104,8 @@ void top_view_print( HOST_ENTRY *h, int timeout ) {
 
     print_top_view_init();
 
+    line_clear( 5 + h->top_view_print_pos );
+
     if ( h->top_view_print_pos == 0 ){
         h->top_view_print_pos = next_view_pos++;
         sprintf(h->top_view_last_timeout_time, "0 ms" );
@@ -111,13 +113,13 @@ void top_view_print( HOST_ENTRY *h, int timeout ) {
     }
 
     
-
-
     if ( timeout == 1 ){
         h->top_view_last_timeouts++;
         h->top_view_last_timeouts_seq = h->top_view_last_timeouts;
 
         sprintf(h->top_view_last_timeout_time, "%"PRIi64" ms         ", h->top_view_last_timeouts * ( perhost_interval / 1000 / 1000 ) );
+
+        pos_printf( 5 + h->top_view_print_pos, HOST_POS          , "\033[01;31m%s\033[00m", h->host);
 
     }else{
 
@@ -126,11 +128,11 @@ void top_view_print( HOST_ENTRY *h, int timeout ) {
         }
 
         h->top_view_last_timeouts = 0;
+
+        pos_printf( 5 + h->top_view_print_pos, HOST_POS          , "\033[01;32m%s\033[00m", h->host);
     }
 
-    line_clear( 5 + h->top_view_print_pos );
     
-    pos_printf( 5 + h->top_view_print_pos, HOST_POS          , "%s", h->host);
     pos_printf( 5 + h->top_view_print_pos, SEND_POS          , "%d", h->num_sent);
     pos_printf( 5 + h->top_view_print_pos, RECV_POS          , "%d", h->num_recv);
     pos_printf( 5 + h->top_view_print_pos, LOST_POS          , "%d", (  h->num_sent - h->num_recv ));

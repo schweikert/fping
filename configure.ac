@@ -7,6 +7,22 @@ AC_INIT([fping],[5.1])
 
 m4_ifdef([AC_AUTOCONF_VERSION],[AC_USE_SYSTEM_EXTENSIONS], [AC_GNU_SOURCE])
 
+# Detect Operatingsystem
+AC_CANONICAL_HOST
+only_clock_realtime=no
+
+case "${host_os}" in
+  darwin*)
+    only_clock_realtime=yes
+    ;;
+  *freebsd*)
+    only_clock_realtime=yes
+    ;;
+  *openbsd*)
+    only_clock_realtime=yes
+    ;;
+esac
+
 dnl --disable-ipv4
 AC_ARG_ENABLE([ipv4],
   AS_HELP_STRING([--disable-ipv4], [Disable support for pinging IPv4 hosts]))
@@ -44,6 +60,7 @@ dnl Test if --enable-timestamp is explicitely enabled and make an error if this 
 AS_IF([test "x$enable_timestamp" = "xyes" -a "x$have_so_timestamp" = "xno"], [
   AC_MSG_ERROR([--enable-timestamp not supported on this platform])
 ])
+AS_IF([test "x$only_clock_realtime" = "xyes"], [AC_DEFINE(ONLY_CLOCK_REALTIME, [1], [ONLY_CLOCK_REALTIME is defined])])
 
 AC_ARG_ENABLE([safe-limits],
   AS_HELP_STRING([--enable-safe-limits], [Restrict timing parameters (-i, -p) within "safe" limits]))

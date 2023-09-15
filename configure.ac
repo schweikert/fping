@@ -8,11 +8,11 @@ AC_INIT([fping],[5.1])
 m4_ifdef([AC_AUTOCONF_VERSION],[AC_USE_SYSTEM_EXTENSIONS], [AC_GNU_SOURCE])
 
 # Detect Operatingsystem
-AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 only_clock_realtime=no
 
-case "${host_os}" in
-  darwin*)
+case "${target}" in
+  *darwin*)
     only_clock_realtime=yes
     ;;
   *freebsd*)
@@ -67,7 +67,6 @@ AC_ARG_ENABLE([safe-limits],
 AS_IF([test "x$enable_safe_limits" = "xyes"], [
    AC_DEFINE(FPING_SAFE_LIMITS, [1], [safe limits should be enforced])])
 
-AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_MAINTAINER_MODE
 

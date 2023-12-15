@@ -363,6 +363,8 @@ int randomly_lose_flag, trace_flag, print_per_system_flag;
 int lose_factor;
 #endif /* DEBUG || _DEBUG */
 
+unsigned int fwmark = 0;
+
 char *filename = NULL; /* file containing hosts to ping */
 
 /*** forward declarations ***/
@@ -518,6 +520,9 @@ int main(int argc, char **argv)
         { "ttl", 'H', OPTPARSE_REQUIRED },
         { "interval", 'i', OPTPARSE_REQUIRED },
         { "iface", 'I', OPTPARSE_REQUIRED },
+#ifdef SO_MARK
+        { "fwmark", 'k', OPTPARSE_REQUIRED },
+#endif
         { "loop", 'l', OPTPARSE_NONE },
         { "all", 'm', OPTPARSE_NONE },
         { "dontfrag", 'M', OPTPARSE_NONE },
@@ -761,6 +766,23 @@ int main(int argc, char **argv)
         case 'f':
             filename = optparse_state.optarg;
             break;
+#ifdef SO_MARK
+        case 'k':
+            if (!(fwmark = (unsigned int)atol(optparse_state.optarg)))
+                usage(1);
+
+            if (socket4 >= 0)
+                if(-1 == setsockopt(socket4, SOL_SOCKET, SO_MARK, &fwmark, sizeof fwmark))
+                    perror("fwmark ipv4");
+
+#ifdef IPV6
+            if (socket6 >= 0)
+                if(-1 == setsockopt(socket6, SOL_SOCKET, SO_MARK, &fwmark, sizeof fwmark))
+                    perror("fwmark ipv6");
+#endif
+
+            break;
+#endif
 
         case 'g':
             /* use IP list generation */
@@ -2923,6 +2945,9 @@ void usage(int is_error)
     fprintf(out, "   -H, --ttl=N        set the IP TTL value (Time To Live hops)\n");
 #ifdef SO_BINDTODEVICE
     fprintf(out, "   -I, --iface=IFACE  bind to a particular interface\n");
+#endif
+#ifdef SO_MARK
+    fprintf(out, "   -k, --fwmark=FWMARK set the routing mark\n");
 #endif
     fprintf(out, "   -l, --loop         loop mode: send pings forever\n");
     fprintf(out, "   -m, --all          use all IPs of provided hostnames (e.g. IPv4 and IPv6), use with -A\n");

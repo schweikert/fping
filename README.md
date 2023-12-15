@@ -28,13 +28,14 @@ If you want to install fping from source, proceed as follows:
    (see: `./configure --help`)
 2. Run `make; make install`.
 3. Make fping either setuid, or, if under Linux:
-   `sudo setcap cap_net_raw+ep fping`
+   `sudo setcap cap_net_raw,cap_net_admin+ep fping`
 
 If you can't run fping as root or can't use the cap_net_raw capability, you can
 also run fping in unprivileged mode. This works on MacOS and also on Linux,
 provided that your GID is included in the range defined in
 `/proc/sys/net/ipv4/ping_group_range`. This is particularly useful for running
-fping in rootless / unprivileged containers.
+fping in rootless / unprivileged containers. The --fwmark option needs root or
+cap_net_admin. setuid will not work for --fwmark.
 
 ## Usage
 

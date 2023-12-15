@@ -130,6 +130,11 @@ to any target (default is 10, minimum is 1).
 
 Set the interface (requires SO_BINDTODEVICE support).
 
+=item B<-k>, B<--fwmark>=I<FWMARK>
+
+Set FWMARK on ping packets for policy-based routing. Requires Linux kernel
+2.6.25<=, and root privileges or cap_net_admin.
+
 =item B<-l>, B<--loop>
 
 Loop sending packets to each target indefinitely. Can be interrupted with

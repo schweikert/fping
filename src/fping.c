@@ -114,24 +114,6 @@ extern int h_errno;
 }
 #endif /* __cplusplus */
 
-/*** Constants ***/
-
-/* CLOCK_MONTONIC starts under macOS, OpenBSD and FreeBSD with undefined positive point and can not be use
- * see github PR #217
- * The configure script detect the predefined operating systems an set CLOCK_REALTIME using over ONLY_CLOCK_REALTIME variable
- */
-#if HAVE_SO_TIMESTAMPNS || ONLY_CLOCK_REALTIME
-#define CLOCKID CLOCK_REALTIME
-#endif
-
-#if !defined(CLOCKID)
-#if defined(CLOCK_MONOTONIC)
-#define CLOCKID CLOCK_MONOTONIC
-#else
-#define CLOCKID CLOCK_REALTIME
-#endif
-#endif
-
 /*** Ping packet defines ***/
 
 #define MAX_IP_PACKET 65536 /* (theoretical) max IP packet size */
@@ -1510,8 +1492,12 @@ void signal_handler(int signum)
 
 void update_current_time()
 {
-    clock_gettime(CLOCKID, &current_time);
-    current_time_ns = timespec_ns(&current_time);
+    /* pull the realtime clock for logging */
+    clock_gettime(CLOCK_REALTIME, &current_time);
+    /* pull the monotonic clock for timing */
+    struct timespec monotonic_time;
+    clock_gettime(CLOCK_MONOTONIC, &monotonic_time);
+    current_time_ns = timespec_ns(&monotonic_time);
 }
 
 /************************************************************

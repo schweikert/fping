@@ -118,15 +118,16 @@ extern int h_errno;
 
 /*** Constants ***/
 
-#if HAVE_SO_TIMESTAMPNS
+/* CLOCK_MONTONIC starts under macOS, OpenBSD and FreeBSD with undefined positive point and can not be use
+ * see github PR #217
+ * The configure script detect the predefined operating systems an set CLOCK_REALTIME using over ONLY_CLOCK_REALTIME variable
+ */
+#if HAVE_SO_TIMESTAMPNS || ONLY_CLOCK_REALTIME
 #define CLOCKID CLOCK_REALTIME
 #endif
 
-/* CLOCK_MONTONIC starts under macOS, OpenBSD and FreeBSD with undefined positive point and can not be use
- * see github PR #217
- */
 #if !defined(CLOCKID)
-#if defined(CLOCK_MONOTONIC) && !defined(__APPLE__) && !defined(__OpenBSD__) && !defined(__FreeBSD__)
+#if defined(CLOCK_MONOTONIC)
 #define CLOCKID CLOCK_MONOTONIC
 #else
 #define CLOCKID CLOCK_REALTIME
@@ -327,7 +328,7 @@ int generate_flag = 0; /* flag for IP list generation */
 int verbose_flag, quiet_flag, stats_flag, unreachable_flag, alive_flag;
 int elapsed_flag, version_flag, count_flag, loop_flag, netdata_flag;
 int per_recv_flag, report_all_rtts_flag, name_flag, addr_flag, backoff_flag, rdns_flag;
-int multif_flag, timeout_flag;
+int multif_flag, timeout_flag, fast_reachable;
 int outage_flag = 0;
 int timestamp_flag = 0;
 int random_data_flag = 0;
@@ -512,6 +513,7 @@ int main(int argc, char **argv)
         { "version", 'v', OPTPARSE_NONE },
         { "top", 'k', OPTPARSE_NONE },
         { "reachable", 'x', OPTPARSE_REQUIRED },
+        { "fast-reachable", 'X', OPTPARSE_REQUIRED },
 #if defined(DEBUG) || defined(_DEBUG)
         { NULL, 'z', OPTPARSE_REQUIRED },
 #endif
@@ -724,6 +726,12 @@ int main(int argc, char **argv)
         case 'x':
             if (!(min_reachable = (unsigned int)atoi(optparse_state.optarg)))
                 usage(1);
+            break;
+
+        case 'X':
+            if (!(min_reachable = (unsigned int)atoi(optparse_state.optarg)))
+                usage(1);
+            fast_reachable = 1;
             break;
 
         case 'f':
@@ -987,13 +995,17 @@ int main(int argc, char **argv)
         int opt = 1;
         if (socket4 >= 0) {
             if (setsockopt(socket4, SOL_SOCKET, SO_TIMESTAMPNS, &opt, sizeof(opt))) {
-                perror("setting SO_TIMESTAMPNS option");
+                if (setsockopt(socket4, SOL_SOCKET, SO_TIMESTAMP, &opt, sizeof(opt))) {
+                    perror("setting SO_TIMESTAMPNS and SO_TIMESTAMP option");
+                }
             }
         }
 #ifdef IPV6
         if (socket6 >= 0) {
             if (setsockopt(socket6, SOL_SOCKET, SO_TIMESTAMPNS, &opt, sizeof(opt))) {
-                perror("setting SO_TIMESTAMPNS option (IPv6)");
+                if (setsockopt(socket6, SOL_SOCKET, SO_TIMESTAMP, &opt, sizeof(opt))) {
+                    perror("setting SO_TIMESTAMPNS and SO_TIMESTAMP option (IPv6)");
+                }
             }
         }
 #endif
@@ -1658,7 +1670,7 @@ void print_netdata(void)
         h = table[i];
 
         if (!sent_charts) {
-            printf("CHART fping.%s_packets '' 'FPing Packets for host %s' packets '%s' fping.packets line 110020 %.0f\n", h->name, h->host, h->host, report_interval / 1e9);
+            printf("CHART fping.%s_packets '' 'FPing Packets' packets '%s' fping.packets line 110020 %.0f\n", h->name, h->host, report_interval / 1e9);
             printf("DIMENSION xmt sent absolute 1 1\n");
             printf("DIMENSION rcv received absolute 1 1\n");
         }
@@ -1669,7 +1681,7 @@ void print_netdata(void)
         printf("END\n");
 
         if (!sent_charts) {
-            printf("CHART fping.%s_quality '' 'FPing Quality for host %s' percentage '%s' fping.quality area 110010 %.0f\n", h->name, h->host, h->host, report_interval / 1e9);
+            printf("CHART fping.%s_quality '' 'FPing Quality' percentage '%s' fping.quality area 110010 %.0f\n", h->name, h->host, report_interval / 1e9);
             printf("DIMENSION returned '' absolute 1 1\n");
             /* printf("DIMENSION lost '' absolute 1 1\n"); */
         }
@@ -1686,7 +1698,7 @@ void print_netdata(void)
         printf("END\n");
 
         if (!sent_charts) {
-            printf("CHART fping.%s_latency '' 'FPing Latency for host %s' ms '%s' fping.latency area 110000 %.0f\n", h->name, h->host, h->host, report_interval / 1e9);
+            printf("CHART fping.%s_latency '' 'FPing Latency' ms '%s' fping.latency area 110000 %.0f\n", h->name, h->host, report_interval / 1e9);
             printf("DIMENSION min minimum absolute 1 1000000\n");
             printf("DIMENSION max maximum absolute 1 1000000\n");
             printf("DIMENSION avg average absolute 1 1000000\n");
@@ -1948,15 +1960,13 @@ int receive_packet(int64_t wait_time,
         reply_buf,
         reply_buf_len
     };
-    struct msghdr recv_msghdr = {
-        reply_src_addr,
-        reply_src_addr_len,
-        &msg_iov,
-        1,
-        &msg_control,
-        sizeof(msg_control),
-        0
-    };
+    struct msghdr recv_msghdr = {0};
+    recv_msghdr.msg_name = reply_src_addr;
+    recv_msghdr.msg_namelen = reply_src_addr_len;
+    recv_msghdr.msg_iov = &msg_iov;
+    recv_msghdr.msg_iovlen = 1;
+    recv_msghdr.msg_control = &msg_control;
+    recv_msghdr.msg_controllen = sizeof(msg_control);
 #if HAVE_SO_TIMESTAMPNS
     struct cmsghdr *cmsg;
 #endif
@@ -2083,7 +2093,7 @@ int decode_icmp_ipv4(
     if (!using_sock_dgram4) {
         struct ip *ip = (struct ip *)reply_buf;
 
-#if defined(__alpha__) && __STDC__ && !defined(__GLIBC__) && !defined(__NetBSD__)
+#if defined(__alpha__) && __STDC__ && !defined(__GLIBC__) && !defined(__NetBSD__) && !defined(__OpenBSD__)
         /* The alpha headers are decidedly broken.
          * Using an ANSI compiler, it provides ip_vhl instead of ip_hl and
          * ip_v.  So, to get ip_hl, we mask off the bottom four bits.
@@ -2419,6 +2429,9 @@ int wait_for_reply(int64_t wait_time)
     /* print "is alive" */
     if (h->num_recv == 1) {
         num_alive++;
+        if (fast_reachable && num_alive >= min_reachable)
+                finish_requested = 1;
+
         if (verbose_flag || alive_flag) {
             printf("%s", h->host);
 
@@ -2962,5 +2975,6 @@ void usage(int is_error)
     fprintf(out, "   -u, --unreach      show targets that are unreachable\n");
     fprintf(out, "   -v, --version      show version\n");
     fprintf(out, "   -x, --reachable=N  shows if >=N hosts are reachable or not\n");
+    fprintf(out, "   -X, --fast-reachable=N exits true immediately when N hosts are found\n");
     exit(is_error);
 }

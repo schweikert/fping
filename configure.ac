@@ -4,7 +4,24 @@ dnl Minimum Autoconf version required.
 AC_PREREQ(2.59)
 
 AC_INIT([fping],[5.1])
-AC_GNU_SOURCE
+
+m4_ifdef([AC_AUTOCONF_VERSION],[AC_USE_SYSTEM_EXTENSIONS], [AC_GNU_SOURCE])
+
+# Detect Operatingsystem
+AC_CANONICAL_TARGET
+only_clock_realtime=no
+
+case "${target}" in
+  *darwin*)
+    only_clock_realtime=yes
+    ;;
+  *freebsd*)
+    only_clock_realtime=yes
+    ;;
+  *openbsd*)
+    only_clock_realtime=yes
+    ;;
+esac
 
 dnl --disable-ipv4
 AC_ARG_ENABLE([ipv4],
@@ -43,13 +60,13 @@ dnl Test if --enable-timestamp is explicitely enabled and make an error if this 
 AS_IF([test "x$enable_timestamp" = "xyes" -a "x$have_so_timestamp" = "xno"], [
   AC_MSG_ERROR([--enable-timestamp not supported on this platform])
 ])
+AS_IF([test "x$only_clock_realtime" = "xyes"], [AC_DEFINE(ONLY_CLOCK_REALTIME, [1], [ONLY_CLOCK_REALTIME is defined])])
 
 AC_ARG_ENABLE([safe-limits],
   AS_HELP_STRING([--enable-safe-limits], [Restrict timing parameters (-i, -p) within "safe" limits]))
 AS_IF([test "x$enable_safe_limits" = "xyes"], [
    AC_DEFINE(FPING_SAFE_LIMITS, [1], [safe limits should be enforced])])
 
-AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_MAINTAINER_MODE
 
@@ -59,7 +76,7 @@ dnl Checks for programs.
 
 AC_PROG_CC
 AM_PROG_CC_C_O
-AC_PROG_CC_STDC
+m4_version_prereq([2.70],,[AC_PROG_CC_STDC])
 AC_PROG_CPP
 AC_PROG_INSTALL
 

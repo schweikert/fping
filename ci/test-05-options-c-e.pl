@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 12;
+use Test::Command tests => 18;
 
 #  -c n       count of pings to send to each target (default 1)
 #  -C n       same as -c, report results in verbose format
@@ -34,6 +34,25 @@ localhost : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
 
 $cmd->stderr_like(qr{localhost : \d\.\d+ \d\.\d+
 127\.0\.0\.1 : \d\.\d+ \d\.\d+
+});
+}
+
+# fping -C n -q
+{
+my $cmd = Test::Command->new(cmd => "fping -C 5 -q -p 100 localhost");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{localhost :( \d\.\d+){5}
+});
+}
+
+# fping -C n -i -q
+{
+my $cmd = Test::Command->new(cmd => "fping --quiet --interval=1 --vcount=20 --period=50 127.0.0.1 127.0.0.2");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{127\.0\.0\.1 :( \d\.\d+){20}
+127\.0\.0\.2 :( \d\.\d+){20}
 });
 }
 

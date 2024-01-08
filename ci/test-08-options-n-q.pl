@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 21;
+use Test::Command tests => 24;
 
 #  -n         show targets by name (-d is equivalent)
 #  -O n       set the type of service (tos) flag on the ICMP packets
@@ -81,4 +81,16 @@ $cmd->stderr_like(qr{\[\d+:\d+:\d+\]
 });
 }
 
+# fping -Q -o
+{
+my $cmd = Test::Command->new(cmd => "fping -c4 -Q1 -p550 -o 8.8.8.7");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{\[\d+:\d+:\d+\]
+8\.8\.8\.7 : xmt/rcv/%loss = 1/0/100%, outage\(ms\) = 55\d
+\[\d+:\d+:\d+\]
+8\.8\.8\.7 : xmt/rcv/%loss = 2/0/100%, outage\(ms\) = 110\d
+8\.8\.8\.7 : xmt/rcv/%loss = 4/0/100%, outage\(ms\) = 220\d
+});
+}
 

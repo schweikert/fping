@@ -1655,7 +1655,7 @@ void print_per_system_stats(void)
             else {
                 fprintf(stderr, " xmt/rcv/%%return = %d/%d/%d%%",
                     h->num_sent, h->num_recv,
-                    ((h->num_recv * 100) / h->num_sent));
+                    h->num_sent > 0 ? ((h->num_recv * 100) / h->num_sent) : 0);
             }
 
             if (h->num_recv) {

@@ -274,7 +274,8 @@ B<fping website: L<http://www.fping.org>>
 
 =head1 DIAGNOSTICS
 
-Exit status is 0 if all the hosts are reachable, 1 if some hosts
+Exit status is 0 if all the hosts (or the number of hosts specified with B<-x>
+or B<-X>) are reachable, 1 if some (or too many with B<-x> or B<-X>) hosts
 were unreachable, 2 if any IP addresses were not found, 3 for invalid command
 line arguments, and 4 for a system call failure.
 

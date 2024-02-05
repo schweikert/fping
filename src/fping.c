@@ -2937,12 +2937,12 @@ void usage(int is_error)
     fprintf(out, "   -6, --ipv6         only ping IPv6 addresses\n");
     fprintf(out, "   -b, --size=BYTES   amount of ping data to send, in bytes (default: %d)\n", DEFAULT_PING_DATA_SIZE);
     fprintf(out, "   -B, --backoff=N    set exponential backoff factor to N (default: 1.5)\n");
-    fprintf(out, "   -c, --count=N      count mode: send N pings to each target\n");
     fprintf(out, "   -f, --file=FILE    read list of targets from a file ( - means stdin)\n");
     fprintf(out, "   -g, --generate     generate target list (only if no -f specified)\n");
     fprintf(out, "                      (give start and end IP in the target list, or a CIDR address)\n");
     fprintf(out, "                      (ex. %s -g 192.168.1.0 192.168.1.255 or %s -g 192.168.1.0/24)\n", prog, prog);
     fprintf(out, "   -H, --ttl=N        set the IP TTL value (Time To Live hops)\n");
+    fprintf(out, "   -i, --interval=MSEC  interval between sending ping packets (default: %.0f ms)\n", interval / 1e6);
 #ifdef SO_BINDTODEVICE
     fprintf(out, "   -I, --iface=IFACE  bind to a particular interface\n");
 #endif
@@ -2964,11 +2964,11 @@ void usage(int is_error)
     fprintf(out, "Output options:\n");
     fprintf(out, "   -a, --alive        show targets that are alive\n");
     fprintf(out, "   -A, --addr         show targets by address\n");
+    fprintf(out, "   -c, --count=N      count mode: send N pings to each target\n");
     fprintf(out, "   -C, --vcount=N     same as -c, report results in verbose format\n");
     fprintf(out, "   -d, --rdns         show targets by name (force reverse-DNS lookup)\n");
     fprintf(out, "   -D, --timestamp    print timestamp before each output line\n");
     fprintf(out, "   -e, --elapsed      show elapsed time on return packets\n");
-    fprintf(out, "   -i, --interval=MSEC  interval between sending ping packets (default: %.0f ms)\n", interval / 1e6);
     fprintf(out, "   -n, --name         show targets by name (reverse-DNS lookup for target IPs)\n");
     fprintf(out, "   -N, --netdata      output compatible for netdata (-l -Q are required)\n");
     fprintf(out, "   -o, --outage       show the accumulated outage time (lost packets * packet interval)\n");

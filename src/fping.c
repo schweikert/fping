@@ -919,9 +919,6 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    if (alive_flag || unreachable_flag || min_reachable)
-        verbose_flag = 0;
-
     if (count_flag) {
         if (verbose_flag)
             per_recv_flag = 1;
@@ -935,6 +932,9 @@ int main(int argc, char **argv)
 
         alive_flag = unreachable_flag = verbose_flag = 0;
     }
+
+    if (alive_flag || unreachable_flag || min_reachable)
+        verbose_flag = 0;
 
     trials = (count > retry + 1) ? count : retry + 1;
 

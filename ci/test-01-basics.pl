@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 9;
+use Test::Command tests => 12;
 use Test::More;
 
 # ping 127.0.0.1
@@ -21,6 +21,18 @@ SKIP: {
     $cmd->exit_is_num(0);
     $cmd->stdout_is_eq("::1 is alive\n");
     $cmd->stderr_is_eq("");
+}
+
+# ping ff02::1
+SKIP: {
+    #system("/sbin/ifconfig >&2");
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping ff02::1");
+    $cmd->exit_is_num(0);
+    $cmd->stdout_is_eq("ff02::1 is alive\n");
+    $cmd->stderr_like(qr{ \[<- .*\]});
 }
 
 # ping 3 times 127.0.0.1

@@ -50,7 +50,7 @@ $cmd9->exit_is_num(1);
 $cmd9->stdout_is_eq("");
 $cmd9->stderr_is_eq("fping: backoff factor 0.9 not valid, must be between 1.0 and 5.0\n");
 
-# fping -B 0.9
+# fping -B 5.1
 my $cmd10 = Test::Command->new(cmd => "fping -B 5.1 127.0.0.1");
 $cmd10->exit_is_num(1);
 $cmd10->stdout_is_eq("");

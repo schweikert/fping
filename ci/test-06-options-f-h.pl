@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 51;
+use Test::Command tests => 72;
 use Test::More;
 use File::Temp;
 
@@ -13,6 +13,10 @@ use File::Temp;
 my $tmpfile = File::Temp->new();
 print $tmpfile "127.0.0.1\n127.0.0.2\n";
 close($tmpfile);
+
+my $tmpfile2 = File::Temp->new();
+print $tmpfile2 "# comment\n127.0.0.1\n\n127.0.0.2\n";
+close($tmpfile2);
 
 # fping without option (-> equivalent to 'fping -f -')
 {
@@ -38,6 +42,22 @@ $cmd->stdout_is_eq("127.0.0.1 is alive\n127.0.0.2 is alive\n");
 $cmd->stderr_is_eq("");
 }
 
+# fping -f file (with comment and empty line)
+{
+my $cmd = Test::Command->new(cmd => "fping -f ".$tmpfile2->filename);
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("127.0.0.1 is alive\n127.0.0.2 is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping -f non-existing-file (error)
+{
+my $cmd = Test::Command->new(cmd => "fping -f file-does-not-exist");
+$cmd->exit_is_num(4);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{: fopen :});
+}
+
 # fping -g (error: no argument)
 {
 my $cmd = Test::Command->new(cmd => "fping -g");
@@ -53,6 +73,31 @@ $cmd->exit_is_num(1);
 $cmd->stdout_is_eq("");
 $cmd->stderr_like(qr{^Usage: fping \[options\] \[targets\.\.\.\]});
 }
+
+# fping -g (error: CIDR network is not an IP address)
+{
+my $cmd = Test::Command->new(cmd => "fping -g xxx/32");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{can't parse address xxx});
+}
+
+# fping -g (error: start of range is not an IP address)
+{
+my $cmd = Test::Command->new(cmd => "fping -g xxx 127.0.0.1");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{can't parse address xxx});
+}
+
+# fping -g (error: end of range is not an IP address)
+{
+my $cmd = Test::Command->new(cmd => "fping -g 127.0.0.1 yyy");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{can't parse address yyy});
+}
+
 # fping -g (error: too many arguments)
 {
 my $cmd = Test::Command->new(cmd => "fping -g 127.0.0.1 127.0.0.2 127.0.0.3");
@@ -131,6 +176,28 @@ SKIP: {
         skip 'Skip IPv6 tests', 3;
     }
     my $cmd = Test::Command->new(cmd => "fping -6 -g ::1 ::1");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_is_eq("fping: -g works only with IPv4 addresses\n");
+}
+
+# fping -g (range - no IPv6 generator - start address IPv6)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -6 -g ::1 127.0.0.1");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_is_eq("fping: -g works only with IPv4 addresses\n");
+}
+
+# fping -g (range - no IPv6 generator - end address IPv6)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -6 -g 127.0.0.1 ::1");
     $cmd->exit_is_num(1);
     $cmd->stdout_is_eq("");
     $cmd->stderr_is_eq("fping: -g works only with IPv4 addresses\n");

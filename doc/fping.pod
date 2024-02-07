@@ -66,7 +66,8 @@ default is 1.5.
 Number of request packets to send to each target.  In this mode, a line is
 displayed for each received response (this can suppressed with B<-q> or B<-Q>).
 Also, statistics about responses for each target are displayed when all
-requests have been sent (or when interrupted).
+requests have been sent (or when interrupted).  This option overrides B<-a>
+or B<-u>.
 
 =item B<-C>, B<--vcount>=I<N>
 
@@ -77,7 +78,8 @@ designed for automated response-time statistics gathering. For example:
  somehost : 91.7 37.0 29.2 - 36.8
 
 shows the response time in milliseconds for each of the five requests, with the
-C<-> indicating that no response was received to the fourth request.
+C<-> indicating that no response was received to the fourth request.  This
+option overrides B<-a> or B<-u>.
 
 =item B<-d>, B<--rdns>
 

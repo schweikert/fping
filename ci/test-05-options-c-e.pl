@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 18;
+use Test::Command tests => 33;
 
 #  -c n       count of pings to send to each target (default 1)
 #  -C n       same as -c, report results in verbose format
@@ -10,6 +10,46 @@ use Test::Command tests => 18;
 # fping -c n
 {
 my $cmd = Test::Command->new(cmd => "fping -4 -c 2 -p 100 localhost 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{localhost : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+localhost : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+127\.0\.0\.1 : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+});
+
+$cmd->stderr_like(qr{localhost : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+});
+}
+
+# fping -c n -q
+{
+my $cmd = Test::Command->new(cmd => "fping -q -c 2 -p 100 localhost 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{localhost : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+});
+}
+
+# fping -c n -a (-a is ignored)
+{
+my $cmd = Test::Command->new(cmd => "fping -a -c 2 -p 100 localhost 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{localhost : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+localhost : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+127\.0\.0\.1 : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+});
+
+$cmd->stderr_like(qr{localhost : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+});
+}
+
+# fping -c n -u (-u is ignored)
+{
+my $cmd = Test::Command->new(cmd => "fping -u -c 2 -p 100 localhost 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr{localhost : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
 127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
@@ -43,6 +83,36 @@ my $cmd = Test::Command->new(cmd => "fping -C 5 -q -p 100 localhost");
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("");
 $cmd->stderr_like(qr{localhost :( \d\.\d+){5}
+});
+}
+
+# fping -C n -a (-a is ignored)
+{
+my $cmd = Test::Command->new(cmd => "fping -a -C 2 -p 100 localhost 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{localhost : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+localhost : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+127\.0\.0\.1 : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+});
+
+$cmd->stderr_like(qr{localhost : \d\.\d+ \d\.\d+
+127\.0\.0\.1 : \d\.\d+ \d\.\d+
+});
+}
+
+# fping -C n -u (-u is ignored)
+{
+my $cmd = Test::Command->new(cmd => "fping -u -C 2 -p 100 localhost 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{localhost : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+localhost : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+127\.0\.0\.1 : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+});
+
+$cmd->stderr_like(qr{localhost : \d\.\d+ \d\.\d+
+127\.0\.0\.1 : \d\.\d+ \d\.\d+
 });
 }
 

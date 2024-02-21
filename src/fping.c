@@ -2938,7 +2938,7 @@ void usage(int is_error)
     fprintf(out, "   -6, --ipv6         only ping IPv6 addresses\n");
     fprintf(out, "   -b, --size=BYTES   amount of ping data to send, in bytes (default: %d)\n", DEFAULT_PING_DATA_SIZE);
     fprintf(out, "   -B, --backoff=N    set exponential backoff factor to N (default: 1.5)\n");
-    fprintf(out, "   -c, --count=N      count mode: send N pings to each target\n");
+    fprintf(out, "   -c, --count=N      count mode: send N pings to each target and report stats\n");
     fprintf(out, "   -f, --file=FILE    read list of targets from a file ( - means stdin)\n");
     fprintf(out, "   -g, --generate     generate target list (only if no -f specified)\n");
     fprintf(out, "                      (give start and end IP in the target list, or a CIDR address)\n");
@@ -2966,7 +2966,7 @@ void usage(int is_error)
     fprintf(out, "Output options:\n");
     fprintf(out, "   -a, --alive        show targets that are alive\n");
     fprintf(out, "   -A, --addr         show targets by address\n");
-    fprintf(out, "   -C, --vcount=N     same as -c, report results in verbose format\n");
+    fprintf(out, "   -C, --vcount=N     same as -c, report results (not stats) in verbose format\n");
     fprintf(out, "   -d, --rdns         show targets by name (force reverse-DNS lookup)\n");
     fprintf(out, "   -D, --timestamp    print timestamp before each output line\n");
     fprintf(out, "   -e, --elapsed      show elapsed time on return packets\n");

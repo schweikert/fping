@@ -2680,9 +2680,7 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
 
 void crash_and_burn(char *message)
 {
-    if (verbose_flag)
-        fprintf(stderr, "%s: %s\n", prog, message);
-
+    fprintf(stderr, "%s: %s\n", prog, message);
     exit(4);
 }
 

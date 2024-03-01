@@ -81,9 +81,9 @@ unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, int64_t t
     /* check if expired (note that unused seqmap values will have fields set to
      * 0, so will be seen as expired */
     next_value = &seqmap_map[seqmap_next_id];
-    if (timestamp - next_value->ping_ts < SEQMAP_TIMEOUT_IN_NS) {
-        fprintf(stderr, "fping error: not enough sequence numbers available! (expire_timeout=%" PRId64 ", host_nr=%d, ping_count=%d, seqmap_next_id=%d)\n",
-            SEQMAP_TIMEOUT_IN_NS, host_nr, ping_count, seqmap_next_id);
+    if (next_value->ping_ts != 0 && timestamp - next_value->ping_ts < SEQMAP_TIMEOUT_IN_NS) {
+        fprintf(stderr, "fping error: not enough sequence numbers available! (expire_timeout=%" PRId64 ", host_nr=%d, ping_count=%d, seqmap_next_id=%d ping_st=%" PRId64 ")\n",
+		SEQMAP_TIMEOUT_IN_NS, host_nr, ping_count, seqmap_next_id, next_value->ping_ts);
         exit(4);
     }
 

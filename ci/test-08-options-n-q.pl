@@ -1,8 +1,9 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 24;
+use Test::Command tests => 30;
 
 #  -n         show targets by name (-d is equivalent)
+#  -o         show outage time (only with -c n, -C n -Q m, and -l)
 #  -O n       set the type of service (tos) flag on the ICMP packets
 #  -p n       interval between ping packets to one target (in millisec)
 #               (in looping and counting modes, default 1000)
@@ -27,7 +28,7 @@ $cmd->stdout_is_eq("");
 $cmd->stderr_is_eq("fping: use either one of -d or -n\n");
 }
 
-# fping -o
+# fping -o -c
 {
 my $cmd = Test::Command->new(cmd => "fping -t100 -p 100 -o -c 5 8.8.8.7");
 $cmd->exit_is_num(1);
@@ -54,6 +55,26 @@ my $cmd = Test::Command->new(cmd => "fping -q -p 100 -c 3 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("");
 $cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 3/3/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+});
+}
+
+# fping -q -o -c
+{
+my $cmd = Test::Command->new(cmd => "fping -q -p 100 -c 3 -o 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 3/3/0%, outage\(ms\) = 0, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+});
+}
+
+# fping -Q -o -C
+{
+my $cmd = Test::Command->new(cmd => "fping -Q0.18 -p100 -C3 -o 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{\[\d{2}:\d{2}:\d{2}\]
+127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, outage\(ms\) = 0, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+127\.0\.0\.1 :( \d+.\d+){3}
 });
 }
 

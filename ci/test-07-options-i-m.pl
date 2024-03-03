@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 15;
+use Test::Command tests => 17;
 use Test::More;
 
 #  -i n       interval between sending ping packets (in millisec) (default 25)
@@ -58,6 +58,17 @@ $cmd->stderr_like(qr{\[\d\d:\d\d:\d\d\]
 127\.0\.0\.1 : xmt/rcv/%loss = \d/\d/\d%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
 \[\d\d:\d\d:\d\d\]
 127\.0\.0\.1 : xmt/rcv/%loss = \d/\d/\d%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+});
+}
+
+# fping -l -Q -o
+{
+my $cmd = Test::Command->new(cmd => '(sleep 2; pkill fping)& fping -p 850 -l -Q 1 -o 127.0.0.1');
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{\[\d\d:\d\d:\d\d\]
+127\.0\.0\.1 : xmt/rcv/%loss = \d/\d/\d%, outage\(ms\) = 0, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+\[\d\d:\d\d:\d\d\]
+127\.0\.0\.1 : xmt/rcv/%loss = \d/\d/\d%, outage\(ms\) = 0, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
 });
 }
 

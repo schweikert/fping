@@ -66,6 +66,11 @@ void seqmap_init()
     if (seqmap_map == NULL) {
         perror("malloc error (can't allocate seqmap_map)");
     }
+
+    // Initialize all ping_ts fields to -SEQMAP_TIMEOUT_IN_NS
+    for (unsigned int i = 0; i < SEQMAP_MAXSEQ; ++i) {
+        seqmap_map[i].ping_ts = -SEQMAP_TIMEOUT_IN_NS;
+    }
 }
 
 unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, int64_t timestamp)

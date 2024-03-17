@@ -452,6 +452,13 @@ int p_setsockopt(uid_t p_uid, int sockfd, int level, int optname,
 
 int main(int argc, char **argv)
 {
+/* Debug: CPU Performance */
+#if defined(DEBUG) || defined(_DEBUG)
+    clock_t perf_cpu_start, perf_cpu_end;
+    double perf_cpu_time_used;
+    perf_cpu_start = clock();
+#endif /* DEBUG || _DEBUG */
+
     int c;
     const uid_t suid = geteuid();
     int tos = 0;
@@ -1197,6 +1204,13 @@ int main(int argc, char **argv)
 
     /* main loop */
     main_loop();
+
+/* Debug: CPU Performance */
+#if defined(DEBUG) || defined(_DEBUG)
+    perf_cpu_end = clock();
+    perf_cpu_time_used = ((double) (perf_cpu_end - perf_cpu_start)) / CLOCKS_PER_SEC;
+    printf("[DEBUG] CPU time used: %f sec", perf_cpu_time_used);
+#endif /* DEBUG || _DEBUG */
 
     finish();
 

@@ -67,6 +67,11 @@ AC_ARG_ENABLE([safe-limits],
 AS_IF([test "x$enable_safe_limits" = "xyes"], [
    AC_DEFINE(FPING_SAFE_LIMITS, [1], [safe limits should be enforced])])
 
+AC_ARG_ENABLE([debug],
+  AS_HELP_STRING([--enable-debug], [enable debugging @<:@default=no@:>@]), [enable_debug=$enableval], [enable_debug=no])
+AS_IF([test "x$enable_debug" = "xyes"], [
+  AC_DEFINE([DEBUG], [1], [Define if debugging is enabled])])
+
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_MAINTAINER_MODE
 

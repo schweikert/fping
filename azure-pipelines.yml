@@ -23,3 +23,30 @@ jobs:
      prove $(ls ci/test-*.pl|grep -v internet-hosts|grep -v -E "test-13-unknown-host.pl|test-14-ping-internet-hosts.pl")
      ci/test-tarball.sh
     displayName: 'build_test'
+
+- job: macos_build
+  displayName: macOS Build
+
+  pool:
+    name: Azure Pipelines
+    vmImage: 'macos-latest'
+  workspace:
+    clean: all
+  steps:
+    - script: |
+       brew install autoconf automake lcov
+       ci/build-2-test-command.sh
+       ci/build-3-prepare-macos.sh
+      displayName: 'before_install'
+
+    - script: |
+       ci/build-4-compile.sh
+      displayName: install
+
+    - script: |
+       set -ex
+       PATH=`pwd`/src:$PATH
+       export SKIP_IPV6=1
+       prove $(ls ci/test-*.pl|grep -v internet-hosts|grep -v test-10-option-u-x.pl)
+       ci/run-lcov.sh
+      displayName: 'build_test'

@@ -20,7 +20,6 @@ jobs:
   - script: |
      set -ex
      PATH=`pwd`/src:$PATH
-     prove ci/test-{01..12}*.pl
-     prove ci/test-15*.pl
+     prove $(ls ci/test-*.pl|grep -v internet-hosts|grep -v -E "test-13-unknown-host.pl|test-14-ping-internet-hosts.pl")
      ci/test-tarball.sh
     displayName: 'build_test'

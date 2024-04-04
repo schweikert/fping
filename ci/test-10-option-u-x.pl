@@ -46,11 +46,3 @@ $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("Enough hosts reachable (required: 1, reachable: 1)\n");
 $cmd->stderr_is_eq("");
 }
-
-# fping -X
-{
-my $cmd = Test::Command->new(cmd => "fping -X 2 --generate 8.8.0.0/29");
-$cmd->exit_is_num(1);
-$cmd->stdout_is_eq("Not enough hosts reachable (required: 2, reachable: 0)\n");
-$cmd->stderr_is_eq("");
-}

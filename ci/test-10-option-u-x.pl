@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 18;
+use Test::Command tests => 15;
 
 #  -u         show targets that are unreachable
 #  -v         show version

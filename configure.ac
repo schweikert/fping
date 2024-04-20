@@ -3,7 +3,7 @@ dnl Process this file with autoconf to produce a configure script.
 dnl Minimum Autoconf version required.
 AC_PREREQ(2.59)
 
-AC_INIT([fping],[5.1])
+AC_INIT([fping],[5.2])
 
 m4_ifdef([AC_AUTOCONF_VERSION],[AC_USE_SYSTEM_EXTENSIONS], [AC_GNU_SOURCE])
 

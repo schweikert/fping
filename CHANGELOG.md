@@ -1,3 +1,43 @@
+fping 5.2 (2024-04-21)
+======================
+
+## New features
+
+- New option -X / --fast-reachable to exit immediately once N hosts have been
+  found (#260, thanks @chriscray and @gsnw)
+
+- New option -k / -fwmark to set Linux fwmark mask (#289, thanks @tomangert and
+  @deepkv)
+
+## Bugfixes and other changes
+
+- Always output fatal error messages (#303, thanks @auerswal)
+- Fallback to SO\_TIMESTAMP if SO\_TIMESTAMPNS is not available (#279, thanks
+  @gsnw)
+- Fix "not enough sequence numbers available" error on BSD-like systems (#307,
+  thanks @cagney, @gsnw)
+- Fix running in unprivileged mode (#248, thanks @sfan5)
+- Fix build issue for NetBSD/alpha (#255, thanks @0-wiz-0)
+- Fix build issue for OpenBSD/alpha (#275, thanks @gsnw)
+- Fix build warning for long int usage (#258, thanks @gsnw)
+- Fix build error with musl libc (#263, thanks @kraj)
+- Fix to guard against division by zero (#293, thanks @auerswal)
+- Decouple -a/-u effects from -c (#298, thanks @auerswal)
+- Added contrib/Dockerfile (#224, thanks @darless)
+- Remove host from Netdata chart titles (#253, thanks @ilyam8)
+- Add additional tests (#292, #297, thanks @auerswal)
+- Update github action os images (#282, thanks @gsnw)
+- Fix Azure pipeline tests (#308, thanks @gsnw)
+- Various autoconf fixes (#286, #283, thanks @gsnw)
+- Extended configure script with --enable-debug and output cpu usage (#311,
+  thanks @gsnw)
+- Documentation: Update Netdata website link (#257, thanks @ilyam8)
+- Documentation: fix description of --file option (#268, thanks @MohGeek)
+- Documentation: improve exit status description (#294, thanks @auerswal)
+- Documentation: move description of -i MSEC (#298, thanks @auerswal)
+- Documentation: improve help output for options -c and -C (#302, #auerswal)
+
+
 fping 5.1 (2022-02-06)
 ======================
 

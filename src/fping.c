@@ -38,6 +38,8 @@ extern "C" {
 #include "config.h"
 #include "options.h"
 #include "optparse.h"
+#include "top_view.h"
+#include "data_types.h"
 
 #include <errno.h>
 #include <inttypes.h>
@@ -214,35 +216,7 @@ char *icmp_unreach_str[16] = {
 
 #define ICMP_UNREACH_MAXTYPE 15
 
-struct event;
-typedef struct host_entry {
-    int i; /* index into array */
-    char *name; /* name as given by user */
-    char *host; /* text description of host */
-    struct sockaddr_storage saddr; /* internet address */
-    socklen_t saddr_len;
-    int64_t timeout; /* time to wait for response */
-    int64_t last_send_time; /* time of last packet sent */
-    int num_sent; /* number of ping packets sent (for statistics) */
-    int num_recv; /* number of pings received (duplicates ignored) */
-    int num_recv_total; /* number of pings received, including duplicates */
-    int64_t max_reply; /* longest response time */
-    int64_t min_reply; /* shortest response time */
-    int64_t total_time; /* sum of response times */
-    /* _i -> splits (reset on every report interval) */
-    int num_sent_i; /* number of ping packets sent */
-    int num_recv_i; /* number of pings received */
-    int64_t max_reply_i; /* longest response time */
-    int64_t min_reply_i; /* shortest response time */
-    int64_t total_time_i; /* sum of response times */
-    int64_t *resp_times; /* individual response times */
 
-    /* to avoid allocating two struct events each time that we send a ping, we
-     * preallocate here two struct events for each ping that we might send for
-     * this host. */
-    struct event *event_storage_ping;
-    struct event *event_storage_timeout;
-} HOST_ENTRY;
 
 int event_storage_count; /* how many events can be stored in host_entry->event_storage_xxx */
 
@@ -358,6 +332,7 @@ int multif_flag, timeout_flag, fast_reachable;
 int outage_flag = 0;
 int timestamp_flag = 0;
 int random_data_flag = 0;
+int top_view = 0;
 #if defined(DEBUG) || defined(_DEBUG)
 int randomly_lose_flag, trace_flag, print_per_system_flag;
 int lose_factor;
@@ -549,6 +524,7 @@ int main(int argc, char **argv)
         { NULL, 'T', OPTPARSE_REQUIRED },
         { "unreach", 'u', OPTPARSE_NONE },
         { "version", 'v', OPTPARSE_NONE },
+        { "top", 'k', OPTPARSE_NONE },
         { "reachable", 'x', OPTPARSE_REQUIRED },
         { "fast-reachable", 'X', OPTPARSE_REQUIRED },
 #if defined(DEBUG) || defined(_DEBUG)
@@ -863,6 +839,9 @@ int main(int argc, char **argv)
             outage_flag = 1;
             break;
 
+        case 'k':
+            top_view = 1;
+            break;
         case '?':
             fprintf(stderr, "%s: %s\n", argv[0], optparse_state.errmsg);
             fprintf(stderr, "see 'fping -h' for usage information\n");
@@ -871,6 +850,7 @@ int main(int argc, char **argv)
         }
     }
 
+    
     /* permanently drop privileges */
     if (suid != getuid() && setuid(getuid())) {
         perror("fatal: failed to permanently drop privileges");
@@ -1352,8 +1332,11 @@ void main_loop()
     struct event *event;
     struct host_entry *h;
 
+    
+
     while (event_queue_ping.first || event_queue_timeout.first) {
         dbg_printf("%s", "# main_loop\n");
+    
 
         /* timeout event ? */
         if (event_queue_timeout.first && event_queue_timeout.first->ev_time - current_time_ns <= 0) {
@@ -1368,23 +1351,28 @@ void main_loop()
                 if (timestamp_flag) {
                     printf("[%.5f] ", (double)current_time_ns / 1e9);
                 }
-                printf("%-*s : [%d], timed out",
-                    max_hostname_len, h->host, event->ping_index);
-                if (h->num_recv > 0) {
-                    printf(" (%s avg, ", sprint_tm(h->total_time / h->num_recv));
+                if( top_view == 0 ){
+                    printf("%-*s : [%d], timed out",
+                        max_hostname_len, h->host, event->ping_index);
+                
+                    if (h->num_recv > 0) {
+                        printf(" (%s avg, ", sprint_tm(h->total_time / h->num_recv));
+                    }
+                    else {
+                        printf(" (NaN avg, ");
+                    }
+                    if (h->num_recv <= h->num_sent) {
+                        printf("%d%% loss)",
+                            ((h->num_sent - h->num_recv) * 100) / h->num_sent);
+                    }
+                    else {
+                        printf("%d%% return)",
+                            (h->num_recv_total * 100) / h->num_sent);
+                    }
+                    printf("\n");
+                }else{
+                    top_view_print( h, 1 );
                 }
-                else {
-                    printf(" (NaN avg, ");
-                }
-                if (h->num_recv <= h->num_sent) {
-                    printf("%d%% loss)",
-                        ((h->num_sent - h->num_recv) * 100) / h->num_sent);
-                }
-                else {
-                    printf("%d%% return)",
-                        (h->num_recv_total * 100) / h->num_sent);
-                }
-                printf("\n");
             }
 
             /* do we need to send a retry? */
@@ -1403,6 +1391,7 @@ void main_loop()
              */
             continue;
         }
+
 
         /* ping event ? */
         if (event_queue_ping.first && event_queue_ping.first->ev_time - current_time_ns <= 0) {
@@ -1459,6 +1448,7 @@ void main_loop()
             dbg_printf("next timeout event in %.0f ms (%s)\n", wait_time_timeout / 1e6, event_queue_timeout.first->host->host);
         }
 
+
         /* When is the next report due? */
         if (report_interval && (loop_flag || count_flag)) {
             int64_t wait_time_next_report = next_report_time - current_time_ns;
@@ -1490,8 +1480,10 @@ void main_loop()
                 ; /* process other replies in the queue */
         }
 
+        
         update_current_time();
 
+        
         if (status_snapshot) {
             status_snapshot = 0;
             print_per_system_splits();
@@ -1499,6 +1491,7 @@ void main_loop()
 
         /* Print report */
         if (report_interval && (loop_flag || count_flag) && (current_time_ns >= next_report_time)) {
+             
             if (netdata_flag)
                 print_netdata();
             else
@@ -1508,6 +1501,10 @@ void main_loop()
                 next_report_time += report_interval;
             }
         }
+    }
+
+    if ( top_view == 1 ){
+        top_view_end();
     }
 }
 
@@ -2186,16 +2183,31 @@ int decode_icmp_ipv4(
         switch (icp->icmp_type) {
         case ICMP_UNREACH:
             h = table[seqmap_value->host_nr];
-            if (icp->icmp_code > ICMP_UNREACH_MAXTYPE) {
-                print_warning("ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
-                    addr_ascii, h->host);
-            }
-            else {
-                print_warning("%s from %s for ICMP Echo sent to %s",
-                    icmp_unreach_str[icp->icmp_code], addr_ascii, h->host);
-            }
 
-            print_warning("\n");
+            if ( top_view == 0 ){
+
+                if (icp->icmp_code > ICMP_UNREACH_MAXTYPE) {
+                    print_warning("ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
+                        addr_ascii, h->host);
+                }
+                else {
+                    print_warning("%s from %s for ICMP Echo sent to %s",
+                        icmp_unreach_str[icp->icmp_code], addr_ascii, h->host);
+                }
+
+                print_warning("\n");
+            }else{
+                
+                if (icp->icmp_code > ICMP_UNREACH_MAXTYPE) {
+                    sprintf( h->top_view_icmp_message,"ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
+                        addr_ascii, h->host);
+                }
+                else {
+                    sprintf( h->top_view_icmp_message,"%s from %s for ICMP Echo sent to %s",
+                        icmp_unreach_str[icp->icmp_code], addr_ascii, h->host);
+                }
+
+            }
             num_othericmprcvd++;
             break;
 
@@ -2318,6 +2330,8 @@ int decode_icmp_ipv6(
     return 1;
 }
 #endif
+
+
 
 int wait_for_reply(int64_t wait_time)
 {
@@ -2480,26 +2494,34 @@ int wait_for_reply(int64_t wait_time)
             printf("[%.5f] ", (double)recv_time / 1e9);
         }
         avg = h->total_time / h->num_recv;
-        printf("%-*s : [%d], %d bytes, %s ms",
-            max_hostname_len, h->host, this_count, result, sprint_tm(this_reply));
-        printf(" (%s avg, ", sprint_tm(avg));
 
-        if (h->num_recv <= h->num_sent) {
-            printf("%d%% loss)",
-                ((h->num_sent - h->num_recv) * 100) / h->num_sent);
-        }
-        else {
-            printf("%d%% return)",
-                (h->num_recv_total * 100) / h->num_sent);
-        }
+        
 
-        if (addr_cmp((struct sockaddr *)&response_addr, (struct sockaddr *)&h->saddr)) {
-            char buf[INET6_ADDRSTRLEN];
-            getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
-            fprintf(stderr, " [<- %s]", buf);
-        }
+        if ( top_view == 0 ){
 
-        printf("\n");
+            printf("%-*s : [%d], %d bytes, %s ms",
+                max_hostname_len, h->host, this_count, result, sprint_tm(this_reply));
+            printf(" (%s avg, ", sprint_tm(avg));
+
+            if (h->num_recv <= h->num_sent) {
+                printf("%d%% loss)",
+                    ((h->num_sent - h->num_recv) * 100) / h->num_sent);
+            }
+            else {
+                printf("%d%% return)",
+                    (h->num_recv_total * 100) / h->num_sent);
+            }
+
+            if (addr_cmp((struct sockaddr *)&response_addr, (struct sockaddr *)&h->saddr)) {
+                char buf[INET6_ADDRSTRLEN];
+                getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+                fprintf(stderr, " [<- %s]", buf);
+            }
+
+            printf("\n");
+        }else{
+            top_view_print( h, 0 );
+        }
     }
 
     return 1;

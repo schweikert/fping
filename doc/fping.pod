@@ -180,10 +180,11 @@ an individual target. Default is 1000 and minimum is 10.
 Quiet. Don't show per-probe results, but only the final summary. Also don't
 show ICMP error messages.
 
-=item B<-Q>, B<--squiet>=I<SECS>
+=item B<-Q>, B<--squiet>=I<SECS[,cumulative]>
 
 Like B<-q>, but additionally show interval summary results every I<SECS>
-seconds.
+seconds. With I<cumulative>, show summary results since start instead of
+for the last interval, unless option B<-N> is used, too.
 
 =item B<-r>, B<--retry>=I<N>
 

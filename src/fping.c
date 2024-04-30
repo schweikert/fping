@@ -358,6 +358,7 @@ int multif_flag, timeout_flag, fast_reachable;
 int outage_flag = 0;
 int timestamp_flag = 0;
 int random_data_flag = 0;
+int cumulative_stats_flag = 0;
 #if defined(DEBUG) || defined(_DEBUG)
 int randomly_lose_flag, trace_flag, print_per_system_flag;
 int lose_factor;
@@ -676,6 +677,14 @@ int main(int argc, char **argv)
                 usage(1);
             }
             report_interval = opt_value_float * 1e9;
+
+            /* recognize keyword(s) after number, ignore everything else */
+            {
+                char *comma = strchr(optparse_state.optarg, ',');
+                if ((comma != NULL) && (strcmp(++comma, "cumulative") == 0)) {
+                    cumulative_stats_flag = 1;
+                }
+            }
 
             break;
 
@@ -1813,7 +1822,9 @@ void print_per_system_splits(void)
         }
 
         fprintf(stderr, "\n");
-        stats_reset_interval(h);
+        if (!cumulative_stats_flag) {
+            stats_reset_interval(h);
+        }
     }
 }
 
@@ -2986,7 +2997,8 @@ void usage(int is_error)
     fprintf(out, "   -N, --netdata      output compatible for netdata (-l -Q are required)\n");
     fprintf(out, "   -o, --outage       show the accumulated outage time (lost packets * packet interval)\n");
     fprintf(out, "   -q, --quiet        quiet (don't show per-target/per-ping results)\n");
-    fprintf(out, "   -Q, --squiet=SECS  same as -q, but add interval summary every SECS seconds\n");
+    fprintf(out, "   -Q, --squiet=SECS[,cumulative]  same as -q, but add interval summary every SECS seconds,\n");
+    fprintf(out, "                                   with 'cumulative', print stats since beginning\n");
     fprintf(out, "   -s, --stats        print final stats\n");
     fprintf(out, "   -u, --unreach      show targets that are unreachable\n");
     fprintf(out, "   -v, --version      show version\n");

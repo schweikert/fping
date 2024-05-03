@@ -56,12 +56,12 @@ int open_ping_socket_ipv4(int *socktype)
     if ((proto = getprotobyname("icmp")) == NULL)
         crash_and_burn("icmp: unknown protocol");
 
-    /* create raw socket for ICMP calls (ping) */
-    *socktype = SOCK_RAW;
+    /* try non-privileged icmp (works on Mac OSX without privileges, for example) */
+    *socktype = SOCK_DGRAM;
     s = socket(AF_INET, *socktype, proto->p_proto);
     if (s < 0) {
-        /* try non-privileged icmp (works on Mac OSX without privileges, for example) */
-        *socktype = SOCK_DGRAM;
+        /* fall back to raw socket for ICMP calls (ping) */
+        *socktype = SOCK_RAW;
         s = socket(AF_INET, *socktype, proto->p_proto);
         if (s < 0) {
             return -1;

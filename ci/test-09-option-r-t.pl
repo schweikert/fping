@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 21;
+use Test::Command tests => 27;
 use Test::More;
 
 #  -R         random bytes
@@ -84,6 +84,14 @@ $cmd->stdout_is_eq("127.0.0.1 is alive\n");
 $cmd->stderr_is_eq("");
 }
 
+# fping -S (wrong source address)
+{
+my $cmd = Test::Command->new(cmd => "fping -S 192.0.2.47 127.0.0.1");
+$cmd->exit_is_num(4);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{fping: cannot bind source address : .+\n});
+}
+
 # fping -S
 SKIP: {
     if($ENV{SKIP_IPV6}) {
@@ -93,6 +101,17 @@ SKIP: {
     $cmd->exit_is_num(0);
     $cmd->stdout_is_eq("::1 is alive\n");
     $cmd->stderr_is_eq("");
+}
+
+# fping -S (wrong IPv6 source address)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -S 2001:db8::1 ::1");
+    $cmd->exit_is_num(4);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_like(qr{fping: cannot bind source address : .+\n});
 }
 
 # fping -S

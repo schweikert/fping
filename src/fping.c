@@ -561,6 +561,16 @@ int main(int argc, char **argv)
     float opt_value_float;
     while ((c = optparse_long(&optparse_state, longopts, NULL)) != EOF) {
         switch (c) {
+        case '0':
+            /*
+             * Use long-option example
+             * Define "struct optparse_long longopts": { "long-option-name", '0', OPTPARSE_NONE }
+             * 
+             * if(strstr(optparse_state.optlongname, "long-option-name") != NULL) {
+             *  long_option_flag = 1;
+             * }
+             */
+            break;
         case '4':
 #ifdef IPV6
             if (hints_ai_family != AF_UNSPEC && hints_ai_family != AF_INET) {

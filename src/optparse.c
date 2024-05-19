@@ -238,12 +238,14 @@ optparse_long(struct optparse *options,
     /* Parse as long option. */
     options->errmsg[0] = '\0';
     options->optopt = 0;
+    options->optlongname = 0;
     options->optarg = 0;
     option += 2; /* skip "--" */
     options->optind++;
     for (int i = 0; !longopts_end(longopts, i); i++) {
         const char *name = longopts[i].longname;
         if (longopts_match(name, option)) {
+            options->optlongname = option;
             if (longindex)
                 *longindex = i;
             options->optopt = longopts[i].shortname;

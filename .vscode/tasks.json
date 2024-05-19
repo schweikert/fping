@@ -1,0 +1,45 @@
+{
+  "tasks": [
+    {
+      "type": "shell",
+      "label": "autogen",
+      "command": "./autogen.sh",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "type": "shell",
+      "label": "configure",
+      "command": "./configure",
+      "args": ["--enable-debug"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "dependsOn": ["autogen"],
+      "problemMatcher": []
+    },
+    {
+      "type": "shell",
+      "label": "build",
+      "command": "make",
+      "args": ["CFLAGS=\"-g -O0\""],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "dependsOn": ["configure"],
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "type": "shell",
+      "label": "autoclean",
+      "command": "./autoclean.sh",
+      "problemMatcher": []
+    }
+  ],
+  "version": "2.0.0"
+}

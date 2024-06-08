@@ -621,7 +621,7 @@ int main(int argc, char **argv)
             break;
 
         case 't':
-            if (!sscanf(optparse_state.optarg, "%f", &opt_value_float))
+            if (sscanf(optparse_state.optarg, "%f", &opt_value_float) != 1)
                 usage(1);
             if (opt_value_float < 0) {
                 usage(1);
@@ -631,12 +631,12 @@ int main(int argc, char **argv)
             break;
 
         case 'r':
-            if (!sscanf(optparse_state.optarg, "%u", &retry))
+            if (sscanf(optparse_state.optarg, "%u", &retry) != 1)
                 usage(1);
             break;
 
         case 'i':
-            if (!sscanf(optparse_state.optarg, "%f", &opt_value_float))
+            if (sscanf(optparse_state.optarg, "%f", &opt_value_float) != 1)
                 usage(1);
             if (opt_value_float < 0) {
                 usage(1);
@@ -645,7 +645,7 @@ int main(int argc, char **argv)
             break;
 
         case 'p':
-            if (!sscanf(optparse_state.optarg, "%f", &opt_value_float))
+            if (sscanf(optparse_state.optarg, "%f", &opt_value_float) != 1)
                 usage(1);
             if (opt_value_float < 0) {
                 usage(1);
@@ -670,7 +670,7 @@ int main(int argc, char **argv)
             break;
 
         case 'b':
-            if (!sscanf(optparse_state.optarg, "%u", &ping_data_size))
+            if (sscanf(optparse_state.optarg, "%u", &ping_data_size) != 1)
                 usage(1);
 
             break;
@@ -687,7 +687,7 @@ int main(int argc, char **argv)
         case 'Q':
             verbose_flag = 0;
             quiet_flag = 1;
-            if (!sscanf(optparse_state.optarg, "%f", &opt_value_float))
+            if (sscanf(optparse_state.optarg, "%f", &opt_value_float) != 1)
                 usage(1);
             if (opt_value_float < 0) {
                 usage(1);
@@ -865,7 +865,7 @@ int main(int argc, char **argv)
             break;
 
         case 'O':
-            if (sscanf(optparse_state.optarg, "%i", &tos)) {
+            if (sscanf(optparse_state.optarg, "%i", &tos) == 1) {
                 if (socket4 >= 0) {
                     if (setsockopt(socket4, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
                         perror("setting type of service octet IP_TOS");

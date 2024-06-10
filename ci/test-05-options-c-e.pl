@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 33;
+use Test::Command tests => 48;
 
 #  -c n       count of pings to send to each target (default 1)
 #  -C n       same as -c, report results in verbose format
@@ -136,6 +136,58 @@ $cmd->stdout_like(qr{\[\d+\.\d+\] 127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\
 
 $cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
 });
+}
+
+# fping -D --timestamp-format=ctime
+{
+my $cmd = Test::Command->new(cmd => "fping -D --timestamp-format=ctime -c 2 -p 100 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{\[\w+\s\w+\s+\d+\s[\d+:]+\s\d+\] 127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+\[\w+\s\w+\s+\d+\s[\d+:]+\s\d+\] 127\.0\.0\.1 : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+});
+
+$cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+});
+}
+
+# fping -D --timestamp-format=iso
+{
+my $cmd = Test::Command->new(cmd => "fping -D --timestamp-format=iso -c 2 -p 100 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{\[[\d+-]+T[\d+:]+\+\d+\] 127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+\[[\d+-]+T[\d+:]+\+\d+\] 127\.0\.0\.1 : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+});
+
+$cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+});
+}
+
+# fping -D --timestamp-format=rfc3339
+{
+my $cmd = Test::Command->new(cmd => "fping -D --timestamp-format=rfc3339 -c 2 -p 100 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{\[[\d+-]+\s[\d+:]+\] 127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+\[[\d+-]+\s[\d+:]+\] 127\.0\.0\.1 : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+});
+
+$cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+});
+}
+
+# fping -D --timestamp-format
+{
+my $cmd = Test::Command->new(cmd => "fping -D --timestamp-format -c 2 -p 100 127.0.0.1");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{Usage:});
+}
+
+# fping -D --timestamp-format="%Y-%m-%d %H:%M:%S"
+{
+my $cmd = Test::Command->new(cmd => "fping -D --timestamp-format=\"%Y-%m-%d %H:%M:%S\" -c 2 -p 100 127.0.0.1");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{Usage:});
 }
 
 # fping -e

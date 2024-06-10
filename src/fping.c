@@ -357,6 +357,7 @@ int per_recv_flag, report_all_rtts_flag, name_flag, addr_flag, backoff_flag, rdn
 int multif_flag, timeout_flag, fast_reachable;
 int outage_flag = 0;
 int timestamp_flag = 0;
+int timestamp_format_flag = 0;
 int random_data_flag = 0;
 int cumulative_stats_flag = 0;
 #if defined(DEBUG) || defined(_DEBUG)
@@ -400,6 +401,7 @@ void host_add_timeout_event(HOST_ENTRY *h, int index, int64_t ev_time);
 struct event *host_get_timeout_event(HOST_ENTRY *h, int index);
 void stats_add(HOST_ENTRY *h, int index, int success, int64_t latency);
 void update_current_time();
+void print_timestamp_format(int64_t current_time_ns, int timestamp_format);
 
 /************************************************************
 
@@ -522,6 +524,7 @@ int main(int argc, char **argv)
         { "vcount", 'C', OPTPARSE_REQUIRED },
         { "rdns", 'd', OPTPARSE_NONE },
         { "timestamp", 'D', OPTPARSE_NONE },
+        { "timestamp-format", '0', OPTPARSE_REQUIRED },
         { "elapsed", 'e', OPTPARSE_NONE },
         { "file", 'f', OPTPARSE_REQUIRED },
         { "generate", 'g', OPTPARSE_NONE },
@@ -562,14 +565,17 @@ int main(int argc, char **argv)
     while ((c = optparse_long(&optparse_state, longopts, NULL)) != EOF) {
         switch (c) {
         case '0':
-            /*
-             * Use long-option example
-             * Define "struct optparse_long longopts": { "long-option-name", '0', OPTPARSE_NONE }
-             * 
-             * if(strstr(optparse_state.optlongname, "long-option-name") != NULL) {
-             *  long_option_flag = 1;
-             * }
-             */
+            if(strstr(optparse_state.optlongname, "timestamp-format") != NULL) {
+              if(strcmp(optparse_state.optarg, "ctime") == 0) {
+                timestamp_format_flag = 1;
+              }else if(strcmp(optparse_state.optarg, "iso") == 0) {
+                timestamp_format_flag = 2;
+              }else if(strcmp(optparse_state.optarg, "rfc3339") == 0) {
+                timestamp_format_flag = 3;
+              }else{
+                usage(1);
+              }
+            }
             break;
         case '4':
 #ifdef IPV6
@@ -1385,7 +1391,7 @@ void main_loop()
 
             if (per_recv_flag) {
                 if (timestamp_flag) {
-                    printf("[%.5f] ", (double)current_time_ns / 1e9);
+                    print_timestamp_format(current_time_ns, timestamp_format_flag);
                 }
                 printf("%-*s : [%d], timed out",
                     max_hostname_len, h->host, event->ping_index);
@@ -2498,7 +2504,7 @@ int wait_for_reply(int64_t wait_time)
     /* print received ping (unless --quiet) */
     if (per_recv_flag) {
         if (timestamp_flag) {
-            printf("[%.5f] ", (double)recv_time / 1e9);
+            print_timestamp_format(recv_time, timestamp_format_flag);
         }
         avg = h->total_time / h->num_recv;
         printf("%-*s : [%d], %d bytes, %s ms",
@@ -2951,6 +2957,40 @@ void ev_remove(struct event_queue *queue, struct event *event)
 
 /************************************************************
 
+  Function: print_human_readable_time from current_time_ns
+
+*************************************************************/
+void print_timestamp_format(int64_t current_time_ns, int timestamp_format)
+{
+    char time_buffer[100];
+    time_t current_time_s;
+    struct tm *local_time;
+
+    current_time_s = current_time_ns / 1000000000;
+    local_time = localtime(&current_time_s);
+    switch(timestamp_format) {
+        case 1:
+            // timestamp-format ctime
+            strftime(time_buffer, sizeof(time_buffer), "%c", local_time);
+            printf("[%s] ", time_buffer);
+            break;
+        case 2:
+            // timestamp-format iso
+            strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%dT%T%z", local_time);
+            printf("[%s] ", time_buffer);
+            break;
+        case 3:
+            // timestamp-format rfc3339
+            strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S", local_time);
+            printf("[%s] ", time_buffer);
+            break;
+        default:
+            printf("[%.5f] ", (double)current_time_ns / 1e9);
+    }
+}
+
+/************************************************************
+
   Function: usage
 
 *************************************************************
@@ -3002,6 +3042,7 @@ void usage(int is_error)
     fprintf(out, "   -C, --vcount=N     same as -c, report results (not stats) in verbose format\n");
     fprintf(out, "   -d, --rdns         show targets by name (force reverse-DNS lookup)\n");
     fprintf(out, "   -D, --timestamp    print timestamp before each output line\n");
+    fprintf(out, "       --timestamp-format=FORMAT  show timestamp in the given format (-D required): ctime|iso|rfc3339\n");
     fprintf(out, "   -e, --elapsed      show elapsed time on return packets\n");
     fprintf(out, "   -n, --name         show targets by name (reverse-DNS lookup for target IPs)\n");
     fprintf(out, "   -N, --netdata      output compatible for netdata (-l -Q are required)\n");

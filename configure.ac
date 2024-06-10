@@ -100,6 +100,9 @@ if test $ac_cv_func_sigaction = yes; then
     AC_DEFINE([USE_SIGACTION],[1],[Define if sigaction is available.])
 fi
 
+AC_CHECK_FUNCS([strftime], [],
+  [AC_MSG_ERROR([strftime function is required but not found])])
+
 AH_TOP([
 #ifndef CONFIG_H
 #define CONFIG_H

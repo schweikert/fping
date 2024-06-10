@@ -93,6 +93,16 @@ hostnames as target (NAME->IP->NAME).
 Add Unix timestamps in front of output lines generated with in looping or counting
 modes (B<-l>, B<-c>, or B<-C>).
 
+Subcommand: B<--timestamp-format>=I<ctime|iso|rfc3339>
+
+Allow to change the timestamp format of the B<-D> option to the following format types.
+
+I<ctime> = "%c" (Example: Mon Jun 10 07:50:00 2024)
+
+I<iso> = "%Y-%m-%dT%T%z" (Example: 2024-06-10T07:50:00+0200)
+
+I<rfc3339> = "%Y-%m-%d %H:%M:%S" (Example: 2024-06-10 07:50:00)
+
 =item B<-e>, B<--elapsed>
 
 Show elapsed (round-trip) time of packets.

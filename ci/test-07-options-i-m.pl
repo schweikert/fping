@@ -51,7 +51,10 @@ $cmd->stderr_like(qr{\[\d+:\d+:\d+\]
 }
 
 # fping -l -Q
-{
+SKIP: {
+if($^O eq 'darwin') {
+    skip 'On macOS, this test is unreliable', 2;
+}
 my $cmd = Test::Command->new(cmd => '(sleep 2; pkill fping)& fping -p 850 -l -Q 1 127.0.0.1');
 $cmd->stdout_is_eq("");
 $cmd->stderr_like(qr{\[\d\d:\d\d:\d\d\]

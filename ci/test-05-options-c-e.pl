@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 48;
+use Test::Command tests => 51;
 
 #  -c n       count of pings to send to each target (default 1)
 #  -C n       same as -c, report results in verbose format
@@ -134,6 +134,17 @@ $cmd->stdout_like(qr{\[\d+\.\d+\] 127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\
 \[\d+\.\d+\] 127\.0\.0\.1 : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
 });
 
+$cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+});
+}
+
+# fping -D (timestamp not before 2001-09-09)
+{
+my $cmd = Test::Command->new(cmd => "fping -D -c 2 -p 100 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{\[[1-9]\d{9,}\.\d+\] 127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+\[[1-9]\d{9,}\.\d+\] 127\.0\.0\.1 : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+});
 $cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
 });
 }

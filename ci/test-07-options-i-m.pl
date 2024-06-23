@@ -52,7 +52,7 @@ $cmd->stderr_like(qr{\[\d+:\d+:\d+\]
 
 # fping -l -Q
 {
-my $cmd = Test::Command->new(cmd => '(sleep 2; pkill fping)& fping -p 850 -l -Q 1 127.0.0.1');
+my $cmd = Test::Command->new(cmd => '(sleep 2; pkill fping)& fping -p 770 -l -Q 1 127.0.0.1');
 $cmd->stdout_is_eq("");
 $cmd->stderr_like(qr{\[\d\d:\d\d:\d\d\]
 127\.0\.0\.1 : xmt/rcv/%loss = \d/\d/\d%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
@@ -63,7 +63,7 @@ $cmd->stderr_like(qr{\[\d\d:\d\d:\d\d\]
 
 # fping -l -t
 {
-my $cmd = Test::Command->new(cmd => '(sleep 2; pkill fping)& fping -p 900 -t 1500 -l 127.0.0.1');
+my $cmd = Test::Command->new(cmd => '(sleep 2; pkill fping)& fping -p 850 -t 1500 -l 127.0.0.1');
 $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
 127\.0\.0\.1 : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
 });

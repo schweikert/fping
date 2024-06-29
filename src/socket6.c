@@ -55,12 +55,12 @@ int open_ping_socket_ipv6(int *socktype)
     if ((proto = getprotobyname("ipv6-icmp")) == NULL)
         crash_and_burn("ipv6-icmp: unknown protocol");
 
-    /* create raw socket for ICMP6 calls (ping) */
-    *socktype = SOCK_RAW;
+    /* try non-privileged icmp6 (works on Mac OSX without privileges, for example) */
+    *socktype = SOCK_DGRAM;
     s = socket(AF_INET6, *socktype, proto->p_proto);
     if (s < 0) {
-        /* try non-privileged icmp6 (works on Mac OSX without privileges, for example) */
-        *socktype = SOCK_DGRAM;
+        /* fall back to raw socket for ICMP6 calls (ping) */
+        *socktype = SOCK_RAW;
         s = socket(AF_INET6, *socktype, proto->p_proto);
         if (s < 0) {
             return -1;

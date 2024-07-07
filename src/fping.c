@@ -139,7 +139,7 @@ extern int h_errno;
 #define SIZE_ICMP_HDR 8 /* from ip_icmp.h */
 #define MAX_PING_DATA (MAX_IP_PACKET - SIZE_IP_HDR - SIZE_ICMP_HDR)
 
-#define MAX_GENERATE 100000 /* maximum number of hosts that -g can generate */
+#define MAX_GENERATE 131070 /* maximum number of hosts that -g can generate */
 
 /* sized so as to be like traditional ping */
 #define DEFAULT_PING_DATA_SIZE 56

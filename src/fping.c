@@ -1356,7 +1356,7 @@ void add_range(char *start, char *end)
 void add_addr_range_ipv4(unsigned long start_long, unsigned long end_long)
 {
     /* check if generator limit is exceeded */
-    if (end_long > start_long + MAX_GENERATE) {
+    if (end_long >= start_long + MAX_GENERATE) {
         fprintf(stderr, "%s: -g parameter generates too many addresses\n", prog);
         exit(1);
     }
@@ -3015,7 +3015,7 @@ void usage(int is_error)
     fprintf(out, "   -c, --count=N      count mode: send N pings to each target and report stats\n");
     fprintf(out, "   -f, --file=FILE    read list of targets from a file ( - means stdin)\n");
     fprintf(out, "   -g, --generate     generate target list (only if no -f specified),\n");
-    fprintf(out, "                      limited to at most %d targets\n", MAX_GENERATE+1);
+    fprintf(out, "                      limited to at most %d targets\n", MAX_GENERATE);
     fprintf(out, "                      (give start and end IP in the target list, or a CIDR address)\n");
     fprintf(out, "                      (ex. %s -g 192.168.1.0 192.168.1.255 or %s -g 192.168.1.0/24)\n", prog, prog);
     fprintf(out, "   -H, --ttl=N        set the IP TTL value (Time To Live hops)\n");

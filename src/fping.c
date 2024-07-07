@@ -394,6 +394,7 @@ struct event *ev_dequeue(struct event_queue *queue);
 void ev_remove(struct event_queue *queue, struct event *event);
 void add_cidr(char *);
 void add_range(char *, char *);
+void add_addr_range_ipv4(unsigned long, unsigned long);
 void print_warning(char *fmt, ...);
 int addr_cmp(struct sockaddr *a, struct sockaddr *b);
 void host_add_ping_event(HOST_ENTRY *h, int index, int64_t ev_time);
@@ -1304,13 +1305,7 @@ void add_cidr(char *addr)
     }
 
     /* add all hosts in that network (net_addr and net_last inclusive) */
-    for (; net_addr <= net_last; net_addr++) {
-        struct in_addr in_addr_tmp;
-        char buffer[20];
-        in_addr_tmp.s_addr = htonl(net_addr);
-        inet_ntop(AF_INET, &in_addr_tmp, buffer, sizeof(buffer));
-        add_name(buffer);
-    }
+    add_addr_range_ipv4(net_addr, net_last);
 }
 
 void add_range(char *start, char *end)
@@ -1354,6 +1349,12 @@ void add_range(char *start, char *end)
     end_long = ntohl(((struct sockaddr_in *)addr_res->ai_addr)->sin_addr.s_addr);
     freeaddrinfo(addr_res);
 
+    /* add IPv4 addresses from closed interval [start_long,end_long] */
+    add_addr_range_ipv4(start_long, end_long);
+}
+
+void add_addr_range_ipv4(unsigned long start_long, unsigned long end_long)
+{
     /* check if generator limit is exceeded */
     if (end_long > start_long + MAX_GENERATE) {
         fprintf(stderr, "%s: -g parameter generates too many addresses\n", prog);
@@ -3013,7 +3014,8 @@ void usage(int is_error)
     fprintf(out, "   -B, --backoff=N    set exponential backoff factor to N (default: 1.5)\n");
     fprintf(out, "   -c, --count=N      count mode: send N pings to each target and report stats\n");
     fprintf(out, "   -f, --file=FILE    read list of targets from a file ( - means stdin)\n");
-    fprintf(out, "   -g, --generate     generate target list (only if no -f specified)\n");
+    fprintf(out, "   -g, --generate     generate target list (only if no -f specified),\n");
+    fprintf(out, "                      limited to at most %d targets\n", MAX_GENERATE+1);
     fprintf(out, "                      (give start and end IP in the target list, or a CIDR address)\n");
     fprintf(out, "                      (ex. %s -g 192.168.1.0 192.168.1.255 or %s -g 192.168.1.0/24)\n", prog, prog);
     fprintf(out, "   -H, --ttl=N        set the IP TTL value (Time To Live hops)\n");

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 72;
+use Test::Command tests => 75;
 use Test::More;
 use File::Temp;
 
@@ -168,6 +168,14 @@ my $cmd = Test::Command->new(cmd => "fping -g 127.0.0.2/0");
 $cmd->exit_is_num(1);
 $cmd->stdout_is_eq("");
 $cmd->stderr_is_eq("fping: netmask must be between 1 and 32 (is: 0)\n");
+}
+
+# fping -g (cidr - too many addresses)
+{
+my $cmd = Test::Command->new(cmd => "fping -g 127.0.0.0/8");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_is_eq("fping: -g parameter generates too many addresses\n");
 }
 
 # fping -g (range - no IPv6 generator)

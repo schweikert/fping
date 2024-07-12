@@ -1,11 +1,13 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 51;
+use Test::Command tests => 63;
+use Test::More;
 
-#  -c n       count of pings to send to each target (default 1)
-#  -C n       same as -c, report results in verbose format
-#  -D         print timestamp before each output line
-#  -e         show elapsed time on return packets
+#  -c n           count of pings to send to each target (default 1)
+#  -C n           same as -c, report results in verbose format
+#  --check-source discard replies not from target address
+#  -D             print timestamp before each output line
+#  -e             show elapsed time on return packets
 
 # fping -c n
 {
@@ -123,6 +125,57 @@ $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("");
 $cmd->stderr_like(qr{127\.0\.0\.1 :( \d\.\d+){20}
 127\.0\.0\.2 :( \d\.\d+){20}
+});
+}
+
+# fping --check-source
+{
+my $cmd = Test::Command->new(cmd => "fping --check-source 127.0.0.1 127.0.0.2");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("127.0.0.1 is alive\n127.0.0.2 is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping --check-source (to IPv6 multicast address -> accept no reply)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping --check-source ff02::1");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("ff02::1 is unreachable\n");
+    $cmd->stderr_is_eq("");
+}
+
+# fping -c N --check-source
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -c1 --check-source 127.0.0.1 ff02::1");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+ff02::1   : \[0\], timed out \(NaN avg, 100% loss\)
+});
+    $cmd->stderr_like(qr{
+127\.0\.0\.1 : xmt/rcv/%loss = 1/1/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+ff02::1   : xmt/rcv/%loss = 1/0/100%
+});
+}
+
+# fping -C N --check-source
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -C1 --check-source 127.0.0.1 ff02::1");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+ff02::1   : \[0\], timed out \(NaN avg, 100% loss\)
+});
+    $cmd->stderr_like(qr{
+127\.0\.0\.1 : \d\.\d+
+ff02::1   : -
 });
 }
 

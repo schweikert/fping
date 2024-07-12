@@ -360,6 +360,7 @@ int timestamp_flag = 0;
 int timestamp_format_flag = 0;
 int random_data_flag = 0;
 int cumulative_stats_flag = 0;
+int check_source_flag = 0;
 #if defined(DEBUG) || defined(_DEBUG)
 int randomly_lose_flag, trace_flag, print_per_system_flag;
 int lose_factor;
@@ -556,6 +557,7 @@ int main(int argc, char **argv)
         { "version", 'v', OPTPARSE_NONE },
         { "reachable", 'x', OPTPARSE_REQUIRED },
         { "fast-reachable", 'X', OPTPARSE_REQUIRED },
+        { "check-source", '0', OPTPARSE_NONE },
 #if defined(DEBUG) || defined(_DEBUG)
         { NULL, 'z', OPTPARSE_REQUIRED },
 #endif
@@ -576,6 +578,10 @@ int main(int argc, char **argv)
               }else{
                 usage(1);
               }
+            } else if (strstr(optparse_state.optlongname, "check-source") != NULL) {
+                check_source_flag = 1;
+            } else {
+                usage(1);
             }
             break;
         case '4':
@@ -2436,6 +2442,12 @@ int wait_for_reply(int64_t wait_time)
 
     dbg_printf("received [%d] from %s\n", this_count, h->host);
 
+    /* optionally require reply source equal to target address */
+    if (check_source_flag && addr_cmp((struct sockaddr *)&response_addr, (struct sockaddr *)&h->saddr)) {
+        dbg_printf("discarding reply from wrong source address\n");
+        return 1;
+    }
+
     /* discard duplicates */
     if (!loop_flag && h->resp_times[this_count] >= 0) {
         if (!per_recv_flag) {
@@ -3037,6 +3049,7 @@ void usage(int is_error)
     fprintf(out, "   -S, --src=IP       set source address\n");
     fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (default: %.0f ms,\n", timeout / 1e6);
     fprintf(out, "                      except with -l/-c/-C, where it's the -p period up to 2000 ms)\n");
+    fprintf(out, "       --check-source discard replies not from target address\n");
     fprintf(out, "\n");
     fprintf(out, "Output options:\n");
     fprintf(out, "   -a, --alive        show targets that are alive\n");

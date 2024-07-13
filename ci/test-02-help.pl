@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 15;
+use Test::Command tests => 18;
 
 my $I_HELP = "   -I, --iface=IFACE  bind to a particular interface\n";
 $I_HELP = '' if $^O eq 'darwin';
@@ -44,3 +44,9 @@ my $cmd5 = Test::Command->new(cmd => "fping --unknown-long-option");
 $cmd5->exit_is_num(1);
 $cmd5->stdout_is_eq("");
 $cmd5->stderr_like(qr{^fping: (illegal|invalid) option -- '?unknown-long-option'?\nsee 'fping -h' for usage information\n$});
+
+# fping with short option used to indicate long-only option
+my $cmd6 = Test::Command->new(cmd => "fping -0 127.0.0.1 127.0.0.2");
+$cmd6->exit_is_num(1);
+$cmd6->stdout_is_eq("");
+$cmd6->stderr_like(qr{Usage:});

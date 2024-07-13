@@ -580,6 +580,8 @@ int main(int argc, char **argv)
               }
             } else if(strstr(optparse_state.optlongname, "check-source") != NULL) {
                 check_source_flag = 1;
+            } else {
+                usage(1);
             }
             break;
         case '4':

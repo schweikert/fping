@@ -57,7 +57,7 @@
 static SEQMAP_VALUE* seqmap_map = NULL;
 static unsigned int seqmap_next_id = 0;
 
-#define SEQMAP_TIMEOUT_IN_NS 10000000000
+#define SEQMAP_TIMEOUT_IN_NS INT64_C(10000000000)
 #define SEQMAP_UNASSIGNED_HOST_NR UINT_MAX
 
 void seqmap_init()

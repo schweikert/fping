@@ -361,6 +361,7 @@ int timestamp_format_flag = 0;
 int random_data_flag = 0;
 int cumulative_stats_flag = 0;
 int check_source_flag = 0;
+int print_tos_flag = 0;
 #if defined(DEBUG) || defined(_DEBUG)
 int randomly_lose_flag, trace_flag, print_per_system_flag;
 int lose_factor;
@@ -558,6 +559,7 @@ int main(int argc, char **argv)
         { "reachable", 'x', OPTPARSE_REQUIRED },
         { "fast-reachable", 'X', OPTPARSE_REQUIRED },
         { "check-source", '0', OPTPARSE_NONE },
+        { "print-tos", '0', OPTPARSE_NONE },
 #if defined(DEBUG) || defined(_DEBUG)
         { NULL, 'z', OPTPARSE_REQUIRED },
 #endif
@@ -569,17 +571,19 @@ int main(int argc, char **argv)
         switch (c) {
         case '0':
             if(strstr(optparse_state.optlongname, "timestamp-format") != NULL) {
-              if(strcmp(optparse_state.optarg, "ctime") == 0) {
-                timestamp_format_flag = 1;
-              }else if(strcmp(optparse_state.optarg, "iso") == 0) {
-                timestamp_format_flag = 2;
-              }else if(strcmp(optparse_state.optarg, "rfc3339") == 0) {
-                timestamp_format_flag = 3;
-              }else{
-                usage(1);
-              }
+                if(strcmp(optparse_state.optarg, "ctime") == 0) {
+                  timestamp_format_flag = 1;
+                }else if(strcmp(optparse_state.optarg, "iso") == 0) {
+                  timestamp_format_flag = 2;
+                }else if(strcmp(optparse_state.optarg, "rfc3339") == 0) {
+                  timestamp_format_flag = 3;
+                }else{
+                  usage(1);
+                }
             } else if (strstr(optparse_state.optlongname, "check-source") != NULL) {
                 check_source_flag = 1;
+            } else if (strstr(optparse_state.optlongname, "print-tos") != NULL) {
+                print_tos_flag = 1;
             } else {
                 usage(1);
             }
@@ -2159,13 +2163,15 @@ int decode_icmp_ipv4(
     char *reply_buf,
     size_t reply_buf_len,
     unsigned short *id,
-    unsigned short *seq)
+    unsigned short *seq,
+    int *ip_header_tos)
 {
     struct icmp *icp;
     int hlen = 0;
 
     if (!using_sock_dgram4) {
         struct ip *ip = (struct ip *)reply_buf;
+        *ip_header_tos = ip->ip_tos;
 
 #if defined(__alpha__) && __STDC__ && !defined(__GLIBC__) && !defined(__NetBSD__) && !defined(__OpenBSD__)
         /* The alpha headers are decidedly broken.
@@ -2366,6 +2372,7 @@ int wait_for_reply(int64_t wait_time)
     SEQMAP_VALUE *seqmap_value;
     unsigned short id;
     unsigned short seq;
+    int ip_header_tos = -1;
 
     /* Receive packet */
     result = receive_packet(wait_time, /* max. wait time, in ns */
@@ -2392,7 +2399,8 @@ int wait_for_reply(int64_t wait_time)
             buffer,
             sizeof(buffer),
             &id,
-            &seq);
+            &seq,
+            &ip_header_tos);
         if (ip_hlen < 0) {
             return 1;
         }
@@ -2498,8 +2506,17 @@ int wait_for_reply(int64_t wait_time)
         if (verbose_flag || alive_flag) {
             printf("%s", h->host);
 
-            if (verbose_flag)
+            if (verbose_flag) {
                 printf(" is alive");
+                  if(print_tos_flag) {
+                      if(ip_header_tos != -1) {
+                          printf(" (TOS %d)", ip_header_tos);
+                      }
+                      else {
+                          printf(" (TOS unknown)");
+                      }
+                  }
+            }
 
             if (elapsed_flag)
                 printf(" (%s ms)", sprint_tm(this_reply));
@@ -3070,5 +3087,6 @@ void usage(int is_error)
     fprintf(out, "   -v, --version      show version\n");
     fprintf(out, "   -x, --reachable=N  shows if >=N hosts are reachable or not\n");
     fprintf(out, "   -X, --fast-reachable=N exits true immediately when N hosts are found\n");
+    fprintf(out, "       --print-tos    show tos value\n");
     exit(is_error);
 }

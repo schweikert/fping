@@ -186,6 +186,11 @@ Calculate "outage time" based on the number of lost pings and the interval used 
 Set the typ of service flag (TOS). I<N> can be either decimal or hexadecimal
 (0xh) format.
 
+=item B<--print-tos>
+
+Displays the TOS value in the output, if TOS is not present, "(TOS unknown)" is returned.
+IPv4 only, requires root privileges or cap_net_raw.
+
 =item B<-p>, B<--period>=I<MSEC>
 
 In looping or counting modes (B<-l>, B<-c>, or B<-C>), this parameter sets

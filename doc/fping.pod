@@ -36,7 +36,7 @@ Restrict name resolution and IPs to IPv6 addresses.
 
 =item B<-a>, B<--alive>
 
-Show systems that are alive.
+Show systems that are alive.  (Options B<-c> and B<-C> override B<-a>.)
 
 =item B<-A>, B<--addr>
 
@@ -248,7 +248,7 @@ Ignored (for compatibility with fping 2.4).
 
 =item B<-u>, B<--unreach>
 
-Show targets that are unreachable.
+Show targets that are unreachable.  (Options B<-c> and B<-C> override B<-u>.)
 
 =item B<-v>, B<--version>
 

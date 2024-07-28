@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 12;
+use Test::Command tests => 15;
 use Test::More;
 
 # ping 127.0.0.1
@@ -44,4 +44,12 @@ SKIP: {
 127\.0\.0\.1 : \[2\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
 });
     $cmd->stderr_like(qr{127\.0\.0\.1 : \d\.\d+ \d\.\d+ \d\.\d+\n});
+}
+
+# invalid target name
+{
+    my $cmd = Test::Command->new(cmd => "fping host.name.invalid");
+    $cmd->exit_is_num(2);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_like(qr{host\.name\.invalid: .+\n});
 }

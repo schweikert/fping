@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 27;
+use Test::Command tests => 30;
 use Test::More;
 
 #  -R         random bytes
@@ -67,6 +67,30 @@ $cmd->stderr_like(qr{\s*
 \s*1 timeouts \(waiting for response\)
 \s*1 ICMP Echos sent
 \s*0 ICMP Echo Replies received
+\s*0 other ICMP received
+
+\s*\d\.\d+ ms \(min round trip time\)
+\s*\d\.\d+ ms \(avg round trip time\)
+\s*\d\.\d+ ms \(max round trip time\)
+\s*\d\.\d+ sec \(elapsed real time\)
+});
+}
+
+# fping -s (both valid and invalid host name)
+{
+my $cmd = Test::Command->new(cmd => "fping -s 127.0.0.1 host.name.invalid");
+$cmd->exit_is_num(2);
+$cmd->stdout_is_eq("127.0.0.1 is alive\n");
+$cmd->stderr_like(qr{host\.name\.invalid: .+
+\s*
+\s*1 targets
+\s*1 alive
+\s*0 unreachable
+\s*1 unknown addresses
+\s*
+\s*0 timeouts \(waiting for response\)
+\s*1 ICMP Echos sent
+\s*1 ICMP Echo Replies received
 \s*0 other ICMP received
 
 \s*\d\.\d+ ms \(min round trip time\)

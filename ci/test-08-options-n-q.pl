@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 39;
+use Test::Command tests => 42;
 
 #  -n         show targets by name (-d is equivalent)
 #  -O n       set the type of service (tos) flag on the ICMP packets
@@ -53,6 +53,15 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping -O 2 --print-tos 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr{127\.0\.0\.1 is alive \(TOS \d+\)
+});
+$cmd->stderr_is_eq("");
+}
+
+# fping --print-tos
+{
+my $cmd = Test::Command->new(cmd => "fping --print-tos 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{127\.0\.0\.1 is alive \(TOS 0\)
 });
 $cmd->stderr_is_eq("");
 }

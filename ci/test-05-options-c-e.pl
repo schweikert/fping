@@ -1,11 +1,12 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 69;
+use Test::Command tests => 72;
 use Test::More;
 
 #  -c n           count of pings to send to each target (default 1)
 #  -C n           same as -c, report results in verbose format
 #  --check-source discard replies not from target address
+#  -d             reverse name lookup
 #  -D             print timestamp before each output line
 #  -e             show elapsed time on return packets
 
@@ -200,6 +201,14 @@ ff02::1   : \[0\], timed out \(NaN avg, 100% loss\)
 127\.0\.0\.1 : \d\.\d+
 ff02::1   : -
 });
+}
+
+# fping -d
+{
+my $cmd = Test::Command->new(cmd => "fping -d 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("localhost is alive\n");
+$cmd->stderr_is_eq("");
 }
 
 # fping -D

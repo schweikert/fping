@@ -35,12 +35,18 @@ else {
 }
 
 sub test_unprivileged_works {
-    plan tests => 3;
+    plan tests => 6;
 
     {
         my $cmd = Test::Command->new(cmd => "/tmp/fping.copy 127.0.0.1");
         $cmd->exit_is_num(0);
         $cmd->stdout_is_eq("127.0.0.1 is alive\n");
+        $cmd->stderr_is_eq("");
+    }
+    {
+        my $cmd = Test::Command->new(cmd => "/tmp/fping.copy --print-tos 127.0.0.1");
+        $cmd->exit_is_num(0);
+        $cmd->stdout_is_eq("127.0.0.1 is alive (TOS unknown)\n");
         $cmd->stderr_is_eq("");
     }
 }

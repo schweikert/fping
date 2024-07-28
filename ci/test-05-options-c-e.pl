@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 63;
+use Test::Command tests => 69;
 use Test::More;
 
 #  -c n           count of pings to send to each target (default 1)
@@ -62,6 +62,18 @@ localhost : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
 $cmd->stderr_like(qr{localhost : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
 127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
 });
+}
+
+# fping -c n ff02::1
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -c 1 ff02::1");
+    $cmd->exit_is_num(0);
+    $cmd->stdout_like(qr{ff02::1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)\n});
+    $cmd->stderr_like(qr{ \[<- .*\]
+ff02::1 : xmt/rcv/%loss = 1/1/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+\n});
 }
 
 # fping -C n
@@ -126,6 +138,17 @@ $cmd->stdout_is_eq("");
 $cmd->stderr_like(qr{127\.0\.0\.1 :( \d\.\d+){20}
 127\.0\.0\.2 :( \d\.\d+){20}
 });
+}
+
+# fping -C n ff02::1
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -C 1 ff02::1");
+    $cmd->exit_is_num(0);
+    $cmd->stdout_like(qr{ff02::1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)\n});
+    $cmd->stderr_like(qr{ \[<- .*\]\nff02::1 : \d\.\d+\n});
 }
 
 # fping --check-source

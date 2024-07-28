@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 42;
+use Test::Command tests => 45;
+use Test::More;
 
 #  -n         show targets by name (-d is equivalent)
 #  -O n       set the type of service (tos) flag on the ICMP packets
@@ -64,6 +65,17 @@ $cmd->exit_is_num(0);
 $cmd->stdout_like(qr{127\.0\.0\.1 is alive \(TOS 0\)
 });
 $cmd->stderr_is_eq("");
+}
+
+# fping --print-tos with IPv6
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping --print-tos ::1");
+    $cmd->exit_is_num(0);
+    $cmd->stdout_like(qr{::1 is alive \(TOS unknown\)\n});
+    $cmd->stderr_is_eq("");
 }
 
 # fping -q

@@ -30,7 +30,7 @@ SKIP: {
 if($^O ne 'linux') {
     skip '-k option is only supported on Linux', 3;
 }
-my $cmd = Test::Command->new(cmd => 'sudo env "PATH=$PATH" fping -k 256 127.0.0.1');
+my $cmd = Test::Command->new(cmd => 'fping -k 256 127.0.0.1');
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("127.0.0.1 is alive\n");
 $cmd->stderr_is_eq("");

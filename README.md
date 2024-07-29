@@ -35,7 +35,7 @@ also run fping in unprivileged mode. This works on MacOS and also on Linux,
 provided that your GID is included in the range defined in
 `/proc/sys/net/ipv4/ping_group_range`. This is particularly useful for running
 fping in rootless / unprivileged containers. The --fwmark option needs root or
-cap_net_admin. setuid will not work for --fwmark.
+cap_net_admin.
 
 ## Usage
 

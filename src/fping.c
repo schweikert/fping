@@ -816,12 +816,12 @@ int main(int argc, char **argv)
                 usage(1);
 
             if (socket4 >= 0)
-                if(-1 == setsockopt(socket4, SOL_SOCKET, SO_MARK, &fwmark, sizeof fwmark))
+                if(-1 == p_setsockopt(suid, socket4, SOL_SOCKET, SO_MARK, &fwmark, sizeof fwmark))
                     perror("fwmark ipv4");
 
 #ifdef IPV6
             if (socket6 >= 0)
-                if(-1 == setsockopt(socket6, SOL_SOCKET, SO_MARK, &fwmark, sizeof fwmark))
+                if(-1 == p_setsockopt(suid, socket6, SOL_SOCKET, SO_MARK, &fwmark, sizeof fwmark))
                     perror("fwmark ipv6");
 #endif
 

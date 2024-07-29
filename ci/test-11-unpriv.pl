@@ -35,7 +35,7 @@ else {
 }
 
 sub test_unprivileged_works {
-    plan tests => 6;
+    plan tests => 12;
 
     {
         my $cmd = Test::Command->new(cmd => "/tmp/fping.copy 127.0.0.1");
@@ -48,6 +48,27 @@ sub test_unprivileged_works {
         $cmd->exit_is_num(0);
         $cmd->stdout_is_eq("127.0.0.1 is alive (TOS unknown)\n");
         $cmd->stderr_is_eq("");
+    }
+    SKIP: {
+        if($^O ne 'linux') {
+            skip '-k option is only supported on Linux', 3;
+        }
+        my $cmd = Test::Command->new(cmd => "/tmp/fping.copy -4 -k 256 127.0.0.1");
+        $cmd->exit_is_num(0);
+        $cmd->stdout_is_eq("127.0.0.1 is alive\n");
+        $cmd->stderr_like(qr{fwmark ipv4: .+\n});
+    }
+    SKIP: {
+        if($^O ne 'linux') {
+            skip '-k option is only supported on Linux', 3;
+        }
+        if($ENV{SKIP_IPV6}) {
+            skip 'Skip IPv6 tests', 3;
+        }
+        my $cmd = Test::Command->new(cmd => "/tmp/fping.copy -6 -k 256 ::1");
+        $cmd->exit_is_num(0);
+        $cmd->stdout_is_eq("::1 is alive\n");
+        $cmd->stderr_like(qr{fwmark ipv6: .+\n});
     }
 }
 

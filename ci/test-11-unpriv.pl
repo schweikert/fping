@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 
 use English;
+use File::Temp qw/ tempdir /;
 use Test::Command;
 use Test::More;
 
@@ -21,8 +22,10 @@ my @gids = split(' ', $EGID);
 my @allowed = get_ping_gid_range();
 
 # Make a copy of the binary so that we get rid of setuid bit
+my $tmpdir = tempdir(CLEANUP => 1);
 my $fping_bin = `which fping`; chomp $fping_bin;
-system("cp $fping_bin /tmp/fping.copy; chmod +x /tmp/fping.copy");
+my $fping_copy = "$tmpdir/fping.copy";
+system("cp $fping_bin $fping_copy; chmod +x $fping_copy");
 
 # Determine what test to run, based on whether unprivileged
 # pings are allowed.
@@ -38,13 +41,13 @@ sub test_unprivileged_works {
     plan tests => 12;
 
     {
-        my $cmd = Test::Command->new(cmd => "/tmp/fping.copy 127.0.0.1");
+        my $cmd = Test::Command->new(cmd => "$fping_copy 127.0.0.1");
         $cmd->exit_is_num(0);
         $cmd->stdout_is_eq("127.0.0.1 is alive\n");
         $cmd->stderr_is_eq("");
     }
     {
-        my $cmd = Test::Command->new(cmd => "/tmp/fping.copy --print-tos 127.0.0.1");
+        my $cmd = Test::Command->new(cmd => "$fping_copy --print-tos 127.0.0.1");
         $cmd->exit_is_num(0);
         $cmd->stdout_is_eq("127.0.0.1 is alive (TOS unknown)\n");
         $cmd->stderr_is_eq("");
@@ -53,7 +56,7 @@ sub test_unprivileged_works {
         if($^O ne 'linux') {
             skip '-k option is only supported on Linux', 3;
         }
-        my $cmd = Test::Command->new(cmd => "/tmp/fping.copy -4 -k 256 127.0.0.1");
+        my $cmd = Test::Command->new(cmd => "$fping_copy -4 -k 256 127.0.0.1");
         $cmd->exit_is_num(0);
         $cmd->stdout_is_eq("127.0.0.1 is alive\n");
         $cmd->stderr_like(qr{fwmark ipv4: .+\n});
@@ -65,7 +68,7 @@ sub test_unprivileged_works {
         if($ENV{SKIP_IPV6}) {
             skip 'Skip IPv6 tests', 3;
         }
-        my $cmd = Test::Command->new(cmd => "/tmp/fping.copy -6 -k 256 ::1");
+        my $cmd = Test::Command->new(cmd => "$fping_copy -6 -k 256 ::1");
         $cmd->exit_is_num(0);
         $cmd->stdout_is_eq("::1 is alive\n");
         $cmd->stderr_like(qr{fwmark ipv6: .+\n});
@@ -76,7 +79,7 @@ sub test_privileged_fails {
     plan tests => 3;
 
     {
-        my $cmd = Test::Command->new(cmd => "/tmp/fping.copy 127.0.0.1");
+        my $cmd = Test::Command->new(cmd => "$fping_copy 127.0.0.1");
         $cmd->exit_is_num(4);
         $cmd->stdout_is_eq("");
         $cmd->stderr_like(qr{: can't create socket \(must run as root\?\)});

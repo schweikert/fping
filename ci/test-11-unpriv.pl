@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 
 use English;
+use File::Copy;
 use File::Temp qw/ tempdir /;
 use Test::Command;
 use Test::More;
@@ -25,7 +26,8 @@ my @allowed = get_ping_gid_range();
 my $tmpdir = tempdir(CLEANUP => 1);
 my $fping_bin = `which fping`; chomp $fping_bin;
 my $fping_copy = "$tmpdir/fping.copy";
-system("cp $fping_bin $fping_copy; chmod +x $fping_copy");
+copy($fping_bin, $fping_copy);
+chmod 0755, $fping_copy;
 
 # Determine what test to run, based on whether unprivileged
 # pings are allowed.

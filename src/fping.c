@@ -2024,7 +2024,11 @@ select_again:
 }
 
 int receive_packet(int64_t wait_time,
+#if HAVE_SO_TIMESTAMPNS
     int64_t *reply_timestamp,
+#else
+    int64_t *reply_timestamp __attribute__((unused)),
+#endif
     struct sockaddr *reply_src_addr,
     size_t reply_src_addr_len,
     char *reply_buf,

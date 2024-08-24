@@ -188,7 +188,8 @@ Set the typ of service flag (TOS). I<N> can be either decimal or hexadecimal
 
 =item B<--print-tos>
 
-Displays the TOS value in the output, if TOS is not present, "(TOS unknown)" is returned.
+Displays the TOS value in the output. If B<fping> cannot read the TOS value,
+"(TOS unknown)" is returned.
 IPv4 only, requires root privileges or cap_net_raw.
 
 =item B<-p>, B<--period>=I<MSEC>

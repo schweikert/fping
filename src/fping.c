@@ -2518,16 +2518,16 @@ int wait_for_reply(int64_t wait_time)
         if (verbose_flag || alive_flag) {
             printf("%s", h->host);
 
-            if (verbose_flag) {
+            if (verbose_flag)
                 printf(" is alive");
-                  if(print_tos_flag) {
-                      if(ip_header_tos != -1) {
-                          printf(" (TOS %d)", ip_header_tos);
-                      }
-                      else {
-                          printf(" (TOS unknown)");
-                      }
-                  }
+
+            if(print_tos_flag) {
+                if(ip_header_tos != -1) {
+                    printf(" (TOS %d)", ip_header_tos);
+                }
+                else {
+                    printf(" (TOS unknown)");
+                }
             }
 
             if (print_ttl_flag) {
@@ -3108,7 +3108,7 @@ void usage(int is_error)
     fprintf(out, "   -v, --version      show version\n");
     fprintf(out, "   -x, --reachable=N  shows if >=N hosts are reachable or not\n");
     fprintf(out, "   -X, --fast-reachable=N exits true immediately when N hosts are found\n");
-    fprintf(out, "       --print-tos    show tos value\n");
+    fprintf(out, "       --print-tos    show received TOS value\n");
     fprintf(out, "       --print-ttl    show IP TTL value\n");
     exit(is_error);
 }

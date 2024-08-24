@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 72;
+use Test::Command tests => 75;
 use Test::More;
 
 #  -c n           count of pings to send to each target (default 1)
@@ -292,6 +292,14 @@ my $cmd = Test::Command->new(cmd => "fping -e 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr{127\.0\.0\.1 is alive \(\d\.\d+ ms\)
 });
+$cmd->stderr_is_eq("");
+}
 
+# fping -e -a
+{
+my $cmd = Test::Command->new(cmd => "fping -e -a 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{127\.0\.0\.1 \(\d\.\d+ ms\)
+});
 $cmd->stderr_is_eq("");
 }

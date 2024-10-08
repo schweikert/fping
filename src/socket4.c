@@ -43,6 +43,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <time.h>
 
 char* ping_buffer_ipv4 = 0;
 size_t ping_pkt_size_ipv4;
@@ -129,14 +130,23 @@ unsigned short calcsum(unsigned short* buffer, int length)
     return ~sum;
 }
 
-int socket_sendto_ping_ipv4(int s, struct sockaddr* saddr, socklen_t saddr_len, uint16_t icmp_seq_nr, uint16_t icmp_id_nr)
+int socket_sendto_ping_ipv4(int s, struct sockaddr* saddr, socklen_t saddr_len, uint16_t icmp_seq_nr, uint16_t icmp_id_nr, uint8_t icmp_proto)
 {
     struct icmp* icp;
+    struct timespec tsorig;
+    long tsorig_ms;
     int n;
 
     icp = (struct icmp*)ping_buffer_ipv4;
 
-    icp->icmp_type = ICMP_ECHO;
+    icp->icmp_type = icmp_proto;
+    if(icmp_proto == 13) {
+        clock_gettime(CLOCK_REALTIME, &tsorig);
+        tsorig_ms = (tsorig.tv_sec % (24*60*60)) * 1000 + tsorig.tv_nsec / 1000000;
+        icp->icmp_otime = htonl(tsorig_ms);
+        icp->icmp_rtime = 0;
+        icp->icmp_ttime = 0;
+    }
     icp->icmp_code = 0;
     icp->icmp_cksum = 0;
     icp->icmp_seq = htons(icmp_seq_nr);

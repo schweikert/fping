@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 41;
+use Test::Command tests => 44;
 use Test::More;
 use Time::HiRes qw(gettimeofday tv_interval);
 
@@ -81,6 +81,17 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping --print-ttl 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr{127\.0\.0\.1 is alive \(TTL \d+\)});
+$cmd->stderr_is_eq("");
+}
+
+# fping --icmp-timestamp
+SKIP: {
+if($^O eq 'darwin') {
+    skip 'On macOS, this test is unreliable', 3;
+}
+my $cmd = Test::Command->new(cmd => "fping --icmp-timestamp 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{127\.0\.0\.1 is alive \(Timestamp Originate=\d+ Receive=\d+ Transmit=\d+\)});
 $cmd->stderr_is_eq("");
 }
 

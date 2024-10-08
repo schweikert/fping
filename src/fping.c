@@ -361,6 +361,7 @@ int timestamp_format_flag = 0;
 int random_data_flag = 0;
 int cumulative_stats_flag = 0;
 int check_source_flag = 0;
+int icmp_request_typ = 0;
 int print_tos_flag = 0;
 int print_ttl_flag = 0;
 #if defined(DEBUG) || defined(_DEBUG)
@@ -536,6 +537,7 @@ int main(int argc, char **argv)
         { "ttl", 'H', OPTPARSE_REQUIRED },
         { "interval", 'i', OPTPARSE_REQUIRED },
         { "iface", 'I', OPTPARSE_REQUIRED },
+        { "icmp-timestamp", '0', OPTPARSE_NONE },
 #ifdef SO_MARK
         { "fwmark", 'k', OPTPARSE_REQUIRED },
 #endif
@@ -584,6 +586,8 @@ int main(int argc, char **argv)
                 }
             } else if (strstr(optparse_state.optlongname, "check-source") != NULL) {
                 check_source_flag = 1;
+            } else if (strstr(optparse_state.optlongname, "icmp-timestamp") != NULL) {
+                icmp_request_typ = 13;
             } else if (strstr(optparse_state.optlongname, "print-tos") != NULL) {
                 print_tos_flag = 1;
             } else if (strstr(optparse_state.optlongname, "print-ttl") != NULL) {
@@ -1925,6 +1929,7 @@ int send_ping(HOST_ENTRY *h, int index)
     int n;
     int myseq;
     int ret = 1;
+    uint8_t proto = ICMP_ECHO;
 
     update_current_time();
     h->last_send_time = current_time_ns;
@@ -1933,7 +1938,9 @@ int send_ping(HOST_ENTRY *h, int index)
     dbg_printf("%s [%d]: send ping\n", h->host, index);
 
     if (h->saddr.ss_family == AF_INET && socket4 >= 0) {
-        n = socket_sendto_ping_ipv4(socket4, (struct sockaddr *)&h->saddr, h->saddr_len, myseq, ident4);
+        if(icmp_request_typ == 13)
+            proto = 13;
+        n = socket_sendto_ping_ipv4(socket4, (struct sockaddr *)&h->saddr, h->saddr_len, myseq, ident4, proto);
     }
 #ifdef IPV6
     else if (h->saddr.ss_family == AF_INET6 && socket6 >= 0) {
@@ -2173,7 +2180,10 @@ int decode_icmp_ipv4(
     unsigned short *id,
     unsigned short *seq,
     int *ip_header_tos,
-    int *ip_header_ttl)
+    int *ip_header_ttl,
+    long *ip_header_otime_ms,
+    long *ip_header_rtime_ms,
+    long *ip_header_ttime_ms)
 {
     struct icmp *icp;
     int hlen = 0;
@@ -2206,7 +2216,7 @@ int decode_icmp_ipv4(
 
     icp = (struct icmp *)(reply_buf + hlen);
 
-    if (icp->icmp_type != ICMP_ECHOREPLY) {
+    if (icp->icmp_type != ICMP_ECHOREPLY && icp->icmp_type != 14) {
         /* Handle other ICMP packets */
         struct icmp *sent_icmp;
         SEQMAP_VALUE *seqmap_value;
@@ -2221,7 +2231,7 @@ int decode_icmp_ipv4(
 
         sent_icmp = (struct icmp *)(reply_buf + hlen + ICMP_MINLEN + sizeof(struct ip));
 
-        if (sent_icmp->icmp_type != ICMP_ECHO || sent_icmp->icmp_id != ident4) {
+        if ((sent_icmp->icmp_type != ICMP_ECHO && sent_icmp->icmp_type != 13) || sent_icmp->icmp_id != ident4) {
             /* not caused by us */
             return -1;
         }
@@ -2272,6 +2282,12 @@ int decode_icmp_ipv4(
 
     *id = icp->icmp_id;
     *seq = ntohs(icp->icmp_seq);
+    if(icp->icmp_type == 14) {
+        *ip_header_otime_ms = ntohl(icp->icmp_dun.id_ts.its_otime);
+        *ip_header_rtime_ms = ntohl(icp->icmp_dun.id_ts.its_rtime);
+        *ip_header_ttime_ms = ntohl(icp->icmp_dun.id_ts.its_ttime);
+        //tsdiff_ms = tsrecv_ms - tsorig_ms;
+    }
 
     return hlen;
 }
@@ -2384,6 +2400,11 @@ int wait_for_reply(int64_t wait_time)
     unsigned short seq;
     int ip_header_tos = -1;
     int ip_header_ttl = -1;
+    // ICMP Timestamp
+    long ip_header_otime_ms = -1;
+    long ip_header_rtime_ms = -1;
+    long ip_header_ttime_ms = -1;
+    int tsrtt;
 
     /* Receive packet */
     result = receive_packet(wait_time, /* max. wait time, in ns */
@@ -2412,7 +2433,10 @@ int wait_for_reply(int64_t wait_time)
             &id,
             &seq,
             &ip_header_tos,
-            &ip_header_ttl);
+            &ip_header_ttl,
+            &ip_header_otime_ms,
+            &ip_header_rtime_ms,
+            &ip_header_ttime_ms);
         if (ip_hlen < 0) {
             return 1;
         }
@@ -2539,6 +2563,15 @@ int wait_for_reply(int64_t wait_time)
               }
             }
 
+            if (icmp_request_typ == 13) {
+                if(ip_header_otime_ms != -1 && ip_header_rtime_ms != -1 && ip_header_ttime_ms != -1) {
+                    printf(" (Timestamp Originate=%lu Receive=%lu Transmit=%lu)", ip_header_otime_ms, ip_header_rtime_ms, ip_header_ttime_ms);
+                }
+                else {
+                    printf(" (Timestamp unknown)");
+                }
+            }
+
             if (elapsed_flag)
                 printf(" (%s ms)", sprint_tm(this_reply));
 
@@ -2578,6 +2611,17 @@ int wait_for_reply(int64_t wait_time)
         }
 
         printf("\n");
+
+        if (icmp_request_typ == 13) {
+            if(ip_header_otime_ms != -1 && ip_header_rtime_ms != -1 && ip_header_ttime_ms != -1) {
+                printf("ICMP timestamp: Originate=%lu Receive=%lu Transmit=%lu\n", ip_header_otime_ms, ip_header_rtime_ms, ip_header_ttime_ms);
+                tsrtt = (ip_header_ttime_ms - ip_header_otime_ms) + (this_reply - (ip_header_rtime_ms - ip_header_otime_ms));
+                printf("ICMP timestamp RTT tsrtt=%d\n", tsrtt);
+            }
+            else {
+                printf("ICMP timestamp: unknown\n");
+            }
+        }
     }
 
     return 1;
@@ -3088,6 +3132,7 @@ void usage(int is_error)
     fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (default: %.0f ms,\n", timeout / 1e6);
     fprintf(out, "                      except with -l/-c/-C, where it's the -p period up to 2000 ms)\n");
     fprintf(out, "       --check-source discard replies not from target address\n");
+    fprintf(out, "       --icmp-timestamp send ping type Timestamp Request\n");
     fprintf(out, "\n");
     fprintf(out, "Output options:\n");
     fprintf(out, "   -a, --alive        show targets that are alive\n");

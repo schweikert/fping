@@ -140,7 +140,7 @@ int socket_sendto_ping_ipv4(int s, struct sockaddr* saddr, socklen_t saddr_len, 
     icp = (struct icmp*)ping_buffer_ipv4;
 
     icp->icmp_type = icmp_proto;
-    if(icmp_proto == 13) {
+    if(icmp_proto == ICMP_TSTAMP) {
         clock_gettime(CLOCK_REALTIME, &tsorig);
         tsorig_ms = (tsorig.tv_sec % (24*60*60)) * 1000 + tsorig.tv_nsec / 1000000;
         icp->icmp_otime = htonl(tsorig_ms);

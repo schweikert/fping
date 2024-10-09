@@ -1939,7 +1939,7 @@ int send_ping(HOST_ENTRY *h, int index)
 
     if (h->saddr.ss_family == AF_INET && socket4 >= 0) {
         if(icmp_request_typ == 13)
-            proto = 13;
+            proto = ICMP_TSTAMP;
         n = socket_sendto_ping_ipv4(socket4, (struct sockaddr *)&h->saddr, h->saddr_len, myseq, ident4, proto);
     }
 #ifdef IPV6
@@ -2216,7 +2216,7 @@ int decode_icmp_ipv4(
 
     icp = (struct icmp *)(reply_buf + hlen);
 
-    if (icp->icmp_type != ICMP_ECHOREPLY && icp->icmp_type != 14) {
+    if (icp->icmp_type != ICMP_ECHOREPLY && icp->icmp_type != ICMP_TSTAMPREPLY) {
         /* Handle other ICMP packets */
         struct icmp *sent_icmp;
         SEQMAP_VALUE *seqmap_value;
@@ -2231,7 +2231,7 @@ int decode_icmp_ipv4(
 
         sent_icmp = (struct icmp *)(reply_buf + hlen + ICMP_MINLEN + sizeof(struct ip));
 
-        if ((sent_icmp->icmp_type != ICMP_ECHO && sent_icmp->icmp_type != 13) || sent_icmp->icmp_id != ident4) {
+        if ((sent_icmp->icmp_type != ICMP_ECHO && sent_icmp->icmp_type != ICMP_TSTAMP) || sent_icmp->icmp_id != ident4) {
             /* not caused by us */
             return -1;
         }
@@ -2282,7 +2282,7 @@ int decode_icmp_ipv4(
 
     *id = icp->icmp_id;
     *seq = ntohs(icp->icmp_seq);
-    if(icp->icmp_type == 14) {
+    if(icp->icmp_type == ICMP_TSTAMPREPLY) {
         *ip_header_otime_ms = ntohl(icp->icmp_dun.id_ts.its_otime);
         *ip_header_rtime_ms = ntohl(icp->icmp_dun.id_ts.its_rtime);
         *ip_header_ttime_ms = ntohl(icp->icmp_dun.id_ts.its_ttime);

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 44;
+use Test::Command tests => 47;
 use Test::More;
 use Time::HiRes qw(gettimeofday tv_interval);
 
@@ -120,6 +120,14 @@ my $cmd = Test::Command->new(cmd => "fping -b 1000 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("127.0.0.1 is alive\n");
 $cmd->stderr_is_eq("");
+}
+
+# fping --icmp-timestamp -b
+{
+my $cmd = Test::Command->new(cmd => "fping --icmp-timestamp -b 1000 127.0.0.1");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{Usage:});
 }
 
 # fping -B

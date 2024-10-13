@@ -691,6 +691,8 @@ int main(int argc, char **argv)
         case 'b':
             if (sscanf(optparse_state.optarg, "%u", &ping_data_size) != 1)
                 usage(1);
+            if (icmp_request_typ > 0)
+                usage(1);
 
             break;
 
@@ -3129,7 +3131,7 @@ void usage(int is_error)
     fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (default: %.0f ms,\n", timeout / 1e6);
     fprintf(out, "                      except with -l/-c/-C, where it's the -p period up to 2000 ms)\n");
     fprintf(out, "       --check-source discard replies not from target address\n");
-    fprintf(out, "       --icmp-timestamp send ping type Timestamp Request\n");
+    fprintf(out, "       --icmp-timestamp send ping type Timestamp Request (only if no -b specified)\n");
     fprintf(out, "\n");
     fprintf(out, "Output options:\n");
     fprintf(out, "   -a, --alive        show targets that are alive\n");

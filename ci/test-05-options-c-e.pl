@@ -84,12 +84,8 @@ if($^O eq 'darwin') {
 }
 my $cmd = Test::Command->new(cmd => "fping -4 --icmp-timestamp -c 2 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 20 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
-ICMP timestamp: Originate=\d+ Receive=\d+ Transmit=\d+
-ICMP timestamp RTT tsrtt=\d+
-127\.0\.0\.1 : \[1\], 20 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
-ICMP timestamp: Originate=\d+ Receive=\d+ Transmit=\d+
-ICMP timestamp RTT tsrtt=\d+
+$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 20 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\), ICMP timestamp: Originate=\d+ Receive=\d+ Transmit=\d+
+127\.0\.0\.1 : \[1\], 20 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\), ICMP timestamp: Originate=\d+ Receive=\d+ Transmit=\d+
 });
 
 $cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+

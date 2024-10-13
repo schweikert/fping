@@ -2404,7 +2404,6 @@ int wait_for_reply(int64_t wait_time)
     long ip_header_otime_ms = -1;
     long ip_header_rtime_ms = -1;
     long ip_header_ttime_ms = -1;
-    int tsrtt;
 
     /* Receive packet */
     result = receive_packet(wait_time, /* max. wait time, in ns */
@@ -2610,18 +2609,16 @@ int wait_for_reply(int64_t wait_time)
             fprintf(stderr, " [<- %s]", buf);
         }
 
-        printf("\n");
-
         if (icmp_request_typ == 13) {
             if(ip_header_otime_ms != -1 && ip_header_rtime_ms != -1 && ip_header_ttime_ms != -1) {
-                printf("ICMP timestamp: Originate=%lu Receive=%lu Transmit=%lu\n", ip_header_otime_ms, ip_header_rtime_ms, ip_header_ttime_ms);
-                tsrtt = (ip_header_ttime_ms - ip_header_otime_ms) + (this_reply - (ip_header_rtime_ms - ip_header_otime_ms));
-                printf("ICMP timestamp RTT tsrtt=%d\n", tsrtt);
+                printf(", ICMP timestamp: Originate=%lu Receive=%lu Transmit=%lu", ip_header_otime_ms, ip_header_rtime_ms, ip_header_ttime_ms);
             }
             else {
-                printf("ICMP timestamp: unknown\n");
+                printf(", ICMP timestamp: unknown");
             }
         }
+
+        printf("\n");
     }
 
     return 1;

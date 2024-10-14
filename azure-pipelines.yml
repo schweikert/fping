@@ -50,3 +50,17 @@ jobs:
        prove $(ls ci/test-*.pl|grep -v internet-hosts|grep -v test-10-option-u-x.pl)
        ci/run-lcov.sh
       displayName: 'build_test'
+
+- job: docker_build
+  displayName: Docker Build
+
+  pool:
+    name: Azure Pipelines
+    vmImage: 'ubuntu-latest'
+  workspace:
+    clean: all
+  steps:
+    - task: ContainerBuild@0
+      displayName: 'Container Build Task'
+      inputs:
+        Dockerfile: contrib/Dockerfile

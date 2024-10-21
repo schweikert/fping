@@ -157,8 +157,8 @@ Set the interface (requires SO_BINDTODEVICE support).
 
 =item B<--icmp-timestamp>
 
-Send ICMP timestamp requests (ICMP type 13).
-If B<fping> not recive ICMP timestamp reply, "(Timestamp unknown)" is returned.
+Send ICMP timestamp requests (ICMP type 13) instead of ICMP Echo requests.
+Cannot be used together with B<-b> because ICMP timestamp messages have a fixed size.
 IPv4 only, requires root privileges.
 
 =item B<-k>, B<--fwmark>=I<FWMARK>

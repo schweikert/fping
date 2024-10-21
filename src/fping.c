@@ -2183,9 +2183,9 @@ int decode_icmp_ipv4(
     unsigned short *seq,
     int *ip_header_tos,
     int *ip_header_ttl,
-    long *ip_header_otime_ms,
-    long *ip_header_rtime_ms,
-    long *ip_header_ttime_ms)
+    uint32_t *ip_header_otime_ms,
+    uint32_t *ip_header_rtime_ms,
+    uint32_t *ip_header_ttime_ms)
 {
     struct icmp *icp;
     int hlen = 0;
@@ -2285,10 +2285,20 @@ int decode_icmp_ipv4(
     *id = icp->icmp_id;
     *seq = ntohs(icp->icmp_seq);
     if(icp->icmp_type == ICMP_TSTAMPREPLY) {
+
+        /* Check that reply_buf_len is sufficiently big to contain the timestamps */
+        if (reply_buf_len < hlen + ICMP_MINLEN + 3 * sizeof(uint32_t)) {
+            if (verbose_flag) {
+                char buf[INET6_ADDRSTRLEN];
+                getnameinfo(response_addr, response_addr_len, buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+                printf("received packet too short for ICMP Timestamp Reply (%d bytes from %s)\n", (int)reply_buf_len, buf);
+            }
+            return -1;
+        }
+
         *ip_header_otime_ms = ntohl(icp->icmp_dun.id_ts.its_otime);
         *ip_header_rtime_ms = ntohl(icp->icmp_dun.id_ts.its_rtime);
         *ip_header_ttime_ms = ntohl(icp->icmp_dun.id_ts.its_ttime);
-        //tsdiff_ms = tsrecv_ms - tsorig_ms;
     }
 
     return hlen;
@@ -2403,9 +2413,9 @@ int wait_for_reply(int64_t wait_time)
     int ip_header_tos = -1;
     int ip_header_ttl = -1;
     // ICMP Timestamp
-    long ip_header_otime_ms = -1;
-    long ip_header_rtime_ms = -1;
-    long ip_header_ttime_ms = -1;
+    uint32_t ip_header_otime_ms;
+    uint32_t ip_header_rtime_ms;
+    uint32_t ip_header_ttime_ms;
 
     /* Receive packet */
     result = receive_packet(wait_time, /* max. wait time, in ns */
@@ -2565,12 +2575,7 @@ int wait_for_reply(int64_t wait_time)
             }
 
             if (icmp_request_typ == 13) {
-                if(ip_header_otime_ms != -1 && ip_header_rtime_ms != -1 && ip_header_ttime_ms != -1) {
-                    printf(" (Timestamp Originate=%lu Receive=%lu Transmit=%lu)", ip_header_otime_ms, ip_header_rtime_ms, ip_header_ttime_ms);
-                }
-                else {
-                    printf(" (Timestamp unknown)");
-                }
+                printf(" (Timestamp Originate=%u Receive=%u Transmit=%u)", ip_header_otime_ms, ip_header_rtime_ms, ip_header_ttime_ms);
             }
 
             if (elapsed_flag)
@@ -2612,12 +2617,7 @@ int wait_for_reply(int64_t wait_time)
         }
 
         if (icmp_request_typ == 13) {
-            if(ip_header_otime_ms != -1 && ip_header_rtime_ms != -1 && ip_header_ttime_ms != -1) {
-                printf(", ICMP timestamp: Originate=%lu Receive=%lu Transmit=%lu", ip_header_otime_ms, ip_header_rtime_ms, ip_header_ttime_ms);
-            }
-            else {
-                printf(", ICMP timestamp: unknown");
-            }
+            printf(", ICMP timestamp: Originate=%u Receive=%u Transmit=%u", ip_header_otime_ms, ip_header_rtime_ms, ip_header_ttime_ms);
         }
 
         printf("\n");
@@ -3131,7 +3131,7 @@ void usage(int is_error)
     fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (default: %.0f ms,\n", timeout / 1e6);
     fprintf(out, "                      except with -l/-c/-C, where it's the -p period up to 2000 ms)\n");
     fprintf(out, "       --check-source discard replies not from target address\n");
-    fprintf(out, "       --icmp-timestamp send ping type Timestamp Request (only if no -b specified)\n");
+    fprintf(out, "       --icmp-timestamp use ICMP Timestamp instead of ICMP Echo\n");
     fprintf(out, "\n");
     fprintf(out, "Output options:\n");
     fprintf(out, "   -a, --alive        show targets that are alive\n");

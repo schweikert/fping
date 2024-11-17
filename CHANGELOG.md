@@ -6,6 +6,11 @@ Next
 - New option --icmp-timestamp send ICMP timestamp requests (ICMP type 13)
   instead of ICMP Echo requests (#353, thanks @auerswal and @gsnw-sebast)
 
+## Bugfixes and other changes
+
+- Azure Pipline only trigger when changes are made in the development branch
+  (#359, thanks @gsnw-sebast)
+- Azure Pipline YAML add docker build (#354, thanks @gsnw-sebast)
 
 fping 5.2 (2024-04-21)
 ======================

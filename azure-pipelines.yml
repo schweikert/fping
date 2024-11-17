@@ -1,3 +1,6 @@
+trigger:
+- develop
+
 jobs:
 - job: linux_build
   displayName: Linux Build

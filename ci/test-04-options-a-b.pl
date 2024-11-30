@@ -91,7 +91,7 @@ if($^O eq 'darwin') {
 }
 my $cmd = Test::Command->new(cmd => "fping --icmp-timestamp 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr{127\.0\.0\.1 is alive \(Timestamp Originate=\d+ Receive=\d+ Transmit=\d+\)});
+$cmd->stdout_like(qr{127\.0\.0\.1 is alive \(Timestamp Originate=\d+ Receive=\d+ Transmit=\d+ Localreceive=\d+\)});
 $cmd->stderr_is_eq("");
 }
 

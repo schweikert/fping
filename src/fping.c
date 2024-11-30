@@ -411,6 +411,7 @@ struct event *host_get_timeout_event(HOST_ENTRY *h, int index);
 void stats_add(HOST_ENTRY *h, int index, int success, int64_t latency);
 void update_current_time();
 void print_timestamp_format(int64_t current_time_ns, int timestamp_format);
+static uint32_t ms_since_midnight_utc(int64_t time_val);
 
 /************************************************************
 
@@ -2593,7 +2594,9 @@ int wait_for_reply(int64_t wait_time)
             }
 
             if (icmp_request_typ == 13) {
-                printf(" (Timestamp Originate=%u Receive=%u Transmit=%u)", ip_header_otime_ms, ip_header_rtime_ms, ip_header_ttime_ms);
+                printf(" (Timestamp Originate=%u Receive=%u Transmit=%u Localreceive=%u)",
+                       ip_header_otime_ms, ip_header_rtime_ms, ip_header_ttime_ms,
+                       ms_since_midnight_utc(recv_time));
             }
 
             if (elapsed_flag)
@@ -2635,7 +2638,9 @@ int wait_for_reply(int64_t wait_time)
         }
 
         if (icmp_request_typ == 13) {
-            printf(", ICMP timestamp: Originate=%u Receive=%u Transmit=%u", ip_header_otime_ms, ip_header_rtime_ms, ip_header_ttime_ms);
+            printf(", ICMP timestamp: Originate=%u Receive=%u Transmit=%u Localreceive=%u",
+                   ip_header_otime_ms, ip_header_rtime_ms, ip_header_ttime_ms,
+                   ms_since_midnight_utc(recv_time));
         }
 
         printf("\n");
@@ -3099,6 +3104,27 @@ void print_timestamp_format(int64_t current_time_ns, int timestamp_format)
         default:
             printf("[%.5f] ", (double)current_time_ns / 1e9);
     }
+}
+
+/************************************************************
+
+  Function: ms_since_midnight_utc
+
+*************************************************************
+
+  Input: int64_t: current UTC time in ns
+
+  Output: uint32_t: current time in ms since midnight UTC
+
+  Description:
+
+  Return ICMP Timestamp value corresponding to the given time value.
+  The given time value must be in UTC.
+
+*************************************************************/
+static uint32_t ms_since_midnight_utc(int64_t time_val)
+{
+    return (uint32_t)((time_val / 1000000) % (24 * 60 * 60 * 1000));
 }
 
 /************************************************************

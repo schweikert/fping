@@ -2413,9 +2413,9 @@ int wait_for_reply(int64_t wait_time)
     int ip_header_tos = -1;
     int ip_header_ttl = -1;
     // ICMP Timestamp
-    uint32_t ip_header_otime_ms;
-    uint32_t ip_header_rtime_ms;
-    uint32_t ip_header_ttime_ms;
+    uint32_t ip_header_otime_ms = 0x80000000U;
+    uint32_t ip_header_rtime_ms = 0x80000000U;
+    uint32_t ip_header_ttime_ms = 0x80000000U;
 
     /* Receive packet */
     result = receive_packet(wait_time, /* max. wait time, in ns */

@@ -591,6 +591,13 @@ int main(int argc, char **argv)
             } else if (strstr(optparse_state.optlongname, "check-source") != NULL) {
                 check_source_flag = 1;
             } else if (strstr(optparse_state.optlongname, "icmp-timestamp") != NULL) {
+#ifdef IPV6
+                if (hints_ai_family != AF_UNSPEC && hints_ai_family != AF_INET) {
+                    fprintf(stderr, "%s: ICMP Timestamp is IPv4 only\n", prog);
+                    exit(1);
+                }
+                hints_ai_family = AF_INET;
+#endif
                 icmp_request_typ = 13;
                 ping_data_size = ICMP_TIMESTAMP_DATA_SIZE;
             } else if (strstr(optparse_state.optlongname, "print-tos") != NULL) {

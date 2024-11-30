@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 53;
+use Test::Command tests => 62;
 use Test::More;
 use Time::HiRes qw(gettimeofday tv_interval);
 
@@ -95,6 +95,17 @@ $cmd->stdout_like(qr{127\.0\.0\.1 is alive \(Timestamp Originate=\d+ Receive=\d+
 $cmd->stderr_is_eq("");
 }
 
+# fping --icmp-timestamp ::1
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping --icmp-timestamp ::1");
+    $cmd->exit_is_num(2);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_like(qr{^::1:.*(not supported|not known)});
+}
+
 # fping --print-ttl with IPv6
 SKIP: {
     if($ENV{SKIP_IPV6}) {
@@ -144,6 +155,28 @@ my $cmd = Test::Command->new(cmd => "fping --icmp-timestamp -b 12 127.0.0.1");
 $cmd->exit_is_num(1);
 $cmd->stdout_is_eq("");
 $cmd->stderr_like(qr{cannot change ICMP Timestamp size});
+}
+
+# fping -6 --icmp-timestamp
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -6 --icmp-timestamp ::1");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_like(qr{ICMP Timestamp is IPv4 only});
+}
+
+# fping --icmp-timestamp -6
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping --icmp-timestamp -6 ::1");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_is_eq("fping: can't specify both -4 and -6\n");
 }
 
 # fping -B

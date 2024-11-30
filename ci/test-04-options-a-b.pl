@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 47;
+use Test::Command tests => 53;
 use Test::More;
 use Time::HiRes qw(gettimeofday tv_interval);
 
@@ -127,7 +127,23 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping --icmp-timestamp -b 1000 127.0.0.1");
 $cmd->exit_is_num(1);
 $cmd->stdout_is_eq("");
-$cmd->stderr_like(qr{Usage:});
+$cmd->stderr_like(qr{cannot change ICMP Timestamp size});
+}
+
+# fping -b --icmp-timestamp
+{
+my $cmd = Test::Command->new(cmd => "fping -b 1000 --icmp-timestamp 127.0.0.1");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{cannot change ICMP Timestamp size});
+}
+
+# fping --icmp-timestamp -b 12 (ICMP Timestamp data size)
+{
+my $cmd = Test::Command->new(cmd => "fping --icmp-timestamp -b 12 127.0.0.1");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{cannot change ICMP Timestamp size});
 }
 
 # fping -B

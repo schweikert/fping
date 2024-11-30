@@ -51,7 +51,7 @@ timestamp).  The reported received data size includes the IP header (normally
 20 bytes) and ICMP header (8 bytes), so the minimum total size is 40 bytes.
 Default is 56, as in B<ping>. Maximum is the theoretical maximum IP datagram
 size (64K), though most systems limit this to a smaller, system-dependent
-number.
+number. Cannot be used together with B<--icmp-timestamp>.
 
 =item B<-B>, B<--backoff>=I<N>
 
@@ -159,7 +159,7 @@ Set the interface (requires SO_BINDTODEVICE support).
 
 Send ICMP timestamp requests (ICMP type 13) instead of ICMP Echo requests.
 Cannot be used together with B<-b> because ICMP timestamp messages have a fixed size.
-IPv4 only, requires root privileges.
+IPv4 only, requires root privileges or cap_net_raw.
 
 =item B<-k>, B<--fwmark>=I<FWMARK>
 

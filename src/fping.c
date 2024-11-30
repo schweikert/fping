@@ -144,6 +144,9 @@ extern int h_errno;
 /* sized so as to be like traditional ping */
 #define DEFAULT_PING_DATA_SIZE 56
 
+/* ICMP Timestamp has a fixed payload size of 12 bytes */
+#define ICMP_TIMESTAMP_DATA_SIZE 12
+
 /* maxima and minima */
 #ifdef FPING_SAFE_LIMITS
 #define MIN_INTERVAL 1 /* in millisec */
@@ -364,6 +367,7 @@ int check_source_flag = 0;
 int icmp_request_typ = 0;
 int print_tos_flag = 0;
 int print_ttl_flag = 0;
+int size_flag = 0;
 #if defined(DEBUG) || defined(_DEBUG)
 int randomly_lose_flag, trace_flag, print_per_system_flag;
 int lose_factor;
@@ -588,6 +592,7 @@ int main(int argc, char **argv)
                 check_source_flag = 1;
             } else if (strstr(optparse_state.optlongname, "icmp-timestamp") != NULL) {
                 icmp_request_typ = 13;
+                ping_data_size = ICMP_TIMESTAMP_DATA_SIZE;
             } else if (strstr(optparse_state.optlongname, "print-tos") != NULL) {
                 print_tos_flag = 1;
             } else if (strstr(optparse_state.optlongname, "print-ttl") != NULL) {
@@ -691,9 +696,7 @@ int main(int argc, char **argv)
         case 'b':
             if (sscanf(optparse_state.optarg, "%u", &ping_data_size) != 1)
                 usage(1);
-            if (icmp_request_typ > 0)
-                usage(1);
-
+            size_flag = 1;
             break;
 
         case 'h':
@@ -970,6 +973,11 @@ int main(int argc, char **argv)
     if ((backoff > MAX_BACKOFF_FACTOR) || (backoff < MIN_BACKOFF_FACTOR)) {
         fprintf(stderr, "%s: backoff factor %.1f not valid, must be between %.1f and %.1f\n",
             prog, backoff, MIN_BACKOFF_FACTOR, MAX_BACKOFF_FACTOR);
+        exit(1);
+    }
+
+    if (icmp_request_typ == 13 && size_flag != 0) {
+        fprintf(stderr, "%s: cannot change ICMP Timestamp size\n", prog);
         exit(1);
     }
 
@@ -2290,7 +2298,7 @@ int decode_icmp_ipv4(
     if(icp->icmp_type == ICMP_TSTAMPREPLY) {
 
         /* Check that reply_buf_len is sufficiently big to contain the timestamps */
-        if (reply_buf_len < hlen + ICMP_MINLEN + 3 * sizeof(uint32_t)) {
+        if (reply_buf_len < hlen + ICMP_MINLEN + ICMP_TIMESTAMP_DATA_SIZE) {
             if (verbose_flag) {
                 char buf[INET6_ADDRSTRLEN];
                 getnameinfo(response_addr, response_addr_len, buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);

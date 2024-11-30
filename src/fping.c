@@ -2218,7 +2218,8 @@ int decode_icmp_ipv4(
 
     icp = (struct icmp *)(reply_buf + hlen);
 
-    if (icp->icmp_type != ICMP_ECHOREPLY && icp->icmp_type != ICMP_TSTAMPREPLY) {
+    if ((icmp_request_typ == 0 && icp->icmp_type != ICMP_ECHOREPLY) ||
+        (icmp_request_typ == 13 && icp->icmp_type != ICMP_TSTAMPREPLY)) {
         /* Handle other ICMP packets */
         struct icmp *sent_icmp;
         SEQMAP_VALUE *seqmap_value;
@@ -2233,7 +2234,9 @@ int decode_icmp_ipv4(
 
         sent_icmp = (struct icmp *)(reply_buf + hlen + ICMP_MINLEN + sizeof(struct ip));
 
-        if ((sent_icmp->icmp_type != ICMP_ECHO && sent_icmp->icmp_type != ICMP_TSTAMP) || sent_icmp->icmp_id != ident4) {
+        if ((icmp_request_typ == 0 && sent_icmp->icmp_type != ICMP_ECHO) ||
+            (icmp_request_typ == 13 && sent_icmp->icmp_type != ICMP_TSTAMP) ||
+            sent_icmp->icmp_id != ident4) {
             /* not caused by us */
             return -1;
         }

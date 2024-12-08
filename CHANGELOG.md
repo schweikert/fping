@@ -1,9 +1,10 @@
-Next
-====
+fping 5.3-rc1 (2024-12-08)
+==========================
+
 
 ## New features
 
-- New option --icmp-timestamp send ICMP timestamp requests (ICMP type 13)
+- New option --icmp-timestamp to send ICMP timestamp requests (ICMP type 13)
   instead of ICMP Echo requests (#353 #363, thanks @auerswal and @gsnw-sebast)
 - Print returned TTL value (#354, thanks @nalves599)
 - Print returned TOS value (#335 #346 #347, thanks @auerswal and @gsnw-sebast)
@@ -13,16 +14,16 @@ Next
 ## Bugfixes and other changes
 
 - ci: Upgrade actions/upload-artifact to v4 (#360, thanks @gsnw-sebast)
-- Azure Pipline only trigger when changes are made in the development branch
+- ci: Azure Pipeline only trigger when changes are made in the development branch
   (#359, thanks @gsnw-sebast)
 - ci: Upgrade actions/upload-artifact to v3 (#355, thanks @pevik)
-- Azure Pipline YAML add docker build (#354, thanks @gsnw-sebast)
-- Dockerfile support architekture 386 change distribution from ubuntu to
-  debian (#350, thanks @gsnw-sebast)
+- ci: Azure Pipeline YAML add docker build (#354, thanks @gsnw-sebast)
+- Dockerfile: change distribution from ubuntu to debian (#350, thanks
+  @gsnw-sebast)
 - Fix warning unused parameter 'reply_timestamp' under macOS (#348, thanks
   @gsnw-sebast)
 - Fix increase maximum -s value to 65507 (#344, thanks @pevik)
-- CI: use File::Temp to create temporary directory (#343, thanks @auerswal)
+- ci: use File::Temp to create temporary directory (#343, thanks @auerswal)
 - Fix -k, --fwmark with setuid fping executable (#342, thanks @auerswal)
 - Another batch of additional tests (take 2) (#341, thanks @auerswal)
 - Document that -a and -u are overridden by -c and -C (#338, thanks @auerswal)

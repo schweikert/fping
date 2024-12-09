@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 15;
+use Test::Command tests => 16;
 use Test::More;
 
 #  -i n       interval between sending ping packets (in millisec) (default 25)
@@ -22,6 +22,14 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => '(sleep 2; pkill fping)& fping -p 900 -l 127.0.0.1');
 $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
 127\.0\.0\.1 : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+});
+}
+
+# fping -l --print-tos --print-ttl
+{
+my $cmd = Test::Command->new(cmd => '(sleep 2; pkill fping)& fping -p 900 --print-ttl --print-tos -l 127.0.0.1');
+$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\) \(TOS \d+\) \(TTL \d+\)
+127\.0\.0\.1 : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\) \(TOS \d+\) \(TTL \d+\)
 });
 }
 

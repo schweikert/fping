@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 78;
+use Test::Command tests => 84;
 use Test::More;
 
 #  -c n           count of pings to send to each target (default 1)
@@ -18,6 +18,21 @@ $cmd->stdout_like(qr{localhost : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% l
 127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
 localhost : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
 127\.0\.0\.1 : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+});
+
+$cmd->stderr_like(qr{localhost : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+});
+}
+
+# fping -c n --print-tos --print-ttl
+{
+my $cmd = Test::Command->new(cmd => "fping -4 -c 2 -p 100 --print-tos --print-ttl localhost 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{localhost : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\) \(TOS \d+\) \(TTL \d+\)
+127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\) \(TOS \d+\) \(TTL \d+\)
+localhost : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\) \(TOS \d+\) \(TTL \d+\)
+127\.0\.0\.1 : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\) \(TOS \d+\) \(TTL \d+\)
 });
 
 $cmd->stderr_like(qr{localhost : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
@@ -100,6 +115,21 @@ $cmd->stdout_like(qr{localhost : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% l
 127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
 localhost : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
 127\.0\.0\.1 : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
+});
+
+$cmd->stderr_like(qr{localhost : \d\.\d+ \d\.\d+
+127\.0\.0\.1 : \d\.\d+ \d\.\d+
+});
+}
+
+# fping -C n --print-tos --print-ttl
+{
+my $cmd = Test::Command->new(cmd => "fping -4 -C 2 -p 100 --print-tos --print-ttl localhost 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{localhost : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\) \(TOS \d+\) \(TTL \d+\)
+127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\) \(TOS \d+\) \(TTL \d+\)
+localhost : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\) \(TOS \d+\) \(TTL \d+\)
+127\.0\.0\.1 : \[1\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\) \(TOS \d+\) \(TTL \d+\)
 });
 
 $cmd->stderr_like(qr{localhost : \d\.\d+ \d\.\d+

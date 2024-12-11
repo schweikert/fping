@@ -6,10 +6,12 @@ fping 5.3-rc1 (2024-12-08)
 
 - New option --icmp-timestamp to send ICMP timestamp requests (ICMP type 13)
   instead of ICMP Echo requests (#353 #363, thanks @auerswal and @gsnw-sebast)
-- Print returned TTL value (#354, thanks @nalves599)
-- Print returned TOS value (#335 #346 #347, thanks @auerswal and @gsnw-sebast)
+- New option --print-ttl to print returned TTL value (#354, thanks @nalves599)
+- New option --print-tos to print returned TOS value (#335 #346 #347, thanks
+  @auerswal and @gsnw-sebast)
 - New option --check-source (#334, thanks @auerswal)
 - Predefined various timestamp formats (#321, thanks @auerswal and @gsnw-sebast)
+- Print cumulative stats with -Q SECS,cumulative (#315, thanks @auerswal)
 
 ## Bugfixes and other changes
 
@@ -38,7 +40,6 @@ fping 5.3-rc1 (2024-12-08)
 - A few more tests to increase code coverage a little bit (#320, thanks @auerswal)
 - Github fix: Change to codeql-action-v2 (#319, thanks @gsnw-sebast)
 - Developer function: Debug with Visual Studio Code (#318, thanks @gsnw-sebast)
-- Print cumulative stats with -Q SECS,cumulative (#315, thanks @auerswal)
 
 fping 5.2 (2024-04-21)
 ======================

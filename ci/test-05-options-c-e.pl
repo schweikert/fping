@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 84;
+use Test::Command tests => 87;
 use Test::More;
 
 #  -c n           count of pings to send to each target (default 1)
@@ -99,8 +99,23 @@ if($^O eq 'darwin') {
 }
 my $cmd = Test::Command->new(cmd => "fping -4 --icmp-timestamp -c 2 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 20 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\), ICMP timestamp: Originate=\d+ Receive=\d+ Transmit=\d+ Localreceive=\d+
-127\.0\.0\.1 : \[1\], 20 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\), ICMP timestamp: Originate=\d+ Receive=\d+ Transmit=\d+ Localreceive=\d+
+$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 20 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\), timestamps: Originate=\d+ Receive=\d+ Transmit=\d+ Localreceive=\d+
+127\.0\.0\.1 : \[1\], 20 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\), timestamps: Originate=\d+ Receive=\d+ Transmit=\d+ Localreceive=\d+
+});
+
+$cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+
+});
+}
+
+# fping --icmp-timestamp --print-tos --print-ttl -c n 127.0.0.1
+SKIP: {
+if($^O eq 'darwin') {
+    skip 'On macOS, this test is unreliable', 3;
+}
+my $cmd = Test::Command->new(cmd => "fping -4 --icmp-timestamp --print-tos --print-ttl -p 100 -c 2 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 20 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\), timestamps: Originate=\d+ Receive=\d+ Transmit=\d+ Localreceive=\d+ \(TOS \d+\) \(TTL \d+\)
+127\.0\.0\.1 : \[1\], 20 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\), timestamps: Originate=\d+ Receive=\d+ Transmit=\d+ Localreceive=\d+ \(TOS \d+\) \(TTL \d+\)
 });
 
 $cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+

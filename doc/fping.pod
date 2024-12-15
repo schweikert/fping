@@ -158,6 +158,8 @@ Set the interface (requires SO_BINDTODEVICE support).
 =item B<--icmp-timestamp>
 
 Send ICMP timestamp requests (ICMP type 13) instead of ICMP Echo requests.
+Print ICMP timestamps for originate, receive, and transmit, together with
+the local receive time in the same format, in addition to normal output.
 Cannot be used together with B<-b> because ICMP timestamp messages have a fixed size.
 IPv4 only, requires root privileges or cap_net_raw.
 

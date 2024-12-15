@@ -2605,31 +2605,29 @@ int wait_for_reply(int64_t wait_time)
             fprintf(stderr, " [<- %s]", buf);
         }
 
-            if(print_tos_flag) {
-                if(ip_header_tos != -1) {
-                    printf(" (TOS %d)", ip_header_tos);
-                }
-                else {
-                    printf(" (TOS unknown)");
-                }
-            }
-
-            if (print_ttl_flag) {
-              if(ip_header_ttl != -1) {
-                  printf(" (TTL %d)", ip_header_ttl);
-              }
-              else {
-                  printf(" (TTL unknown)");
-              }
-            }
-
         if (icmp_request_typ == 13) {
-            printf("%simestamp%s Originate=%u Receive=%u Transmit=%u Localreceive=%u%s",
-                   per_recv_flag ? ", ICMP t" : " (T",
-                   per_recv_flag ? ":" : "",
+            printf("%s timestamps: Originate=%u Receive=%u Transmit=%u Localreceive=%u",
+                   alive_flag ? "" : ",",
                    ip_header_otime_ms, ip_header_rtime_ms, ip_header_ttime_ms,
-                   ms_since_midnight_utc(recv_time),
-                   per_recv_flag ? "" : ")");
+                   ms_since_midnight_utc(recv_time));
+        }
+
+        if(print_tos_flag) {
+            if(ip_header_tos != -1) {
+                printf(" (TOS %d)", ip_header_tos);
+            }
+            else {
+                printf(" (TOS unknown)");
+            }
+        }
+
+        if (print_ttl_flag) {
+          if(ip_header_ttl != -1) {
+              printf(" (TTL %d)", ip_header_ttl);
+          }
+          else {
+              printf(" (TTL unknown)");
+          }
         }
 
         if (elapsed_flag && !per_recv_flag)

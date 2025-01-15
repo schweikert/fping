@@ -6,6 +6,11 @@ Next
 - Fix fallback to SO\_TIMESTAMP if SO\_TIMESTAMPNS is not available (#375, thanks
   @auerswal)
 
+## New features
+
+- The -g, --generate option now also supports IPv6 addresses (#376,
+  thanks @auerswal)
+
 fping 5.3 (2025-01-02)
 ======================
 

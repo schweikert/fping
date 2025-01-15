@@ -122,9 +122,11 @@ Read list of targets from a file.
 
 Generate a target list from a supplied IP netmask, or a starting and ending IP.
 Specify the netmask or start/end in the targets portion of the command line. If
-a network with netmask is given, the network and broadcast addresses will be
-excluded. ex. To ping the network 192.168.1.0/24, the specified command line
-could look like either:
+an IPv4 network with netmask is given, the network and broadcast addresses will
+be excluded.
+
+Example: To ping the network 192.168.1.0/24, the specified command line could
+look like either:
 
  $ fping -g 192.168.1.0/24
 
@@ -322,8 +324,8 @@ line arguments, and 4 for a system call failure.
 =head1 RESTRICTIONS
 
 The number of addresses that can be generated using the C<-g>, C<--generate>
-option is limited to 131070 (the number of host addresses in one 15-bit IPv4
-prefix).
+option is limited to 131072 (the number of host addresses in one 111-bit IPv6
+prefix, two addresses more than the host addresses in one 15-bit IPv4 prefix).
 
 If fping was configured with C<--enable-safe-limits>, the following values are
 not allowed for non-root users:

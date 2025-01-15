@@ -139,7 +139,7 @@ extern int h_errno;
 #define SIZE_ICMP_HDR 8 /* from ip_icmp.h */
 #define MAX_PING_DATA (MAX_IP_PACKET - SIZE_IP_HDR - SIZE_ICMP_HDR)
 
-#define MAX_GENERATE 131070 /* maximum number of hosts that -g can generate */
+#define MAX_GENERATE 131072 /* maximum number of hosts that -g can generate */
 
 /* sized so as to be like traditional ping */
 #define DEFAULT_PING_DATA_SIZE 56
@@ -404,6 +404,12 @@ void add_cidr(char *);
 void add_cidr_ipv4(unsigned long, unsigned long);
 void add_range(char *, char *);
 void add_addr_range_ipv4(unsigned long, unsigned long);
+#ifdef IPV6
+uint64_t be_octets_to_uint64(uint8_t*);
+void uint64_to_be_octets(uint64_t, uint8_t*);
+void add_cidr_ipv6(uint64_t, uint64_t, unsigned long, const char *);
+void add_addr_range_ipv6(uint64_t, uint64_t, uint64_t, uint64_t, const char *);
+#endif
 void print_warning(char *fmt, ...);
 int addr_cmp(struct sockaddr *a, struct sockaddr *b);
 void host_add_ping_event(HOST_ENTRY *h, int index, int64_t ev_time);
@@ -1302,17 +1308,31 @@ void add_cidr(char *addr)
     struct addrinfo addr_hints;
     struct addrinfo *addr_res;
     unsigned long net_addr;
+#ifdef IPV6
+    uint64_t net_upper, net_lower;
+    char *scope_str;
+#endif /* IPV6 */
 
     /* Split address from mask */
-    addr_end = strchr(addr, '/');
+    addr_end = strrchr(addr, '/');
     if (addr_end == NULL) {
         usage(1);
     }
-    *addr_end = '\0';
     mask_str = addr_end + 1;
+
+#ifdef IPV6
+    /* IPv6 addresses can have a scope */
+    scope_str = strchr(addr, '%');
+    if (scope_str && mask_str < scope_str) {
+        fprintf(stderr, "%s: address scope must precede prefix length\n", prog);
+        exit(1);
+    }
+#endif /*IPV6 */
+
+    *addr_end = '\0';
     mask = atoi(mask_str);
 
-    /* parse address (IPv4 only) */
+    /* parse address */
     memset(&addr_hints, 0, sizeof(struct addrinfo));
     addr_hints.ai_family = hints_ai_family;
     addr_hints.ai_flags = AI_NUMERICHOST;
@@ -1325,9 +1345,17 @@ void add_cidr(char *addr)
         net_addr = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
         freeaddrinfo(addr_res);
         add_cidr_ipv4(net_addr, mask);
+#ifdef IPV6
+    } else if (addr_res->ai_family == AF_INET6) {
+        uint8_t *ipv6_addr = ((struct sockaddr_in6*)addr_res->ai_addr)->sin6_addr.s6_addr;
+        net_upper = be_octets_to_uint64(ipv6_addr);
+        net_lower = be_octets_to_uint64(ipv6_addr + 8);
+        freeaddrinfo(addr_res);
+        add_cidr_ipv6(net_upper, net_lower, mask, scope_str);
+#endif /* IPV6 */
     } else {
         freeaddrinfo(addr_res);
-        fprintf(stderr, "%s: -g works only with IPv4 addresses\n", prog);
+        fprintf(stderr, "%s: -g does not support this address family\n", prog);
         exit(1);
     }
 }
@@ -1360,6 +1388,29 @@ void add_cidr_ipv4(unsigned long net_addr, unsigned long mask)
     add_addr_range_ipv4(net_addr, net_last);
 }
 
+#ifdef IPV6
+void add_cidr_ipv6(uint64_t net_upper, uint64_t net_lower, unsigned long mask, const char *scope_str)
+{
+    uint64_t bitmask_lower;
+    uint64_t last_lower;
+
+    /* check mask -- 2^63 addresses should suffice for now */
+    if (mask < 65 || mask > 128) {
+        fprintf(stderr, "%s: netmask must be between 65 and 128 (is: %lu)\n", prog, mask);
+        exit(1);
+    }
+
+    /* convert mask integer from 65 to 128 to the lower part of a bitmask */
+    bitmask_lower = ((uint64_t)-1) << (128 - mask);
+
+    /* calculate network range */
+    net_lower &= bitmask_lower;
+    last_lower = net_lower + ((uint64_t)1 << (128 - mask)) - 1;
+
+    add_addr_range_ipv6(net_upper, net_lower, net_upper, last_lower, scope_str);
+}
+#endif /* IPV6 */
+
 void add_range(char *start, char *end)
 {
     struct addrinfo addr_hints;
@@ -1367,8 +1418,27 @@ void add_range(char *start, char *end)
     unsigned long start_long;
     unsigned long end_long;
     int ret;
+#ifdef IPV6
+    uint64_t start_upper, start_lower;
+    uint64_t end_upper, end_lower;
+    char *start_scope_str, *end_scope_str;
 
-    /* parse start address (IPv4 only) */
+    /*
+     * The compiler does not know that setting the address family hint to
+     * ensure that start and end are from the same address family also
+     * ensures that either start_long and end_long are initialized and used,
+     * or start_upper, start_lower, end_upper, and end_lower are initialized
+     * and used.  Thus initialize all variables when both IPv4 and IPv6 are
+     * supported to suppress compiler warnings.
+     */
+    start_long = -1;
+    end_long = 0;
+    start_upper = start_lower = -1;
+    end_upper = end_lower = 0;
+    start_scope_str = end_scope_str = NULL;
+#endif /* IPV6 */
+
+    /* parse start address */
     memset(&addr_hints, 0, sizeof(struct addrinfo));
     addr_hints.ai_family = hints_ai_family;
     addr_hints.ai_flags = AI_NUMERICHOST;
@@ -1382,13 +1452,32 @@ void add_range(char *start, char *end)
     if (addr_res->ai_family == AF_INET) {
         start_long = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
         freeaddrinfo(addr_res);
+#ifdef IPV6
+    } else if (addr_res->ai_family == AF_INET6) {
+        uint8_t *ipv6_addr = ((struct sockaddr_in6*)addr_res->ai_addr)->sin6_addr.s6_addr;
+        start_upper = be_octets_to_uint64(ipv6_addr);
+        start_lower = be_octets_to_uint64(ipv6_addr + 8);
+        freeaddrinfo(addr_res);
+#endif /* IPV6 */
     } else {
         freeaddrinfo(addr_res);
-        fprintf(stderr, "%s: -g works only with IPv4 addresses\n", prog);
+        fprintf(stderr, "%s: -g does not support this address family\n", prog);
         exit(1);
     }
 
-    /* parse end address (IPv4 only) */
+    /* IPv6 addresses can have a scope */
+    if (hints_ai_family == AF_INET6) {
+        start_scope_str = strchr(start, '%');
+        end_scope_str = strchr(end, '%');
+        if ((!start_scope_str && end_scope_str) ||
+            (start_scope_str && !end_scope_str) ||
+            (start_scope_str && end_scope_str && strcmp(start_scope_str, end_scope_str) != 0)) {
+                fprintf(stderr, "%s: different scopes for start and end addresses\n", prog);
+                exit(1);
+        }
+    }
+
+    /* parse end address */
     memset(&addr_hints, 0, sizeof(struct addrinfo));
     addr_hints.ai_family = hints_ai_family;
     addr_hints.ai_flags = AI_NUMERICHOST;
@@ -1401,9 +1490,17 @@ void add_range(char *start, char *end)
         end_long = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
         freeaddrinfo(addr_res);
         add_addr_range_ipv4(start_long, end_long);
+#ifdef IPV6
+    } else if (addr_res->ai_family == AF_INET6) {
+        uint8_t *ipv6_addr = ((struct sockaddr_in6*)addr_res->ai_addr)->sin6_addr.s6_addr;
+        end_upper = be_octets_to_uint64(ipv6_addr);
+        end_lower = be_octets_to_uint64(ipv6_addr + 8);
+        freeaddrinfo(addr_res);
+        add_addr_range_ipv6(start_upper, start_lower, end_upper, end_lower, start_scope_str);
+#endif /* IPV6 */
     } else {
         freeaddrinfo(addr_res);
-        fprintf(stderr, "%s: -g works only with IPv4 addresses\n", prog);
+        fprintf(stderr, "%s: -g does not support this address family\n", prog);
         exit(1);
     }
 }
@@ -1425,6 +1522,63 @@ void add_addr_range_ipv4(unsigned long start_long, unsigned long end_long)
         add_name(buffer);
     }
 }
+
+#ifdef IPV6
+uint64_t be_octets_to_uint64(uint8_t *be_octets)
+{
+    int i;
+    uint64_t ret = 0;
+    for (i = 0; i < 8; i++) {
+        ret |= (uint64_t)be_octets[7 - i] << (i * 8);
+    }
+    return ret;
+}
+
+void uint64_to_be_octets(uint64_t num, uint8_t *be_octets)
+{
+    int i;
+    for (i = 0; i < 8; i++) {
+        be_octets[7 - i] = (uint8_t)((num >> (i * 8)) & 0xff);
+    }
+}
+
+void add_addr_range_ipv6(uint64_t start_upper, uint64_t start_lower,
+                         uint64_t end_upper, uint64_t end_lower,
+                         const char *scope_str)
+{
+    struct in6_addr in6_addr_tmp;
+    char buffer[100];
+
+    /* prevent generating too many addresses */
+    if ((start_upper + 1 < end_upper) ||
+        (start_upper + 1 == end_upper && end_lower >= start_lower) ||
+        (start_upper + 1 == end_upper && end_lower - MAX_GENERATE >= start_lower) ||
+        (start_upper == end_upper && end_lower - MAX_GENERATE >= start_lower &&
+                                     start_lower + MAX_GENERATE <= end_lower)) {
+        fprintf(stderr, "%s: -g parameter generates too many addresses\n", prog);
+        exit(1);
+    }
+
+    while ((start_upper < end_upper) ||
+           (start_upper == end_upper && start_lower <= end_lower)) {
+        uint64_to_be_octets(start_upper, in6_addr_tmp.s6_addr);
+        uint64_to_be_octets(start_lower, in6_addr_tmp.s6_addr + 8);
+        inet_ntop(AF_INET6, &in6_addr_tmp, buffer, sizeof(buffer));
+        if (scope_str) {
+	    if (strlen(buffer) + strlen(scope_str) + 1 > sizeof(buffer)) {
+                fprintf(stderr, "%s: scope identifier is too long\n", prog);
+                exit(1);
+            }
+            strncat(buffer, scope_str, sizeof(buffer) - strlen(buffer) - 1);
+        }
+        add_name(buffer);
+        start_lower++;
+        if (start_lower == 0) {
+            start_upper++;
+        }
+    }
+}
+#endif /* IPv6 */
 
 void main_loop()
 {

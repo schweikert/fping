@@ -1,3 +1,11 @@
+Next
+====
+
+## Bugfixes and other changes
+
+- Fix fallback to SO\_TIMESTAMP if SO\_TIMESTAMPNS is not available (#375, thanks
+  @auerswal)
+
 fping 5.3 (2025-01-02)
 ======================
 

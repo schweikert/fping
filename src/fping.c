@@ -1284,6 +1284,14 @@ static inline int64_t timespec_ns(struct timespec *a)
     return ((int64_t)a->tv_sec * 1000000000) + a->tv_nsec;
 }
 
+#if HAVE_SO_TIMESTAMPNS
+/* convert a struct timeval to nanoseconds */
+static inline int64_t timeval_ns(struct timeval *a)
+{
+    return ((int64_t)a->tv_sec * 1000000000) + ((int64_t)a->tv_usec * 1000);
+}
+#endif /* HAVE_SO_TIMESTAMPNS */
+
 void add_cidr(char *addr)
 {
     char *addr_end;
@@ -2105,12 +2113,17 @@ int receive_packet(int64_t wait_time,
     /* ancilliary data */
     {
         struct timespec reply_timestamp_ts;
+        struct timeval reply_timestamp_tv;
         for (cmsg = CMSG_FIRSTHDR(&recv_msghdr);
              cmsg != NULL;
              cmsg = CMSG_NXTHDR(&recv_msghdr, cmsg)) {
             if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_TIMESTAMPNS) {
                 memcpy(&reply_timestamp_ts, CMSG_DATA(cmsg), sizeof(reply_timestamp_ts));
                 *reply_timestamp = timespec_ns(&reply_timestamp_ts);
+            }
+            if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_TIMESTAMP) {
+                memcpy(&reply_timestamp_tv, CMSG_DATA(cmsg), sizeof(reply_timestamp_tv));
+                *reply_timestamp = timeval_ns(&reply_timestamp_tv);
             }
         }
     }

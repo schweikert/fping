@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 146;
+use Test::Command tests => 161;
 use Test::More;
 use File::Temp;
 
@@ -10,13 +10,35 @@ use File::Temp;
 #               (ex. ../src/fping -g 192.168.1.0 192.168.1.255 or ../src/fping -g 192.168.1.0/24)
 #  -H n       Set the IP TTL value (Time To Live hops)
 
+# basic input file
 my $tmpfile = File::Temp->new();
 print $tmpfile "127.0.0.1\n127.0.0.2\n";
 close($tmpfile);
 
+# input file with comment, empty & blank lines, leading & trailing whitespace
 my $tmpfile2 = File::Temp->new();
-print $tmpfile2 "# comment\n127.0.0.1\n\n127.0.0.2\n";
+print $tmpfile2 "# comment\n 127.0.0.1\n\n\t127.0.0.2 \t\n   \n \t127.0.0.3\t \n";
 close($tmpfile2);
+
+# input file with CRLF line endings
+my $tmpfile3 = File::Temp->new();
+print $tmpfile3 " # comment \r\n 127.0.0.1\r\n\r\n127.0.0.2 \r\n   \r\n 127.0.0.3 \r\n";
+close($tmpfile3);
+
+# input file without trailing newline (i.e., not a POSIX text file)
+my $tmpfile4 = File::Temp->new();
+print $tmpfile4 "127.0.0.1\n127.0.0.2";
+close($tmpfile4);
+
+# input file with large amount of trailing whitespace
+my $tmpfile5 = File::Temp->new();
+print $tmpfile5 "127.0.0.1"." "x300 ."\n  127.0.0.2"." "x300 ."\r\n";
+close($tmpfile5);
+
+# input file with ignored words after the target
+my $tmpfile6 = File::Temp->new();
+print $tmpfile6 "127.0.0.1 # this is ignored\n127.0.0.2 this is ignored\n";
+close($tmpfile6);
 
 # fping without option (-> equivalent to 'fping -f -')
 {
@@ -42,9 +64,41 @@ $cmd->stdout_is_eq("127.0.0.1 is alive\n127.0.0.2 is alive\n");
 $cmd->stderr_is_eq("");
 }
 
-# fping -f file (with comment and empty line)
+# fping -f file (with comment, empty line, blank line, and spaces around IPs)
 {
 my $cmd = Test::Command->new(cmd => "fping -f ".$tmpfile2->filename);
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("127.0.0.1 is alive\n127.0.0.2 is alive\n127.0.0.3 is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping -f file (with CRLF line endings)
+{
+my $cmd = Test::Command->new(cmd => "fping -f ".$tmpfile3->filename);
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("127.0.0.1 is alive\n127.0.0.2 is alive\n127.0.0.3 is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping -f file (last "line" without NL -> not a POSIX text file)
+{
+my $cmd = Test::Command->new(cmd => "fping -f ".$tmpfile4->filename);
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("127.0.0.1 is alive\n127.0.0.2 is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping -f file (lots of trailing whitespace)
+{
+my $cmd = Test::Command->new(cmd => "fping -f ".$tmpfile5->filename);
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("127.0.0.1 is alive\n127.0.0.2 is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping -f file (trailing comments)
+{
+my $cmd = Test::Command->new(cmd => "fping -f ".$tmpfile6->filename);
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("127.0.0.1 is alive\n127.0.0.2 is alive\n");
 $cmd->stderr_is_eq("");
@@ -56,6 +110,14 @@ my $cmd = Test::Command->new(cmd => "fping -f file-does-not-exist");
 $cmd->exit_is_num(4);
 $cmd->stdout_is_eq("");
 $cmd->stderr_like(qr{: fopen :});
+}
+
+# fping -f /dev/null (no imput)
+{
+my $cmd = Test::Command->new(cmd => "fping -f /dev/null");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_is_eq("");
 }
 
 # fping -g (error: no argument)

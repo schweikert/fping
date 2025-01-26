@@ -3,8 +3,12 @@ Next
 
 ## Bugfixes and other changes
 
-- Fix fallback to SO\_TIMESTAMP if SO\_TIMESTAMPNS is not available (#375, thanks
-  @auerswal)
+- Fix fallback to SO\_TIMESTAMP if SO\_TIMESTAMPNS is not available (#375,
+  thanks @auerswal)
+
+- When reading target names from file or standard input, lines longer
+  than the static buffer are no longer interpreted as more than one line
+  (#378, thanks @auerswal)
 
 ## New features
 

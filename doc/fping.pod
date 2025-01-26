@@ -327,6 +327,9 @@ The number of addresses that can be generated using the C<-g>, C<--generate>
 option is limited to 131072 (the number of host addresses in one 111-bit IPv6
 prefix, two addresses more than the host addresses in one 15-bit IPv4 prefix).
 
+The length of target names read from file or standard input is limited to
+255 bytes.
+
 If fping was configured with C<--enable-safe-limits>, the following values are
 not allowed for non-root users:
 

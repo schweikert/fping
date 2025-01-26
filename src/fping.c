@@ -140,6 +140,7 @@ extern int h_errno;
 #define MAX_PING_DATA (MAX_IP_PACKET - SIZE_IP_HDR - SIZE_ICMP_HDR)
 
 #define MAX_GENERATE 131072 /* maximum number of hosts that -g can generate */
+#define MAX_TARGET_NAME_LEN 255 /* maximum target name length read from file */
 
 /* sized so as to be like traditional ping */
 #define DEFAULT_PING_DATA_SIZE 56
@@ -1174,8 +1175,10 @@ int main(int argc, char **argv)
     }
     else if (filename) {
         FILE *ping_file;
-        char line[132];
-        char host[132];
+        char line[MAX_TARGET_NAME_LEN + 1];
+        char host[MAX_TARGET_NAME_LEN + 1];
+        char scratch[MAX_TARGET_NAME_LEN + 1];
+        int skip, non_empty;
 
         if (strcmp(filename, "-") == 0)
             ping_file = fdopen(0, "r");
@@ -1185,14 +1188,72 @@ int main(int argc, char **argv)
         if (!ping_file)
             errno_crash_and_burn("fopen");
 
+        /*
+         * Read the first word of every non-comment line, skip everything else.
+         * (Empty and blank lines are ignored.  Lines where the first non-blank
+         * character is a '#' are interpreted as comments and ignored.)
+        */
         while (fgets(line, sizeof(line), ping_file)) {
-            if (sscanf(line, "%s", host) != 1)
-                continue;
+            skip = non_empty = 0;
 
-            if ((!*host) || (host[0] == '#')) /* magic to avoid comments */
+            /* skip over a prefix of the line where sscanf finds nothing */
+            if ((sscanf(line, "%s", host) != 1) || (!*host)) {
                 continue;
+            }
 
-            add_name(host);
+            /* the first word of the line can indicate a comment line */
+            if (host[0] == '#') {
+                skip = 1; /* skip remainder of line */
+            } else {
+                non_empty = 1; /* we have something to add as a target name */
+                /*
+                 * We have found the start of a word.
+                 * This part of the line may contain all of the first word.
+                 */
+                if (!strchr(line, '\n') && (strlen(line) == sizeof(line) - 1)) {
+                    char discard1[MAX_TARGET_NAME_LEN + 1];
+                    char discard2[MAX_TARGET_NAME_LEN + 1];
+                    if (sscanf(line, "%s%s", discard1, discard2) == 2) {
+                        skip = 1; /* a second word starts in this part */
+                    }
+                    if (isspace(line[sizeof(line) - 2])) {
+                        skip = 1; /* the first word ends in this part */
+                    }
+                }
+            }
+            /* read remainder of this input line */
+            while (!strchr(line, '\n') && fgets(line, sizeof(line), ping_file)) {
+                if (skip) {
+                    continue; /* skip rest of data in this input line */
+                }
+                if (isspace(line[0])) {
+                    skip = 1; /* first word ended in previous part */
+                    continue;
+                }
+                if ((sscanf(line, "%s", scratch) != 1) || (!*scratch)) {
+                    skip = 1; /* empty or blank part of line, skip the rest */
+                    continue;
+                }
+                if (sizeof(host) - strlen(host) < strlen(scratch) + 1) {
+                    fprintf(stderr, "%s: target name too long\n", prog);
+                    exit(1);
+                }
+                /* append remainder of word started in previous line part */
+                strncat(host, scratch, sizeof(host) - strlen(host) - 1);
+                /*
+                 * Since the "host" buffer is the same size as the "line"
+                 * buffer, a target name that fits into the "host" buffer
+                 * cannot use more than two consecutive line parts.
+                 * A target name that uses two consecutive line parts
+                 * and fits into the "host" buffer must end before the
+                 * end of the second "line" buffer.  Thus the rest of
+                 * the line can be skipped.
+                 */
+                skip = 1;
+            }
+
+            if (non_empty)
+                add_name(host);
         }
 
         fclose(ping_file);

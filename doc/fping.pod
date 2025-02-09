@@ -163,6 +163,18 @@ the local receive time in the same format, in addition to normal output.
 Cannot be used together with B<-b> because ICMP timestamp messages have a fixed size.
 IPv4 only, requires root privileges or cap_net_raw.
 
+=item B<-J>, B<--json>
+
+Format output JSON (-c or -C required and implies -q)
+
+Example usage:
+
+ $ fping -J -c 1 127.0.0.1
+
+or
+
+ $ fping -J -s -c 1 127.0.0.1
+
 =item B<-k>, B<--fwmark>=I<FWMARK>
 
 Set FWMARK on ping packets for policy-based routing. Requires Linux kernel

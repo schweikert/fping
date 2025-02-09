@@ -38,6 +38,7 @@ extern "C" {
 #include "config.h"
 #include "options.h"
 #include "optparse.h"
+#include "json.h"
 
 #include <errno.h>
 #include <inttypes.h>
@@ -365,6 +366,7 @@ int timestamp_format_flag = 0;
 int random_data_flag = 0;
 int cumulative_stats_flag = 0;
 int check_source_flag = 0;
+int output_json_flag = 0;
 int icmp_request_typ = 0;
 int print_tos_flag = 0;
 int print_ttl_flag = 0;
@@ -550,6 +552,7 @@ int main(int argc, char **argv)
         { "ttl", 'H', OPTPARSE_REQUIRED },
         { "interval", 'i', OPTPARSE_REQUIRED },
         { "iface", 'I', OPTPARSE_REQUIRED },
+        { "json", 'J', OPTPARSE_OPTIONAL },
         { "icmp-timestamp", '0', OPTPARSE_NONE },
 #ifdef SO_MARK
         { "fwmark", 'k', OPTPARSE_REQUIRED },
@@ -899,6 +902,12 @@ int main(int argc, char **argv)
             ;
 #endif
             break;
+        
+        case 'J':
+            output_json_flag = 1;
+            verbose_flag = 0;
+            quiet_flag = 1;
+            break;
 
         case 'T':
             /* This option is ignored for compatibility reasons ("select timeout" is not meaningful anymore) */
@@ -969,6 +978,11 @@ int main(int argc, char **argv)
         fprintf(stderr, "%s: specify only one of c, l\n", prog);
         exit(1);
     }
+
+    if (output_json_flag && !count_flag) {
+      fprintf(stderr, "%s: required -c or -C\n", prog);
+      exit(1);
+  }
 
 #ifdef FPING_SAFE_LIMITS
     if ((interval < (int64_t)MIN_INTERVAL * 1000000 || perhost_interval < (int64_t)MIN_PERHOST_INTERVAL * 1000000)
@@ -1091,6 +1105,8 @@ int main(int argc, char **argv)
             fprintf(stderr, "  outage_flag set\n");
         if (netdata_flag)
             fprintf(stderr, "  netdata_flag set\n");
+        if (output_json_flag)
+            fprintf(stderr, "  output_json_flag set\n");
     }
 #endif /* DEBUG || _DEBUG */
 
@@ -1938,25 +1954,64 @@ void print_per_system_stats(void)
     if (verbose_flag || per_recv_flag)
         fprintf(stderr, "\n");
 
+    if (output_json_flag)
+    {
+        print_json_start(0);
+        print_json_start_array("hosts", 1, 2);
+    }
+
     for (i = 0; i < num_hosts; i++) {
         h = table[i];
-        fprintf(stderr, "%-*s :", max_hostname_len, h->host);
+        if (output_json_flag) {
+            if (i == 0)
+                print_json_start(4);
+            else
+                print_json_next(4);
+
+            print_json_keyvalue("host", h->host, 1, 6);
+        } else {
+            fprintf(stderr, "%-*s :", max_hostname_len, h->host);
+        }
 
         if (report_all_rtts_flag) {
+            if (output_json_flag)
+                print_json_start_array("count", 0, 6);
             for (j = 0; j < h->num_sent; j++) {
                 if ((resp = h->resp_times[j]) >= 0)
-                    fprintf(stderr, " %s", sprint_tm(resp));
+                    if (output_json_flag)
+                        if (j == 0)
+                            print_json_keyvalue(json_int_to_string(j), sprint_tm(resp), 1, 8);
+                        else
+                            print_json_keyvalue(json_int_to_string(j), sprint_tm(resp), 0, 8);
+                    else
+                        fprintf(stderr, " %s", sprint_tm(resp));
                 else
-                    fprintf(stderr, " -");
+                    if (output_json_flag)
+                        if (j == 0)
+                            print_json_keyvalue(json_int_to_string(j), "-", 1, 8);
+                        else
+                            print_json_keyvalue(json_int_to_string(j), "-", 0, 8);
+                    else
+                        fprintf(stderr, " -");
             }
 
-            fprintf(stderr, "\n");
+            if (output_json_flag) {
+                print_json_end_array(6);
+                print_json_end(4);
+            } else {
+                fprintf(stderr, "\n");
+            }
         }
         else {
             if (h->num_recv <= h->num_sent) {
-                fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
-                    h->num_sent, h->num_recv, h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
-
+                if (output_json_flag) {
+                    print_json_keyvalue("xmt", json_int_to_string(h->num_sent), 0, 6);
+                    print_json_keyvalue("rcv", json_int_to_string(h->num_recv), 0, 6);
+                    print_json_keyvalue("loss", json_int_to_string(h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0), 0, 6);
+                } else {
+                    fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
+                        h->num_sent, h->num_recv, h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
+                }
                 if (outage_flag) {
                     /* Time outage total */
                     outage_ms = (h->num_sent - h->num_recv) * perhost_interval / 1e6;
@@ -1971,13 +2026,33 @@ void print_per_system_stats(void)
 
             if (h->num_recv) {
                 avg = h->total_time / h->num_recv;
-                fprintf(stderr, ", min/avg/max = %s", sprint_tm(h->min_reply));
-                fprintf(stderr, "/%s", sprint_tm(avg));
-                fprintf(stderr, "/%s", sprint_tm(h->max_reply));
+                if (output_json_flag) {
+                    print_json_keyvalue("min", sprint_tm(h->min_reply), 0, 6);
+                    print_json_keyvalue("avg", sprint_tm(avg), 0, 6);
+                    print_json_keyvalue("max", sprint_tm(h->max_reply), 0, 6);
+                } else {
+                    fprintf(stderr, ", min/avg/max = %s", sprint_tm(h->min_reply));
+                    fprintf(stderr, "/%s", sprint_tm(avg));
+                    fprintf(stderr, "/%s", sprint_tm(h->max_reply));
+                }
+            } else {
+                if (output_json_flag) {
+                    print_json_keyvalue("min", "-", 0, 6);
+                    print_json_keyvalue("avg", "-", 0, 6);
+                    print_json_keyvalue("max", "-", 0, 6);
+                }
             }
 
-            fprintf(stderr, "\n");
+            if (output_json_flag)
+                print_json_end(4);
+            else
+                fprintf(stderr, "\n");
         }
+    }
+    if (output_json_flag) {
+        print_json_end_array(2);
+        if (! stats_flag)
+            print_json_end(0);
     }
 }
 
@@ -2130,32 +2205,50 @@ void print_per_system_splits(void)
 
 void print_global_stats(void)
 {
-    fprintf(stderr, "\n");
-    fprintf(stderr, " %7d targets\n", num_hosts);
-    fprintf(stderr, " %7d alive\n", num_alive);
-    fprintf(stderr, " %7d unreachable\n", num_unreachable);
-    fprintf(stderr, " %7d unknown addresses\n", num_noaddress);
-    fprintf(stderr, "\n");
-    fprintf(stderr, " %7d timeouts (waiting for response)\n", num_timeout);
-    fprintf(stderr, " %7d ICMP Echos sent\n", num_pingsent);
-    fprintf(stderr, " %7d ICMP Echo Replies received\n", num_pingreceived);
-    fprintf(stderr, " %7d other ICMP received\n", num_othericmprcvd);
-    fprintf(stderr, "\n");
-
     if (total_replies == 0) {
-        min_reply = 0;
-        max_reply = 0;
-        total_replies = 1;
-        sum_replies = 0;
+      min_reply = 0;
+      max_reply = 0;
+      total_replies = 1;
+      sum_replies = 0;
     }
 
-    fprintf(stderr, " %s ms (min round trip time)\n", sprint_tm(min_reply));
-    fprintf(stderr, " %s ms (avg round trip time)\n",
-        sprint_tm(sum_replies / total_replies));
-    fprintf(stderr, " %s ms (max round trip time)\n", sprint_tm(max_reply));
-    fprintf(stderr, " %12.3f sec (elapsed real time)\n",
-        (end_time - start_time) / 1e9);
-    fprintf(stderr, "\n");
+    if (output_json_flag)
+    {
+        print_json_keyvalue("targets", json_int_to_string(num_hosts), 0, 2);
+        print_json_keyvalue("alive", json_int_to_string(num_alive), 0, 2);
+        print_json_keyvalue("unreachable", json_int_to_string(num_unreachable), 0, 2);
+        print_json_keyvalue("unknown addresses", json_int_to_string(num_noaddress), 0, 2);
+        print_json_keyvalue("timeouts", json_int_to_string(num_timeout), 0, 2);
+        print_json_keyvalue("ICMP Echos sent", json_int_to_string(num_pingsent), 0, 2);
+        print_json_keyvalue("ICMP Echo Replies received", json_int_to_string(num_pingreceived), 0, 2);
+        print_json_keyvalue("other ICMP received", json_int_to_string(num_othericmprcvd), 0, 2);
+
+        print_json_keyvalue("ms (min round trip time)", sprint_tm(min_reply), 0, 2);
+        print_json_keyvalue("ms (avg round trip time)", sprint_tm(sum_replies / total_replies), 0, 2);
+        print_json_keyvalue("ms (max round trip time)", sprint_tm(max_reply), 0, 2);
+        print_json_keyvalue("sec (elapsed real time)", json_int_to_string((end_time - start_time) / 1e9), 0, 2);
+        print_json_end(0);
+    } else {
+        fprintf(stderr, "\n");
+        fprintf(stderr, " %7d targets\n", num_hosts);
+        fprintf(stderr, " %7d alive\n", num_alive);
+        fprintf(stderr, " %7d unreachable\n", num_unreachable);
+        fprintf(stderr, " %7d unknown addresses\n", num_noaddress);
+        fprintf(stderr, "\n");
+        fprintf(stderr, " %7d timeouts (waiting for response)\n", num_timeout);
+        fprintf(stderr, " %7d ICMP Echos sent\n", num_pingsent);
+        fprintf(stderr, " %7d ICMP Echo Replies received\n", num_pingreceived);
+        fprintf(stderr, " %7d other ICMP received\n", num_othericmprcvd);
+        fprintf(stderr, "\n");
+
+        fprintf(stderr, " %s ms (min round trip time)\n", sprint_tm(min_reply));
+        fprintf(stderr, " %s ms (avg round trip time)\n",
+            sprint_tm(sum_replies / total_replies));
+        fprintf(stderr, " %s ms (max round trip time)\n", sprint_tm(max_reply));
+        fprintf(stderr, " %12.3f sec (elapsed real time)\n",
+            (end_time - start_time) / 1e9);
+        fprintf(stderr, "\n");
+    }
 }
 
 /************************************************************
@@ -3389,6 +3482,7 @@ void usage(int is_error)
 #ifdef SO_BINDTODEVICE
     fprintf(out, "   -I, --iface=IFACE  bind to a particular interface\n");
 #endif
+    fprintf(out, "   -J, --json         output in JSON format to stdout (-c or -C required and implies -q)\n");
 #ifdef SO_MARK
     fprintf(out, "   -k, --fwmark=FWMARK set the routing mark\n");
 #endif

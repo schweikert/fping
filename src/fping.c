@@ -1823,7 +1823,7 @@ void print_per_system_stats(void)
             }
 
             if (output_json_flag)
-                print_json_end(1);
+                print_json_end(0);
             else
                 fprintf(stderr, "\n");
         }

@@ -36,14 +36,14 @@ static int current_indent = 0;  /* Current indentation level */
 static void print_indent(void) {
     if (json_pretty_print > 0) {
         for (int i = 0; i < current_indent * json_pretty_print; i++) {
-            fprintf(stderr, " ");
+            fprintf(stdout, " ");
         }
     }
 }
 
 static void print_newline(void) {
     if (json_pretty_print > 0) {
-        fprintf(stderr, "\n");
+        fprintf(stdout, "\n");
     }
 }
 
@@ -71,15 +71,15 @@ char* json_int_to_string(int input) {
 
 void print_json_start(void) {
     print_indent();
-    fprintf(stderr, "{");
+    fprintf(stdout, "{");
     increase_indent();
 }
 
 void print_json_next(void) {
-    fprintf(stderr, ",");
+    fprintf(stdout, ",");
     print_newline();
     print_indent();
-    fprintf(stderr, "{");
+    fprintf(stdout, "{");
     increase_indent();
 }
 
@@ -87,7 +87,7 @@ void print_json_end(int json_last_end) {
     decrease_indent();
     print_newline();
     print_indent();
-    fprintf(stderr, "}");
+    fprintf(stdout, "}");
     if (json_last_end > 0 && json_pretty_print > 0) {
         print_newline();
     }
@@ -95,7 +95,7 @@ void print_json_end(int json_last_end) {
 
 void print_json_start_array(const char *json_key, int json_first_record) {
     if (json_key == NULL) {
-        fprintf(stderr, "Error: NULL pointer provided\n");
+        fprintf(stdout, "Error: NULL pointer provided\n");
         return;
     }
 
@@ -103,7 +103,7 @@ void print_json_start_array(const char *json_key, int json_first_record) {
     char *safe_key = malloc(key_len + 1);
 
     if (safe_key == NULL) {
-        fprintf(stderr, "Error: Memory allocation failed\n");
+        fprintf(stdout, "Error: Memory allocation failed\n");
         free(safe_key);
         return;
     }
@@ -111,7 +111,7 @@ void print_json_start_array(const char *json_key, int json_first_record) {
     strcpy(safe_key, json_key);
 
     if (json_first_record == 0) {
-        fprintf(stderr, ",");
+        fprintf(stdout, ",");
         print_newline();
     } else {
         print_newline();
@@ -119,9 +119,9 @@ void print_json_start_array(const char *json_key, int json_first_record) {
 
     print_indent();
     if (json_pretty_print > 0) {
-        fprintf(stderr, "\"%s\": [", safe_key);
+        fprintf(stdout, "\"%s\": [", safe_key);
     } else {
-        fprintf(stderr, "\"%s\":[", safe_key);
+        fprintf(stdout, "\"%s\":[", safe_key);
     }
 
     if (json_first_record > 0)  {
@@ -137,12 +137,12 @@ void print_json_end_array(void) {
     decrease_indent();
     print_newline();
     print_indent();
-    fprintf(stderr, "]");
+    fprintf(stdout, "]");
 }
 
 void print_json_keyvalue(const char *json_key, const char *json_value, int json_first_record) {
     if (json_key == NULL || json_value == NULL) {
-        fprintf(stderr, "Error: NULL pointer provided\n");
+        fprintf(stdout, "Error: NULL pointer provided\n");
         return;
     }
 
@@ -153,7 +153,7 @@ void print_json_keyvalue(const char *json_key, const char *json_value, int json_
     char *safe_value = malloc(value_len + 1);
 
     if (safe_key == NULL || safe_value == NULL) {
-        fprintf(stderr, "Error: Memory allocation failed\n");
+        fprintf(stdout, "Error: Memory allocation failed\n");
         free(safe_key);
         free(safe_value);
         return;
@@ -163,14 +163,14 @@ void print_json_keyvalue(const char *json_key, const char *json_value, int json_
     strcpy(safe_value, json_value);
 
     if (json_first_record == 0) {
-        fprintf(stderr, ",");
+        fprintf(stdout, ",");
         print_newline();
     } else {
         print_newline();
     }
 
     print_indent();
-    fprintf(stderr, "\"%s\": \"%s\"", safe_key, safe_value);
+    fprintf(stdout, "\"%s\": \"%s\"", safe_key, safe_value);
 
     free(safe_key);
     free(safe_value);
@@ -178,7 +178,7 @@ void print_json_keyvalue(const char *json_key, const char *json_value, int json_
 
 void print_json_nokeyvalue(const char *json_value, int json_first_record) {
     if (json_value == NULL) {
-        fprintf(stderr, "Error: NULL pointer provided\n");
+        fprintf(stdout, "Error: NULL pointer provided\n");
         return;
     }
 
@@ -186,7 +186,7 @@ void print_json_nokeyvalue(const char *json_value, int json_first_record) {
     char *safe_value = malloc(value_len + 1);
 
     if (safe_value == NULL) {
-        fprintf(stderr, "Error: Memory allocation failed\n");
+        fprintf(stdout, "Error: Memory allocation failed\n");
         free(safe_value);
         return;
     }
@@ -194,13 +194,13 @@ void print_json_nokeyvalue(const char *json_value, int json_first_record) {
     strcpy(safe_value, json_value);
 
     if (json_first_record == 0) {
-        fprintf(stderr, ",");
+        fprintf(stdout, ",");
         print_newline();
     } else if (json_first_record == 1) {
         print_newline();
     }
     print_indent();
-    fprintf(stderr, "\"%s\"", safe_value);
+    fprintf(stdout, "\"%s\"", safe_value);
 
     free(safe_value);
 }

@@ -2798,19 +2798,8 @@ void add_name(char *name)
         
         // Handle JSON output for invalid hosts
         if (output_json_flag) {
-            static int first_invalid = 1;
-            if (first_invalid) {
-                print_json_start();
-                print_json_keyvalue("host", name, 1);
-                print_json_keyvalue("error", gai_strerror(ret_ga), 0);
-                print_json_end(0);
-                first_invalid = 0;
-            } else {
-                print_json_next();
-                print_json_keyvalue("host", name, 1);
-                print_json_keyvalue("error", gai_strerror(ret_ga), 0);
-                print_json_end(0);
-            }
+            fprintf(stdout, "{\"host\": \"%s\",\"error\": \"%s\"}", name, gai_strerror(ret_ga));
+            return;
         }
         
         num_noaddress++;

@@ -28,3 +28,5 @@ stamp-h1
 doc/fping.8
 doc/fping6.8
 ci/build
+._*
+*.bak

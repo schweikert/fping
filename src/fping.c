@@ -545,6 +545,7 @@ int main(int argc, char **argv)
         { "interval", 'i', OPTPARSE_REQUIRED },
         { "iface", 'I', OPTPARSE_REQUIRED },
         { "json", 'J', OPTPARSE_OPTIONAL },
+        { "json-pretty", '0', OPTPARSE_NONE },
         { "icmp-timestamp", '0', OPTPARSE_NONE },
 #ifdef SO_MARK
         { "fwmark", 'k', OPTPARSE_REQUIRED },
@@ -592,6 +593,11 @@ int main(int argc, char **argv)
                 }else{
                   usage(1);
                 }
+            } else if (strstr(optparse_state.optlongname, "json-pretty") != NULL) {
+                json_pretty_print = 2;
+                output_json_flag = 1;
+                verbose_flag = 0;
+                quiet_flag = 1;
             } else if (strstr(optparse_state.optlongname, "check-source") != NULL) {
                 check_source_flag = 1;
             } else if (strstr(optparse_state.optlongname, "icmp-timestamp") != NULL) {
@@ -899,6 +905,7 @@ int main(int argc, char **argv)
             output_json_flag = 1;
             verbose_flag = 0;
             quiet_flag = 1;
+            json_pretty_print = 0;  /* Default to condensed JSON unless --json-pretty is specified */
             break;
 
         case 'T':
@@ -1730,48 +1737,46 @@ void print_per_system_stats(void)
 
     if (output_json_flag)
     {
-        print_json_start(0);
-        print_json_start_array("hosts", 1, 2);
+        print_json_start();
+        print_json_start_array("hosts", 1);
     }
 
     for (i = 0; i < num_hosts; i++) {
         h = table[i];
         if (output_json_flag) {
             if (i == 0)
-                print_json_start(4);
+                print_json_start();
             else
-                print_json_next(4);
+                print_json_next();
 
-            print_json_keyvalue("host", h->host, 1, 6);
+            print_json_keyvalue("host", h->host, 1);
         } else {
             fprintf(stderr, "%-*s :", max_hostname_len, h->host);
         }
 
         if (report_all_rtts_flag) {
-            if (output_json_flag)
-                print_json_start_array("count", 0, 6);
-            for (j = 0; j < h->num_sent; j++) {
-                if ((resp = h->resp_times[j]) >= 0)
-                    if (output_json_flag)
-                        if (j == 0)
-                            print_json_keyvalue(json_int_to_string(j), sprint_tm(resp), 1, 8);
-                        else
-                            print_json_keyvalue(json_int_to_string(j), sprint_tm(resp), 0, 8);
-                    else
+            if (output_json_flag) {
+                print_json_start_array("count", 0);
+                for (j = 0; j < h->num_sent; j++) {
+                    if ((resp = h->resp_times[j]) >= 0) {
+                        print_json_nokeyvalue(sprint_tm(resp), j == 0);
+                    } else {
+                        print_json_nokeyvalue("-", j == 0);
+                    }
+                }
+            } else {
+                for (j = 0; j < h->num_sent; j++) {
+                    if ((resp = h->resp_times[j]) >= 0) {
                         fprintf(stderr, " %s", sprint_tm(resp));
-                else
-                    if (output_json_flag)
-                        if (j == 0)
-                            print_json_keyvalue(json_int_to_string(j), "-", 1, 8);
-                        else
-                            print_json_keyvalue(json_int_to_string(j), "-", 0, 8);
-                    else
+                    } else {
                         fprintf(stderr, " -");
+                    }
+                }
             }
 
             if (output_json_flag) {
-                print_json_end_array(6);
-                print_json_end(4);
+                print_json_end_array();
+                print_json_end(0);
             } else {
                 fprintf(stderr, "\n");
             }
@@ -1779,9 +1784,9 @@ void print_per_system_stats(void)
         else {
             if (h->num_recv <= h->num_sent) {
                 if (output_json_flag) {
-                    print_json_keyvalue("xmt", json_int_to_string(h->num_sent), 0, 6);
-                    print_json_keyvalue("rcv", json_int_to_string(h->num_recv), 0, 6);
-                    print_json_keyvalue("loss", json_int_to_string(h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0), 0, 6);
+                    print_json_keyvalue("xmt", json_int_to_string(h->num_sent), 0);
+                    print_json_keyvalue("rcv", json_int_to_string(h->num_recv), 0);
+                    print_json_keyvalue("loss", json_int_to_string(h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0), 0);
                 } else {
                     fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
                         h->num_sent, h->num_recv, h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
@@ -1801,9 +1806,9 @@ void print_per_system_stats(void)
             if (h->num_recv) {
                 avg = h->total_time / h->num_recv;
                 if (output_json_flag) {
-                    print_json_keyvalue("min", sprint_tm(h->min_reply), 0, 6);
-                    print_json_keyvalue("avg", sprint_tm(avg), 0, 6);
-                    print_json_keyvalue("max", sprint_tm(h->max_reply), 0, 6);
+                    print_json_keyvalue("min", sprint_tm(h->min_reply), 0);
+                    print_json_keyvalue("avg", sprint_tm(avg), 0);
+                    print_json_keyvalue("max", sprint_tm(h->max_reply), 0);
                 } else {
                     fprintf(stderr, ", min/avg/max = %s", sprint_tm(h->min_reply));
                     fprintf(stderr, "/%s", sprint_tm(avg));
@@ -1811,22 +1816,22 @@ void print_per_system_stats(void)
                 }
             } else {
                 if (output_json_flag) {
-                    print_json_keyvalue("min", "-", 0, 6);
-                    print_json_keyvalue("avg", "-", 0, 6);
-                    print_json_keyvalue("max", "-", 0, 6);
+                    print_json_keyvalue("min", "-", 0);
+                    print_json_keyvalue("avg", "-", 0);
+                    print_json_keyvalue("max", "-", 0);
                 }
             }
 
             if (output_json_flag)
-                print_json_end(4);
+                print_json_end(1);
             else
                 fprintf(stderr, "\n");
         }
     }
     if (output_json_flag) {
-        print_json_end_array(2);
+        print_json_end_array();
         if (! stats_flag)
-            print_json_end(0);
+            print_json_end(1);
     }
 }
 
@@ -1988,20 +1993,20 @@ void print_global_stats(void)
 
     if (output_json_flag)
     {
-        print_json_keyvalue("targets", json_int_to_string(num_hosts), 0, 2);
-        print_json_keyvalue("alive", json_int_to_string(num_alive), 0, 2);
-        print_json_keyvalue("unreachable", json_int_to_string(num_unreachable), 0, 2);
-        print_json_keyvalue("unknown addresses", json_int_to_string(num_noaddress), 0, 2);
-        print_json_keyvalue("timeouts", json_int_to_string(num_timeout), 0, 2);
-        print_json_keyvalue("ICMP Echos sent", json_int_to_string(num_pingsent), 0, 2);
-        print_json_keyvalue("ICMP Echo Replies received", json_int_to_string(num_pingreceived), 0, 2);
-        print_json_keyvalue("other ICMP received", json_int_to_string(num_othericmprcvd), 0, 2);
+        print_json_keyvalue("targets", json_int_to_string(num_hosts), 0);
+        print_json_keyvalue("alive", json_int_to_string(num_alive), 0);
+        print_json_keyvalue("unreachable", json_int_to_string(num_unreachable), 0);
+        print_json_keyvalue("unknown addresses", json_int_to_string(num_noaddress), 0);
+        print_json_keyvalue("timeouts", json_int_to_string(num_timeout), 0);
+        print_json_keyvalue("ICMP Echos sent", json_int_to_string(num_pingsent), 0);
+        print_json_keyvalue("ICMP Echo Replies received", json_int_to_string(num_pingreceived), 0);
+        print_json_keyvalue("other ICMP received", json_int_to_string(num_othericmprcvd), 0);
 
-        print_json_keyvalue("ms (min round trip time)", sprint_tm(min_reply), 0, 2);
-        print_json_keyvalue("ms (avg round trip time)", sprint_tm(sum_replies / total_replies), 0, 2);
-        print_json_keyvalue("ms (max round trip time)", sprint_tm(max_reply), 0, 2);
-        print_json_keyvalue("sec (elapsed real time)", json_int_to_string((end_time - start_time) / 1e9), 0, 2);
-        print_json_end(0);
+        print_json_keyvalue("ms (min round trip time)", sprint_tm(min_reply), 0);
+        print_json_keyvalue("ms (avg round trip time)", sprint_tm(sum_replies / total_replies), 0);
+        print_json_keyvalue("ms (max round trip time)", sprint_tm(max_reply), 0);
+        print_json_keyvalue("sec (elapsed real time)", json_int_to_string((end_time - start_time) / 1e9), 0);
+        print_json_end(1);
     } else {
         fprintf(stderr, "\n");
         fprintf(stderr, " %7d targets\n", num_hosts);
@@ -3257,6 +3262,7 @@ void usage(int is_error)
     fprintf(out, "   -I, --iface=IFACE  bind to a particular interface\n");
 #endif
     fprintf(out, "   -J, --json         output in JSON format to stdout (-c or -C required and implies -q)\n");
+    fprintf(out, "       --json-pretty  use pretty-printed JSON output (implies -J)\n");
 #ifdef SO_MARK
     fprintf(out, "   -k, --fwmark=FWMARK set the routing mark\n");
 #endif

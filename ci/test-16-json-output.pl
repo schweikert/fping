@@ -39,7 +39,7 @@ use Test::More;
 {
     my $cmd = Test::Command->new(cmd => "fping -J -c1 host.invalid");
     $cmd->exit_is_num(2);  # Exit code 2 indicates name resolution error
-    $cmd->stdout_like(qr/^\{"host":\s*"host\.invalid","error":\s*"Name or service not known"\}$/, "Unreachable host JSON structure is correct");
+    $cmd->stdout_like(qr/^\{"host":\s*"host\.invalid","error":\s*"(?:Name or service not known|Temporary failure in name resolution)"\}$/, "Unreachable host JSON structure is correct");
     $cmd->stderr_is_eq("");
 }
 

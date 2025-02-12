@@ -2796,13 +2796,13 @@ void add_name(char *name)
         if (!quiet_flag)
             print_warning("%s: %s\n", name, gai_strerror(ret_ga));
         
+        num_noaddress++;
+        
         // Handle JSON output for invalid hosts
         if (output_json_flag) {
             fprintf(stdout, "{\"host\": \"%s\",\"error\": \"%s\"}", name, gai_strerror(ret_ga));
             return;
         }
-        
-        num_noaddress++;
         return;
     }
 

@@ -1,6 +1,11 @@
 Next
 ====
 
+## New features
+
+- The -g, --generate option now also supports IPv6 addresses (#376,
+  thanks @auerswal)
+
 ## Bugfixes and other changes
 
 - Fix fallback to SO\_TIMESTAMP if SO\_TIMESTAMPNS is not available (#375,
@@ -10,10 +15,7 @@ Next
   than the static buffer are no longer interpreted as more than one line
   (#378, thanks @auerswal)
 
-## New features
-
-- The -g, --generate option now also supports IPv6 addresses (#376,
-  thanks @auerswal)
+- Typo fix in error message when SO\_BINDTODEVICE fails
 
 fping 5.3 (2025-01-02)
 ======================

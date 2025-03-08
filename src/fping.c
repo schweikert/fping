@@ -881,14 +881,14 @@ int main(int argc, char **argv)
 #ifdef SO_BINDTODEVICE
             if (socket4 >= 0) {
                 if (p_setsockopt(suid, socket4, SOL_SOCKET, SO_BINDTODEVICE, optparse_state.optarg, strlen(optparse_state.optarg))) {
-                    perror("binding to specific interface (SO_BINTODEVICE)");
+                    perror("binding to specific interface (SO_BINDTODEVICE)");
                     exit(1);
                 }
             }
 #ifdef IPV6
             if (socket6 >= 0) {
                 if (p_setsockopt(suid, socket6, SOL_SOCKET, SO_BINDTODEVICE, optparse_state.optarg, strlen(optparse_state.optarg))) {
-                    perror("binding to specific interface (SO_BINTODEVICE), IPV6");
+                    perror("binding to specific interface (SO_BINDTODEVICE), IPV6");
                     exit(1);
                 }
             }

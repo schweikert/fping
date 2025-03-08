@@ -1,9 +1,10 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 16;
+use Test::Command tests => 28;
 use Test::More;
 
 #  -i n       interval between sending ping packets (in millisec) (default 25)
+#  -I IFACE   bind to a particular interface, not always available
 #  -l         loop sending pings forever
 #  -k         set fwmark on ping packets
 #  -m         ping multiple interfaces on target host
@@ -15,6 +16,53 @@ my $cmd = Test::Command->new(cmd => "fping -i 100 127.0.0.1 127.0.0.2");
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("127.0.0.1 is alive\n127.0.0.2 is alive\n");
 $cmd->stderr_is_eq("");
+}
+
+# fping -I IFACE
+SKIP: {
+if($^O ne 'linux') {
+    skip '-I option functionality is only tested on Linux', 3;
+}
+my $cmd = Test::Command->new(cmd => 'fping -I lo 127.0.0.1');
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("127.0.0.1 is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping -I IFACE
+SKIP: {
+if($^O ne 'linux') {
+    skip '-I option functionality is only tested on Linux', 3;
+}
+if($ENV{SKIP_IPV6}) {
+    skip 'Skip IPv6 tests', 3;
+}
+my $cmd = Test::Command->new(cmd => 'fping -6 -I lo ::1');
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("::1 is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping -I IFACE
+SKIP: {
+if($^O ne 'linux') {
+    skip '-I option functionality is only tested on Linux', 3;
+}
+my $cmd = Test::Command->new(cmd => 'fping -I NotAnInterface 127.0.0.1');
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{binding to specific interface \(SO_BINDTODEVICE\):.*\n});
+}
+
+# fping -I IFACE
+SKIP: {
+if($^O ne 'darwin') {
+    skip 'test for unsupported -I on macOS', 3;
+}
+my $cmd = Test::Command->new(cmd => 'fping -I lo0 127.0.0.1');
+$cmd->exit_is_num(3);
+$cmd->stdout_is_eq("");
+$cmd->stderr_is_eq("fping: cant bind to a particular net interface since SO_BINDTODEVICE is not supported on your os.\n");
 }
 
 # fping -l

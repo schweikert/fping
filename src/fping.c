@@ -34,8 +34,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
-#include "fping.h"
 #include "config.h"
+#include "fping.h"
 #include "options.h"
 #include "optparse.h"
 
@@ -1339,7 +1339,7 @@ int main(int argc, char **argv)
 #if defined(DEBUG) || defined(_DEBUG)
     perf_cpu_end = clock();
     perf_cpu_time_used = ((double) (perf_cpu_end - perf_cpu_start)) / CLOCKS_PER_SEC;
-    printf("[DEBUG] CPU time used: %f sec", perf_cpu_time_used);
+    printf("[DEBUG] CPU time used: %f sec\n", perf_cpu_time_used);
 #endif /* DEBUG || _DEBUG */
 
     finish();
@@ -2757,7 +2757,7 @@ int wait_for_reply(int64_t wait_time)
 
     /* optionally require reply source equal to target address */
     if (check_source_flag && addr_cmp((struct sockaddr *)&response_addr, (struct sockaddr *)&h->saddr)) {
-        dbg_printf("discarding reply from wrong source address\n");
+        dbg_printf("%s\n", "discarding reply from wrong source address");
         return 1;
     }
 

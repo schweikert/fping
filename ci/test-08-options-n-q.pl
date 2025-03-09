@@ -83,7 +83,7 @@ SKIP: {
     }
     my $cmd = Test::Command->new(cmd => "fping --print-tos ::1");
     $cmd->exit_is_num(0);
-    $cmd->stdout_like(qr{::1 is alive \(TOS unknown\)\n});
+    $cmd->stdout_like(qr{::1 is alive \(TOS \d+\)\n});
     $cmd->stderr_is_eq("");
 }
 

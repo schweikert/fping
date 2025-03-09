@@ -51,13 +51,13 @@ sub test_unprivileged_works {
     {
         my $cmd = Test::Command->new(cmd => "$fping_copy --print-tos 127.0.0.1");
         $cmd->exit_is_num(0);
-        $cmd->stdout_is_eq("127.0.0.1 is alive (TOS unknown)\n");
+        $cmd->stdout_like(qr{127\.0\.0\.1 is alive \(TOS \d+\)\n});
         $cmd->stderr_is_eq("");
     }
     {
         my $cmd = Test::Command->new(cmd => "$fping_copy --print-ttl 127.0.0.1");
         $cmd->exit_is_num(0);
-        $cmd->stdout_is_eq("127.0.0.1 is alive (TTL unknown)\n");
+        $cmd->stdout_like(qr{127\.0\.0\.1 is alive \(TTL \d+\)\n});
         $cmd->stderr_is_eq("");
     }
     SKIP: {

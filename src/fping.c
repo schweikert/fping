@@ -297,6 +297,7 @@ struct event_queue event_queue_timeout;
 char *prog;
 int ident4 = 0; /* our icmp identity field */
 int ident6 = 0;
+const int sock_opt_on = 1; /* to activate a socket option */
 int socket4 = -1;
 int socktype4 = -1;
 int using_sock_dgram4 = 0;
@@ -611,8 +612,32 @@ int main(int argc, char **argv)
                 ping_data_size = ICMP_TIMESTAMP_DATA_SIZE;
             } else if (strstr(optparse_state.optlongname, "print-tos") != NULL) {
                 print_tos_flag = 1;
+                if (socket4 >= 0 && (socktype4 == SOCK_DGRAM)) {
+                    if (setsockopt(socket4, IPPROTO_IP, IP_RECVTOS, &sock_opt_on, sizeof(sock_opt_on))) {
+                        perror("setsockopt IP_RECVTOS");
+                    }
+                }
+#if defined(IPV6) && defined(IPV6_RECVTCLASS)
+                if (socket6 >= 0) {
+                    if (setsockopt(socket6, IPPROTO_IPV6, IPV6_RECVTCLASS, &sock_opt_on, sizeof(sock_opt_on))) {
+                        perror("setsockopt IPV6_RECVTCLASS");
+                    }
+                }
+#endif
             } else if (strstr(optparse_state.optlongname, "print-ttl") != NULL) {
                 print_ttl_flag = 1;
+                if (socket4 >= 0 && (socktype4 == SOCK_DGRAM)) {
+                    if (setsockopt(socket4, IPPROTO_IP, IP_RECVTTL, &sock_opt_on, sizeof(sock_opt_on))) {
+                        perror("setsockopt IP_RECVTTL");
+                    }
+                }
+#if defined(IPV6) && defined(IPV6_RECVHOPLIMIT)
+                if (socket6 >= 0) {
+                    if (setsockopt(socket6, IPPROTO_IPV6, IPV6_RECVHOPLIMIT, &sock_opt_on, sizeof(sock_opt_on))) {
+                        perror("setsockopt IPV6_RECVHOPLIMIT");
+                    }
+                }
+#endif
             } else {
                 usage(1);
             }
@@ -2297,12 +2322,14 @@ int receive_packet(int64_t wait_time,
     struct sockaddr *reply_src_addr,
     size_t reply_src_addr_len,
     char *reply_buf,
-    size_t reply_buf_len)
+    size_t reply_buf_len,
+    int *ip_header_tos,
+    int *ip_header_ttl)
 {
     struct timeval to;
     int s = 0;
     int recv_len;
-    static unsigned char msg_control[40];
+    static unsigned char msg_control[128];
     struct iovec msg_iov = {
         reply_buf,
         reply_buf_len
@@ -2314,9 +2341,7 @@ int receive_packet(int64_t wait_time,
     recv_msghdr.msg_iovlen = 1;
     recv_msghdr.msg_control = &msg_control;
     recv_msghdr.msg_controllen = sizeof(msg_control);
-#if HAVE_SO_TIMESTAMPNS
     struct cmsghdr *cmsg;
-#endif
 
     /* Wait for a socket to become ready */
     if (wait_time) {
@@ -2337,14 +2362,16 @@ int receive_packet(int64_t wait_time,
         return 0;
     }
 
-#if HAVE_SO_TIMESTAMPNS
     /* ancilliary data */
     {
+#if HAVE_SO_TIMESTAMPNS
         struct timespec reply_timestamp_ts;
         struct timeval reply_timestamp_tv;
+#endif
         for (cmsg = CMSG_FIRSTHDR(&recv_msghdr);
              cmsg != NULL;
              cmsg = CMSG_NXTHDR(&recv_msghdr, cmsg)) {
+#if HAVE_SO_TIMESTAMPNS
             if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_TIMESTAMPNS) {
                 memcpy(&reply_timestamp_ts, CMSG_DATA(cmsg), sizeof(reply_timestamp_ts));
                 *reply_timestamp = timespec_ns(&reply_timestamp_ts);
@@ -2353,9 +2380,23 @@ int receive_packet(int64_t wait_time,
                 memcpy(&reply_timestamp_tv, CMSG_DATA(cmsg), sizeof(reply_timestamp_tv));
                 *reply_timestamp = timeval_ns(&reply_timestamp_tv);
             }
+#endif
+            if (cmsg->cmsg_level == IPPROTO_IP && cmsg->cmsg_type == IP_TOS) {
+                memcpy(ip_header_tos, CMSG_DATA(cmsg), sizeof(*ip_header_tos));
+            }
+            if (cmsg->cmsg_level == IPPROTO_IP && cmsg->cmsg_type == IP_TTL) {
+                memcpy(ip_header_ttl, CMSG_DATA(cmsg), sizeof(*ip_header_ttl));
+            }
+#ifdef IPV6
+            if (cmsg->cmsg_level == IPPROTO_IPV6 && cmsg->cmsg_type == IPV6_TCLASS) {
+                memcpy(ip_header_tos, CMSG_DATA(cmsg), sizeof(*ip_header_tos));
+            }
+            if (cmsg->cmsg_level == IPPROTO_IPV6 && cmsg->cmsg_type == IPV6_HOPLIMIT) {
+                memcpy(ip_header_ttl, CMSG_DATA(cmsg), sizeof(*ip_header_ttl));
+            }
+#endif
         }
     }
-#endif
 
 #if defined(DEBUG) || defined(_DEBUG)
     if (randomly_lose_flag) {
@@ -2683,7 +2724,9 @@ int wait_for_reply(int64_t wait_time)
         (struct sockaddr *)&response_addr, /* reply_src_addr */
         sizeof(response_addr), /* reply_src_addr_len */
         buffer, /* reply_buf */
-        sizeof(buffer) /* reply_buf_len */
+        sizeof(buffer), /* reply_buf_len */
+        &ip_header_tos, /* TOS resp. TC byte */
+        &ip_header_ttl /* TTL resp. hop limit */
     );
 
     if (result <= 0) {

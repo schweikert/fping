@@ -146,7 +146,6 @@ Set the IP TTL field (time to live hops).
 
 Displays the IPv4 TTL value from the IP Header in the output.
 If B<fping> cannot read the TTL value, "(TTL unknown)" is returned.
-IPv4 only, requires root privileges or cap_net_raw.
 
 =item B<-i>, B<--interval>=I<MSEC>
 
@@ -206,7 +205,6 @@ Set the typ of service flag (TOS). I<N> can be either decimal or hexadecimal
 
 Displays the TOS value in the output. If B<fping> cannot read the TOS value,
 "(TOS unknown)" is returned.
-IPv4 only, requires root privileges or cap_net_raw.
 
 =item B<-p>, B<--period>=I<MSEC>
 

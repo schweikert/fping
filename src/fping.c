@@ -358,7 +358,7 @@ int64_t next_report_time; /* time next -Q report is expected */
 /* switches */
 int generate_flag = 0; /* flag for IP list generation */
 int verbose_flag, quiet_flag, stats_flag, unreachable_flag, alive_flag;
-int elapsed_flag, version_flag, count_flag, loop_flag, netdata_flag;
+int elapsed_flag, version_flag, count_flag, loop_flag, netdata_flag, json_flag;
 int per_recv_flag, report_all_rtts_flag, name_flag, addr_flag, backoff_flag, rdns_flag;
 int multif_flag, timeout_flag, fast_reachable;
 int outage_flag = 0;
@@ -392,10 +392,13 @@ int send_ping(HOST_ENTRY *h, int index);
 void usage(int);
 int wait_for_reply(int64_t);
 void print_per_system_stats(void);
+void print_per_system_stats_json(void);
 void print_per_system_splits(void);
+void print_per_system_splits_json(void);
 void stats_reset_interval(HOST_ENTRY *h);
 void print_netdata(void);
 void print_global_stats(void);
+void print_global_stats_json(void);
 void main_loop();
 void signal_handler(int);
 void finish();
@@ -552,6 +555,7 @@ int main(int argc, char **argv)
         { "ttl", 'H', OPTPARSE_REQUIRED },
         { "interval", 'i', OPTPARSE_REQUIRED },
         { "iface", 'I', OPTPARSE_REQUIRED },
+        { "json", 'J', OPTPARSE_OPTIONAL },
         { "icmp-timestamp", '0', OPTPARSE_NONE },
 #ifdef SO_MARK
         { "fwmark", 'k', OPTPARSE_REQUIRED },
@@ -933,6 +937,10 @@ int main(int argc, char **argv)
 #endif
             break;
 
+        case 'J':
+            json_flag = 1;
+            break;
+
         case 'T':
             /* This option is ignored for compatibility reasons ("select timeout" is not meaningful anymore) */
             break;
@@ -1000,6 +1008,11 @@ int main(int argc, char **argv)
 
     if (count_flag && loop_flag) {
         fprintf(stderr, "%s: specify only one of c, l\n", prog);
+        exit(1);
+    }
+
+    if (json_flag && !count_flag) {
+        fprintf(stderr, "%s: with -J or --json required -c or -C\n", prog);
         exit(1);
     }
 
@@ -1125,6 +1138,8 @@ int main(int argc, char **argv)
             fprintf(stderr, "  outage_flag set\n");
         if (netdata_flag)
             fprintf(stderr, "  netdata_flag set\n");
+        if (json_flag)
+            fprintf(stderr, "  json_flag set\n");
     }
 #endif /* DEBUG || _DEBUG */
 
@@ -1697,25 +1712,58 @@ void main_loop()
             stats_add(h, event->ping_index, 0, -1);
 
             if (per_recv_flag) {
+                if (json_flag)
+                    printf("{\"resp\": {");
+
                 if (timestamp_flag) {
-                    print_timestamp_format(current_time_ns, timestamp_format_flag);
+                    if (json_flag)
+                        printf("\"timestamp\": %.5f, ", (double)current_time_ns / 1e9);
+                    else
+                        print_timestamp_format(current_time_ns, timestamp_format_flag);
                 }
-                printf("%-*s : [%d], timed out",
-                    max_hostname_len, h->host, event->ping_index);
-                if (h->num_recv > 0) {
-                    printf(" (%s avg, ", sprint_tm(h->total_time / h->num_recv));
+                if (json_flag)
+                {
+                  printf("\"host\": \"%s\", ", h->host);
+                  printf("\"seq\": %d", event->ping_index);
                 }
                 else {
-                    printf(" (NaN avg, ");
+                    printf("%-*s : [%d], timed out",
+                        max_hostname_len, h->host, event->ping_index);
+                }
+                if (h->num_recv > 0) {
+                    if (json_flag)
+                        printf(", \"rttAvg\": %s", sprint_tm(h->total_time / h->num_recv));
+                    else
+                        printf(" (%s avg, ", sprint_tm(h->total_time / h->num_recv));
+                }
+                else {
+                    if (json_flag)
+                        printf(", \"rttAvg\": \"NaN\"");
+                    else
+                        printf(" (NaN avg, ");
                 }
                 if (h->num_recv <= h->num_sent) {
-                    printf("%d%% loss)",
-                        ((h->num_sent - h->num_recv) * 100) / h->num_sent);
+                    if (json_flag) {
+                        printf(", \"loss\": %d", ((h->num_sent - h->num_recv) * 100) / h->num_sent);
+                    }
+                    else {
+                        printf("%d%% loss)",
+                            ((h->num_sent - h->num_recv) * 100) / h->num_sent);
+                    }
                 }
                 else {
-                    printf("%d%% return)",
-                        (h->num_recv_total * 100) / h->num_sent);
+                    if (json_flag) {
+                        printf(", \"return\": %d", (h->num_recv_total * 100) / h->num_sent);
+                    }
+                    else {
+                        printf("%d%% return)",
+                            (h->num_recv_total * 100) / h->num_sent);
+                    }
                 }
+
+                if (json_flag)
+                    printf("}}");
+                
                 printf("\n");
             }
 
@@ -1826,15 +1874,23 @@ void main_loop()
 
         if (status_snapshot) {
             status_snapshot = 0;
-            print_per_system_splits();
+            if (json_flag)
+                print_per_system_splits_json();
+            else
+                print_per_system_splits();
         }
 
         /* Print report */
         if (report_interval && (loop_flag || count_flag) && (current_time_ns >= next_report_time)) {
-            if (netdata_flag)
+            if (netdata_flag) {
                 print_netdata();
-            else
+            }
+            else if (json_flag) {
+                print_per_system_splits_json();
+            }
+            else {
                 print_per_system_splits();
+            }
 
             while (current_time_ns >= next_report_time) {
                 next_report_time += report_interval;
@@ -1923,15 +1979,27 @@ void finish()
         }
     }
 
-    if (count_flag || loop_flag)
-        print_per_system_stats();
+    if (count_flag || loop_flag) {
+        if (json_flag)
+            print_per_system_stats_json();
+        else
+            print_per_system_stats();
+    }
 #if defined(DEBUG) || defined(_DEBUG)
-    else if (print_per_system_flag)
-        print_per_system_stats();
+    else if (print_per_system_flag) {
+        if (json_flag)
+            print_per_system_stats_json();
+        else
+            print_per_system_stats();
+    }
 #endif /* DEBUG || _DEBUG */
 
-    if (stats_flag)
-        print_global_stats();
+    if (stats_flag) {
+        if (json_flag)
+            print_global_stats_json();
+        else
+            print_global_stats();
+    }
 
     if (min_reachable) {
         if ((num_hosts - num_unreachable) >= min_reachable) {
@@ -2014,6 +2082,80 @@ void print_per_system_stats(void)
 
             fprintf(stderr, "\n");
         }
+    }
+}
+
+/************************************************************
+
+  Function: print_per_system_stats_json
+
+*************************************************************
+
+  Inputs:  void (none)
+
+  Description:
+
+
+************************************************************/
+
+void print_per_system_stats_json(void)
+{
+    int i, j, avg, outage_ms;
+    HOST_ENTRY *h;
+    int64_t resp;
+
+    for (i = 0; i < num_hosts; i++) {
+        h = table[i];
+
+        if (report_all_rtts_flag)
+            fprintf(stdout, "{\"vSum\": {");
+        else
+            fprintf(stdout, "{\"summary\": {");
+
+        fprintf(stdout, "\"host\": \"%s\", ", h->host);
+
+        if (report_all_rtts_flag) {
+            fprintf(stdout, "\"values\": [");
+            for (j = 0; j < h->num_sent; j++) {
+                if (j > 0)
+                  fprintf(stdout, ", ");
+                
+                if ((resp = h->resp_times[j]) >= 0)
+                    fprintf(stdout, "%s", sprint_tm(resp));
+                else
+                    fprintf(stdout, "-");
+            }
+
+            fprintf(stdout, "]}");
+        }
+        else {
+            if (h->num_recv <= h->num_sent) {
+                fprintf(stdout, "\"xmt\": %d, ", h->num_sent);
+                fprintf(stdout, "\"rcv\": %d, ", h->num_recv);
+                fprintf(stdout, "\"loss\": %d", h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
+
+                if (outage_flag) {
+                    /* Time outage total */
+                    outage_ms = (h->num_sent - h->num_recv) * perhost_interval / 1e6;
+                    fprintf(stdout, ", \"outage(ms)\": %d", outage_ms);
+                }
+            }
+            else {
+                fprintf(stdout, "\"xmt\": %d, ", h->num_sent);
+                fprintf(stdout, "\"rcv\": %d, ", h->num_recv);
+                fprintf(stdout, "\"return\": %d", h->num_sent > 0 ? ((h->num_recv * 100) / h->num_sent) : 0);
+            }
+
+            if (h->num_recv) {
+                avg = h->total_time / h->num_recv;
+                fprintf(stdout, ", \"rttMin\": %s", sprint_tm(h->min_reply));
+                fprintf(stdout, ", \"rttAvg\": %s", sprint_tm(avg));
+                fprintf(stdout, ", \"rttMax\": %s", sprint_tm(h->max_reply));
+            }
+
+            fprintf(stdout, "}");
+        }
+        fprintf(stdout, "}\n");
     }
 }
 
@@ -2153,6 +2295,63 @@ void print_per_system_splits(void)
 
 /************************************************************
 
+  Function: print_per_system_splits_json
+
+*************************************************************
+
+  Inputs:  void (none)
+
+  Description:
+
+
+************************************************************/
+
+void print_per_system_splits_json(void)
+{
+    int i, avg, outage_ms_i;
+    HOST_ENTRY *h;
+
+    update_current_time();
+
+    for (i = 0; i < num_hosts; i++) {
+        h = table[i];
+        fprintf(stdout, "{\"intSum\": {");
+        fprintf(stdout, "\"time\": %" PRId64 ",", current_time.tv_sec);
+        fprintf(stdout, "\"host\": \"%s\", ", h->host);
+
+        if (h->num_recv_i <= h->num_sent_i) {
+            fprintf(stdout, "\"xmt\": %d, ", h->num_sent_i);
+            fprintf(stdout, "\"rcv\": %d, ", h->num_recv_i);
+            fprintf(stdout, "\"loss\": %d", h->num_sent_i > 0 ? ((h->num_sent_i - h->num_recv_i) * 100) / h->num_sent_i : 0);
+
+            if (outage_flag) {
+                /* Time outage  */
+                outage_ms_i = (h->num_sent_i - h->num_recv_i) * perhost_interval / 1e6;
+                fprintf(stdout, ", \"outage(ms)\": %d", outage_ms_i);
+            }
+        }
+        else {
+            fprintf(stdout, "\"xmt\": %d, ", h->num_sent_i);
+            fprintf(stdout, "\"rcv\": %d, ", h->num_recv_i);
+            fprintf(stdout, "\"loss\": %d", h->num_sent_i > 0 ? ((h->num_recv_i * 100) / h->num_sent_i) : 0);
+        }
+
+        if (h->num_recv_i) {
+            avg = h->total_time_i / h->num_recv_i;
+            fprintf(stdout, ", \"rttMin\": %s, ", sprint_tm(h->min_reply_i));
+            fprintf(stdout, "\"rttAvg\": %s, ", sprint_tm(avg));
+            fprintf(stdout, "\"rttMax\": %s", sprint_tm(h->max_reply_i));
+        }
+
+        fprintf(stdout, "}}\n");
+        if (!cumulative_stats_flag) {
+            stats_reset_interval(h);
+        }
+    }
+}
+
+/************************************************************
+
   Function: print_global_stats
 
 *************************************************************
@@ -2192,6 +2391,45 @@ void print_global_stats(void)
     fprintf(stderr, " %12.3f sec (elapsed real time)\n",
         (end_time - start_time) / 1e9);
     fprintf(stderr, "\n");
+}
+
+/************************************************************
+
+  Function: print_global_stats_json
+
+*************************************************************
+
+  Inputs:  void (none)
+
+  Description:
+
+
+************************************************************/
+
+void print_global_stats_json(void)
+{
+    fprintf(stdout, "{\"globalSum\": {");
+    fprintf(stdout, "\"targets\": %d, ", num_hosts);
+    fprintf(stdout, "\"alive\": %d, ", num_alive);
+    fprintf(stdout, "\"unreachable\": %d, ", num_unreachable);
+    fprintf(stdout, "\"unknown addresses\": %d, ", num_noaddress);
+    fprintf(stdout, "\"timeouts (waiting for response)\": %d, ", num_timeout);
+    fprintf(stdout, "\"ICMP Echos sent\": %d, ", num_pingsent);
+    fprintf(stdout, "\"ICMP Echo Replies received\": %d, ", num_pingreceived);
+    fprintf(stdout, "\"other ICMP received\": %d, ", num_othericmprcvd);
+
+    if (total_replies == 0) {
+        min_reply = 0;
+        max_reply = 0;
+        total_replies = 1;
+        sum_replies = 0;
+    }
+
+    fprintf(stdout, "\"ms (min round trip time)\": %s, ", sprint_tm(min_reply));
+    fprintf(stdout, "\"ms (avg round trip time)\": %s, ", sprint_tm(sum_replies / total_replies));
+    fprintf(stdout, "\"ms (max round trip time)\": %s, ", sprint_tm(max_reply));
+    fprintf(stdout, "\"sec (elapsed real time)\": %.3f", (end_time - start_time) / 1e9);
+    fprintf(stdout, "}}\n");
 }
 
 /************************************************************
@@ -2872,21 +3110,39 @@ int wait_for_reply(int64_t wait_time)
 
     /* print received ping (unless --quiet) */
     if (per_recv_flag) {
+        if (json_flag)
+            printf("{\"resp\": {");
+
         if (timestamp_flag) {
-            print_timestamp_format(recv_time, timestamp_format_flag);
+            if (json_flag)
+                printf("\"timestamp\": %.5f, ", (double)recv_time / 1e9);
+            else
+                print_timestamp_format(recv_time, timestamp_format_flag);
         }
         avg = h->total_time / h->num_recv;
-        printf("%-*s : [%d], %d bytes, %s ms",
-            max_hostname_len, h->host, this_count, result, sprint_tm(this_reply));
-        printf(" (%s avg, ", sprint_tm(avg));
-
-        if (h->num_recv <= h->num_sent) {
-            printf("%d%% loss)",
-                ((h->num_sent - h->num_recv) * 100) / h->num_sent);
+        if (json_flag) {
+            printf("\"host\": \"%s\", ", h->host);
+            printf("\"seq\": %d, ", this_count);
+            printf("\"size\": %d, ", result);
+            printf("\"rtt\": %s, ", sprint_tm(this_reply));
+            printf("\"rttAvg\": %s", sprint_tm(avg));
         }
         else {
-            printf("%d%% return)",
-                (h->num_recv_total * 100) / h->num_sent);
+            printf("%-*s : [%d], %d bytes, %s ms", max_hostname_len, h->host, this_count, result, sprint_tm(this_reply));
+            printf(" (%s avg, ", sprint_tm(avg));
+        }
+
+        if (h->num_recv <= h->num_sent) {
+            if (json_flag)
+                printf(", \"loss\": %d", ((h->num_sent - h->num_recv) * 100) / h->num_sent);
+            else
+                printf("%d%% loss)", ((h->num_sent - h->num_recv) * 100) / h->num_sent);
+        }
+        else {
+            if (json_flag)
+                printf(", \"return\": %d", (h->num_recv_total * 100) / h->num_sent);
+            else
+                printf("%d%% return)", (h->num_recv_total * 100) / h->num_sent);
         }
     }
 
@@ -2899,32 +3155,56 @@ int wait_for_reply(int64_t wait_time)
         }
 
         if (icmp_request_typ == 13) {
-            printf("%s timestamps: Originate=%u Receive=%u Transmit=%u Localreceive=%u",
-                   alive_flag ? "" : ",",
-                   ip_header_otime_ms, ip_header_rtime_ms, ip_header_ttime_ms,
-                   ms_since_midnight_utc(recv_time));
+            if (json_flag) {
+              printf(", \"timestamps\": {");
+              printf("\"originate\": %u, ", ip_header_otime_ms);
+              printf("\"receive\": %u, ", ip_header_rtime_ms);
+              printf("\"transmit\": %u, ", ip_header_ttime_ms);
+              printf("\"localreceive\": %u}", ms_since_midnight_utc(recv_time));
+            }
+            else {
+                printf("%s timestamps: Originate=%u Receive=%u Transmit=%u Localreceive=%u",
+                      alive_flag ? "" : ",",
+                      ip_header_otime_ms, ip_header_rtime_ms, ip_header_ttime_ms,
+                      ms_since_midnight_utc(recv_time));
+            }
         }
 
         if(print_tos_flag) {
             if(ip_header_tos != -1) {
-                printf(" (TOS %d)", ip_header_tos);
+                if (json_flag)
+                    printf(", \"tos\": %d", ip_header_tos);
+                else
+                    printf(" (TOS %d)", ip_header_tos);
             }
             else {
-                printf(" (TOS unknown)");
+                if (json_flag)
+                    printf(", \"tos\": -1");
+                else
+                    printf(" (TOS unknown)");
             }
         }
 
         if (print_ttl_flag) {
           if(ip_header_ttl != -1) {
-              printf(" (TTL %d)", ip_header_ttl);
+              if (json_flag)
+                  printf(", \"ttl\": %d", ip_header_ttl);
+              else
+                  printf(" (TTL %d)", ip_header_ttl);
           }
           else {
-              printf(" (TTL unknown)");
+              if (json_flag)
+                  printf(", \"ttl\": -1");
+              else
+                  printf(" (TTL unknown)");
           }
         }
 
         if (elapsed_flag && !per_recv_flag)
                 printf(" (%s ms)", sprint_tm(this_reply));
+
+        if (json_flag)
+            printf("}}");
 
         printf("\n");
     }
@@ -2978,6 +3258,13 @@ void add_name(char *name)
         if (!quiet_flag)
             print_warning("%s: %s\n", name, gai_strerror(ret_ga));
         num_noaddress++;
+
+        // Handle JSON output for invalid hosts
+        if (json_flag) {
+            fprintf(stderr, "{\"host\": \"%s\", \"error\": \"%s\"}", name, gai_strerror(ret_ga));
+            return;
+        }
+
         return;
     }
 
@@ -3469,6 +3756,7 @@ void usage(int is_error)
     fprintf(out, "   -D, --timestamp    print timestamp before each output line\n");
     fprintf(out, "       --timestamp-format=FORMAT  show timestamp in the given format (-D required): ctime|iso|rfc3339\n");
     fprintf(out, "   -e, --elapsed      show elapsed time on return packets\n");
+    fprintf(out, "   -J, --json         output in JSON format (-c or -C required)\n");
     fprintf(out, "   -n, --name         show targets by name (reverse-DNS lookup for target IPs)\n");
     fprintf(out, "   -N, --netdata      output compatible for netdata (-l -Q are required)\n");
     fprintf(out, "   -o, --outage       show the accumulated outage time (lost packets * packet interval)\n");

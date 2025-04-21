@@ -48,7 +48,7 @@
 /* description of the data structure used:
  *
  * - we assume that no more than SEQMAP_MAXSEQ (65535) pings are sent in
- *   the timeout interval (SEQMAP_TIMEOUT_IN_NS)
+ *   the timeout interval (seqmap_timeout_in_ns)
  * - we store the values in an array with SEQMAP_MAXSEQ elements
  * - current sequence number % SEQMAP_MAXSEQ gives the current index
  * - when entering a value, we check that the current entry is expired
@@ -56,12 +56,13 @@
 
 static SEQMAP_VALUE* seqmap_map = NULL;
 static unsigned int seqmap_next_id = 0;
+static int64_t seqmap_timeout_in_ns;
 
-#define SEQMAP_TIMEOUT_IN_NS INT64_C(10000000000)
 #define SEQMAP_UNASSIGNED_HOST_NR UINT_MAX
 
-void seqmap_init()
+void seqmap_init(int64_t timeout)
 {
+    seqmap_timeout_in_ns = timeout;
     seqmap_map = calloc(SEQMAP_MAXSEQ, sizeof(SEQMAP_VALUE));
     if (seqmap_map == NULL) {
         perror("malloc error (can't allocate seqmap_map)");
@@ -81,9 +82,9 @@ unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, int64_t t
     /* check if expired (note that unused seqmap values will have fields set to
      * 0, so will be seen as expired */
     next_value = &seqmap_map[seqmap_next_id];
-    if (next_value->ping_ts != 0 && timestamp - next_value->ping_ts < SEQMAP_TIMEOUT_IN_NS) {
+    if (next_value->ping_ts != 0 && timestamp - next_value->ping_ts < seqmap_timeout_in_ns) {
         fprintf(stderr, "fping error: not enough sequence numbers available! (expire_timeout=%" PRId64 ", host_nr=%d, ping_count=%d, seqmap_next_id=%d)\n",
-            SEQMAP_TIMEOUT_IN_NS, host_nr, ping_count, seqmap_next_id);
+            seqmap_timeout_in_ns, host_nr, ping_count, seqmap_next_id);
         exit(4);
     }
 
@@ -112,7 +113,7 @@ SEQMAP_VALUE* seqmap_fetch(unsigned int id, int64_t now)
     value = &seqmap_map[id];
 
     /* verify that value is not expired */
-    if (now - value->ping_ts >= SEQMAP_TIMEOUT_IN_NS) {
+    if (now - value->ping_ts >= seqmap_timeout_in_ns) {
         dbg_printf("seqmap_fetch(%d) -> host: %d, index: %d -> DISCARDED %ld\n", id, value->host_nr, value->ping_count,
                 now - value->ping_ts);
         return NULL;

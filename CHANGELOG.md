@@ -6,6 +6,9 @@ Next
 - The -g, --generate option now also supports IPv6 addresses (#376,
   thanks @auerswal)
 
+- New option --seqmap-timeout to control the time after which sequence numbers
+  can be used again (#388, thanks @auerswal)
+
 ## Bugfixes and other changes
 
 - Fix OpenBSD warning sprintf() is often misused, please use snprintf() (#394, thanks @gsnw-sebast)

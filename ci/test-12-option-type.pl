@@ -1,10 +1,10 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 84;
+use Test::Command tests => 90;
 use Test::More;
 
 # some options require a numeric argument
-for my $arg (qw(b B c C H i O p Q r t x X)) {
+for my $arg (qw(b B c C H i O p Q r t x X -seqmap-timeout)) {
     for my $test_input (qw(xxx '')) {
         my $cmd = Test::Command->new(cmd => "fping -$arg $test_input");
         $cmd->exit_is_num(1);

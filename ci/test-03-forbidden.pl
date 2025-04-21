@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 36;
+use Test::Command tests => 39;
 
 # fping -i 0
 my $cmd1 = Test::Command->new(cmd => "fping -i 0 -T10 -g 127.0.0.1/29");
@@ -57,7 +57,7 @@ $cmd10->stdout_is_eq("");
 $cmd10->stderr_is_eq("fping: backoff factor 5.1 not valid, must be between 1.0 and 5.0\n");
 
 # non-negative only
-for my $arg (qw(i p Q t)) {
+for my $arg (qw(i p Q t -seqmap-timeout)) {
     my $cmd = Test::Command->new(cmd => "fping -$arg -1");
     $cmd->exit_is_num(1);
     $cmd->stdout_is_eq("");

@@ -317,6 +317,7 @@ unsigned int debugging = 0;
 /* all time-related values are int64_t nanoseconds */
 unsigned int retry = DEFAULT_RETRY;
 int64_t timeout = (int64_t)DEFAULT_TIMEOUT * 1000000;
+int64_t seqmap_timeout = (int64_t)DEFAULT_SEQMAP_TIMEOUT * 1000000;
 int64_t interval = (int64_t)DEFAULT_INTERVAL * 1000000;
 int64_t perhost_interval = (int64_t)DEFAULT_PERHOST_INTERVAL * 1000000;
 float backoff = DEFAULT_BACKOFF_FACTOR;
@@ -578,6 +579,7 @@ int main(int argc, char **argv)
         { "check-source", '0', OPTPARSE_NONE },
         { "print-tos", '0', OPTPARSE_NONE },
         { "print-ttl", '0', OPTPARSE_NONE },
+        { "seqmap-timeout", '0', OPTPARSE_REQUIRED },
 #if defined(DEBUG) || defined(_DEBUG)
         { NULL, 'z', OPTPARSE_REQUIRED },
 #endif
@@ -638,6 +640,12 @@ int main(int argc, char **argv)
                     }
                 }
 #endif
+            } else if (strstr(optparse_state.optlongname, "seqmap-timeout") != NULL) {
+                if (sscanf(optparse_state.optarg, "%f", &opt_value_float) != 1)
+                    usage(1);
+                if (opt_value_float < 0)
+                    usage(1);
+                seqmap_timeout = opt_value_float * 1000000;
             } else {
                 usage(1);
             }
@@ -1077,6 +1085,7 @@ int main(int argc, char **argv)
             prog, count, retry, interval / 1e6);
         fprintf(stderr, "  perhost_interval: %.0f ms, timeout: %.0f\n",
             perhost_interval / 1e6, timeout / 1e6);
+        fprintf(stderr, "  seqmap_timeout: %.0f\n", seqmap_timeout / 1e6);
         fprintf(stderr, "  ping_data_size = %u, trials = %u\n",
             ping_data_size, trials);
 
@@ -1355,7 +1364,7 @@ int main(int argc, char **argv)
 
     last_send_time = 0;
 
-    seqmap_init();
+    seqmap_init(seqmap_timeout);
 
     /* main loop */
     main_loop();
@@ -3446,6 +3455,7 @@ void usage(int is_error)
     fprintf(out, "   -r, --retry=N      number of retries (default: %d)\n", DEFAULT_RETRY);
     fprintf(out, "   -R, --random       random packet data (to foil link data compression)\n");
     fprintf(out, "   -S, --src=IP       set source address\n");
+    fprintf(out, "       --seqmap-timeout=MSEC sequence number mapping timeout (default: %.0f ms)\n", seqmap_timeout / 1e6);
     fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (default: %.0f ms,\n", timeout / 1e6);
     fprintf(out, "                      except with -l/-c/-C, where it's the -p period up to 2000 ms)\n");
     fprintf(out, "       --check-source discard replies not from target address\n");

@@ -32,6 +32,10 @@
 #define AUTOTUNE_TIMEOUT_MAX  2000
 #endif
 
+/* default time in milliseconds before a sequence number can be used again */
+#ifndef DEFAULT_SEQMAP_TIMEOUT
+#define DEFAULT_SEQMAP_TIMEOUT 10000
+#endif
 
 #ifndef DEFAULT_RETRY 
 #define DEFAULT_RETRY 3            /* number of times to retry a host */

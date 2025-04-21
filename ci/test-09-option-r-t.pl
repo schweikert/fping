@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 30;
+use Test::Command tests => 36;
 use Test::More;
 
 #  -R         random bytes
@@ -144,6 +144,22 @@ my $cmd = Test::Command->new(cmd => "fping -S bla");
 $cmd->exit_is_num(1);
 $cmd->stdout_is_eq("");
 $cmd->stderr_is_eq("fping: can't parse source address: bla\n");
+}
+
+# fping --seqmap-timeout N
+{
+my $cmd = Test::Command->new(cmd => "fping --seqmap-timeout 20000 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("127.0.0.1 is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping --seqmap-timeout N
+{
+my $cmd = Test::Command->new(cmd => "fping --seqmap-timeout 0 127.0.0.1");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("127.0.0.1 is unreachable\n");
+$cmd->stderr_is_eq("");
 }
 
 # (note: fping -t also tested in test-4-options-a-b.pl)

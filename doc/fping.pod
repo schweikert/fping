@@ -241,6 +241,11 @@ Print cumulative statistics upon exit.
 
 Set source address.
 
+=item B<--seqmap-timeout>=I<MSEC>
+
+Timeout for sequence number mappings in milliseconds. Sequence numbers can
+be reused after the timeout. The default value is 10000ms.
+
 =item B<-t>, B<--timeout>=I<MSEC>
 
 Initial target timeout in milliseconds. In the default, non-loop mode, the

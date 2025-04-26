@@ -56,7 +56,7 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 192.0.2.47");
 $cmd->exit_is_num(1);
-$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"192\.0\.2\.47",\s"seq":\s\d+,\s"rttAvg":\s"NaN",\s"loss":\s\d+\}\}
+$cmd->stdout_like(qr/^\{"timeout":\s\{"host":\s"192\.0\.2\.47",\s"seq":\s\d+,\s"rttAvg":\s"NaN",\s"loss":\s\d+\}\}
 \{"summary":\s\{"host":\s"192\.0\.2\.47",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }

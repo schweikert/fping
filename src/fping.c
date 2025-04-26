@@ -1713,7 +1713,7 @@ void main_loop()
 
             if (per_recv_flag) {
                 if (json_flag)
-                    printf("{\"resp\": {");
+                    printf("{\"timeout\": {");
 
                 if (timestamp_flag) {
                     if (json_flag)

@@ -3261,7 +3261,7 @@ void add_name(char *name)
 
         // Handle JSON output for invalid hosts
         if (json_flag) {
-            fprintf(stderr, "{\"host\": \"%s\", \"error\": \"%s\"}", name, gai_strerror(ret_ga));
+            fprintf(stdout, "{\"warning\": {\"host\": \"%s\", \"message\": \"%s\"}}", name, gai_strerror(ret_ga));
             return;
         }
 

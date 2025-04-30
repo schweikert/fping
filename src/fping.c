@@ -555,7 +555,7 @@ int main(int argc, char **argv)
         { "ttl", 'H', OPTPARSE_REQUIRED },
         { "interval", 'i', OPTPARSE_REQUIRED },
         { "iface", 'I', OPTPARSE_REQUIRED },
-        { "json", 'J', OPTPARSE_OPTIONAL },
+        { "json", 'J', OPTPARSE_NONE },
         { "icmp-timestamp", '0', OPTPARSE_NONE },
 #ifdef SO_MARK
         { "fwmark", 'k', OPTPARSE_REQUIRED },

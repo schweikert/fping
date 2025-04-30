@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 54;
+use Test::Command tests => 63;
 use Test::More;
 
 # fping -J -c 2 127.0.0.1
@@ -65,8 +65,35 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 2 -D 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s\d+.\d+,\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"loss":\s\d+\}\}
-\{"resp":\s\{"timestamp":\s\d+.\d+,\s"host":\s"127\.0\.0\.1",\s"seq":\s1,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"loss":\s\d+\}\}
+$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"\d+.\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"loss":\s\d+\}\}
+\{"resp":\s\{"timestamp":\s"\d+.\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s1,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"loss":\s\d+\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
+$cmd->stderr_is_eq("");
+}
+
+# fping -J -c 1 -D --timestamp-format=ctime 127.0.0.1
+{
+my $cmd = Test::Command->new(cmd => "fping -J -c 1 -D --timestamp-format=ctime 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"\w+\s\w+\s+\d+\s[\d+:]+\s\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"loss":\s\d+\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
+$cmd->stderr_is_eq("");
+}
+
+# fping -J -c 1 -D --timestamp-format=iso 127.0.0.1
+{
+my $cmd = Test::Command->new(cmd => "fping -J -c 1 -D --timestamp-format=iso 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"[\d+-]+T[\d+:]+\+\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"loss":\s\d+\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
+$cmd->stderr_is_eq("");
+}
+
+# fping -J -c 1 -D --timestamp-format=rfc3339 127.0.0.1
+{
+my $cmd = Test::Command->new(cmd => "fping -J -c 1 -D --timestamp-format=rfc3339 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"[\d+-]+\s[\d+:]+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"loss":\s\d+\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }

@@ -1715,12 +1715,9 @@ void main_loop()
                 if (json_flag)
                     printf("{\"timeout\": {");
 
-                if (timestamp_flag) {
-                    if (json_flag)
-                        printf("\"timestamp\": %.5f, ", (double)current_time_ns / 1e9);
-                    else
-                        print_timestamp_format(current_time_ns, timestamp_format_flag);
-                }
+                if (timestamp_flag)
+                    print_timestamp_format(current_time_ns, timestamp_format_flag);
+
                 if (json_flag)
                 {
                   printf("\"host\": \"%s\", ", h->host);
@@ -3113,12 +3110,9 @@ int wait_for_reply(int64_t wait_time)
         if (json_flag)
             printf("{\"resp\": {");
 
-        if (timestamp_flag) {
-            if (json_flag)
-                printf("\"timestamp\": %.5f, ", (double)recv_time / 1e9);
-            else
-                print_timestamp_format(recv_time, timestamp_format_flag);
-        }
+        if (timestamp_flag)
+            print_timestamp_format(recv_time, timestamp_format_flag);
+
         avg = h->total_time / h->num_recv;
         if (json_flag) {
             printf("\"host\": \"%s\", ", h->host);
@@ -3659,20 +3653,32 @@ void print_timestamp_format(int64_t current_time_ns, int timestamp_format)
         case 1:
             // timestamp-format ctime
             strftime(time_buffer, sizeof(time_buffer), "%c", local_time);
-            printf("[%s] ", time_buffer);
+            if (json_flag)
+                printf("\"timestamp\": \"%s\", ", time_buffer);
+            else
+                printf("[%s] ", time_buffer);
             break;
         case 2:
             // timestamp-format iso
             strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%dT%T%z", local_time);
-            printf("[%s] ", time_buffer);
+            if (json_flag)
+                printf("\"timestamp\": \"%s\", ", time_buffer);
+            else
+                printf("[%s] ", time_buffer);
             break;
         case 3:
             // timestamp-format rfc3339
             strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S", local_time);
-            printf("[%s] ", time_buffer);
+            if (json_flag)
+                printf("\"timestamp\": \"%s\", ", time_buffer);
+            else
+                printf("[%s] ", time_buffer);
             break;
         default:
-            printf("[%.5f] ", (double)current_time_ns / 1e9);
+            if (json_flag)
+                printf("\"timestamp\": \"%.5f\", ", (double)current_time_ns / 1e9);
+            else
+                printf("[%.5f] ", (double)current_time_ns / 1e9);
     }
 }
 

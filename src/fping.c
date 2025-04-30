@@ -1012,7 +1012,7 @@ int main(int argc, char **argv)
     }
 
     if (json_flag && !count_flag) {
-        fprintf(stderr, "%s: with -J or --json required -c or -C\n", prog);
+        fprintf(stderr, "%s: option -J, --json requires -c or -C\n", prog);
         exit(1);
     }
 

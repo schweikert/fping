@@ -2123,7 +2123,7 @@ void print_per_system_stats_json(void)
                 if ((resp = h->resp_times[j]) >= 0)
                     fprintf(stdout, "%s", sprint_tm(resp));
                 else
-                    fprintf(stdout, "-");
+                    fprintf(stdout, "null");
             }
 
             fprintf(stdout, "]}");

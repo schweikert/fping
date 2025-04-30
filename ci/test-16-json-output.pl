@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 48;
+use Test::Command tests => 54;
 use Test::More;
 
 # fping -J -c 2 127.0.0.1
@@ -76,6 +76,24 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 -q 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
+$cmd->stderr_is_eq("");
+}
+
+# fping -J -C 1 127.0.0.1
+{
+my $cmd = Test::Command->new(cmd => "fping -J -C 1 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s\d+,\s"size":\s\d+,\s"rtt":\s\d+.\d+,\s"rttAvg":\s\d+.\d+,\s"loss":\s\d+\}\}
+\{"vSum":\s\{"host":\s"127\.0\.0\.1",\s"values":\s\[\d+.\d+\]\}\}?$/);
+$cmd->stderr_is_eq("");
+}
+
+# fping -J -C 1 192.0.2.47
+{
+my $cmd = Test::Command->new(cmd => "fping -J -C 1 192.0.2.47");
+$cmd->exit_is_num(1);
+$cmd->stdout_like(qr/^\{"timeout":\s\{"host":\s"192\.0\.2\.47",\s"seq":\s\d+,\s"rttAvg":\s"NaN",\s"loss":\s\d+\}\}
+\{"vSum":\s\{"host":\s"192\.0\.2\.47",\s"values":\s\[null\]\}\}?$/);
 $cmd->stderr_is_eq("");
 }
 

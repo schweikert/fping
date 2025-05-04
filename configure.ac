@@ -34,7 +34,14 @@ AC_ARG_ENABLE([ipv6],
   AS_HELP_STRING([--disable-ipv6], [Disable support for pinging IPv6 hosts]))
 AS_IF([test "x$enable_ipv6" != "xno"], [
     dnl Test if IPv6 is supported
-       AC_CHECK_HEADERS([netinet/icmp6.h], [have_ipv6="yes"], [], [[
+       AC_CHECK_HEADERS([netinet/icmp6.h], [have_ipv6="yes"], [have_ipv6="no"], [[
+      #include <netinet/in.h>
+      #include <sys/types.h>
+  ]])
+])
+AS_IF([test "x$have_ipv6" == "xyes"], [
+    dnl Test if IPv6 is supported
+       AC_CHECK_HEADERS([netinet/ip6.h], [have_ipv6="yes"], [have_ipv6="no"], [[
       #include <netinet/in.h>
       #include <sys/types.h>
   ]])

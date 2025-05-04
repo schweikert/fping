@@ -26,6 +26,8 @@ Next
 - Options --print-tos and --print-ttl now also work for IPv6, and no
   longer require privileges (#384, thanks @auerswal)
 
+- Report received ICMPv6 error messages (#391, thanks @auerswal)
+
 fping 5.3 (2025-01-02)
 ======================
 

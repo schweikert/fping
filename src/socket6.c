@@ -65,6 +65,20 @@ int open_ping_socket_ipv6(int *socktype)
         if (s < 0) {
             return -1;
         }
+    } else {
+        /* receive only ICMP6 messages relevant for fping on raw socket */
+        struct icmp6_filter recv_filter;
+
+        ICMP6_FILTER_SETBLOCKALL(&recv_filter);
+        ICMP6_FILTER_SETPASS(ICMP6_ECHO_REPLY, &recv_filter);
+        ICMP6_FILTER_SETPASS(ICMP6_DST_UNREACH, &recv_filter);
+        ICMP6_FILTER_SETPASS(ICMP6_PACKET_TOO_BIG, &recv_filter);
+        ICMP6_FILTER_SETPASS(ICMP6_TIME_EXCEEDED, &recv_filter);
+        ICMP6_FILTER_SETPASS(ICMP6_PARAM_PROB, &recv_filter);
+
+        if (setsockopt(s, IPPROTO_ICMPV6, ICMP6_FILTER, &recv_filter, sizeof(recv_filter))) {
+            errno_crash_and_burn("cannot set icmp6 message type filter");
+        }
     }
 
     /* Make sure that we use non-blocking IO */

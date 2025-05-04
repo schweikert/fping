@@ -70,6 +70,7 @@ extern "C" {
 
 #ifdef IPV6
 #include <netinet/icmp6.h>
+#include <netinet/ip6.h>
 #endif
 #include <netinet/in_systm.h>
 
@@ -217,6 +218,46 @@ char *icmp_unreach_str[16] = {
 };
 
 #define ICMP_UNREACH_MAXTYPE 15
+
+#ifdef IPV6
+/* Long names for ICMPv6 unreachable codes */
+#define ICMP6_UNREACH_MAXCODE 9
+char *icmp6_unreach_str[ICMP6_UNREACH_MAXCODE + 1] = {
+    "No route to destination", /* 0 */
+    "Communication with destination administratively prohibited", /* 1 */
+    "Beyond scope of source address", /* 2 */
+    "Address unreachable", /* 3 */
+    "Port unreachable", /* 4 */
+    "Source address failed ingress/egress policy", /* 5 */
+    "Reject route to destination", /* 6 */
+    "Error in Source Routing Header", /* 7 */
+    "Headers too long", /* 8 */
+    "Error in P-Route", /* 9 */
+};
+
+/* Long names for ICMPv6 time exceeded codes */
+#define ICMP6_TIME_EXCEEDED_MAXCODE 1
+char *icmp6_time_exceeded_str[ICMP6_TIME_EXCEEDED_MAXCODE + 1] = {
+    "Hop limit exceeded in transit", /* 0 */
+    "Fragment reassembly time exceeded", /* 1 */
+};
+
+/* Long names for ICMPv6 parameter problem codes */
+#define ICMP6_PARAM_PROB_MAXCODE 10
+char *icmp6_param_prob_str[ICMP6_PARAM_PROB_MAXCODE + 1] = {
+    "Erroneous header field encountered", /* 0 */
+    "Unrecognized Next Header type encountered", /* 1 */
+    "Unrecognized IPv6 option encountered", /* 2 */
+    "IPv6 First Fragment has incomplete IPv6 Header Chain", /* 3 */
+    "SR Upper-layer Header Error", /* 4 */
+    "Unrecognized Next Header type encountered by intermediate node", /* 5 */
+    "Extension header too big", /* 6 */
+    "Extension header chain too long", /* 7 */
+    "Too many extension headers", /* 8 */
+    "Too many options in extension header", /* 9 */
+    "Option too big", /* 10 */
+};
+#endif
 
 struct event;
 typedef struct host_entry {
@@ -2864,7 +2905,7 @@ int decode_icmp_ipv6(
         if (verbose_flag) {
             char buf[INET6_ADDRSTRLEN];
             getnameinfo(response_addr, response_addr_len, buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
-            printf("received packet too short for ICMP (%d bytes from %s)\n", (int)reply_buf_len, buf);
+            printf("received packet too short for ICMPv6 (%d bytes from %s)\n", (int)reply_buf_len, buf);
         }
         return 0; /* too short */
     }
@@ -2872,21 +2913,31 @@ int decode_icmp_ipv6(
     icp = (struct icmp6_hdr *)reply_buf;
 
     if (icp->icmp6_type != ICMP6_ECHO_REPLY) {
-        /* Handle other ICMP packets */
+        /* Handle other ICMPv6 packets */
+        struct ip6_hdr *sent_ipv6;
         struct icmp6_hdr *sent_icmp;
         SEQMAP_VALUE *seqmap_value;
         char addr_ascii[INET6_ADDRSTRLEN];
         HOST_ENTRY *h;
 
-        /* reply icmp packet (ICMP_MINLEN) followed by "sent packet" (ip + icmp headers) */
-        if (reply_buf_len < ICMP_MINLEN + sizeof(struct ip) + ICMP_MINLEN) {
-            /* discard ICMP message if we can't tell that it was caused by us (i.e. if the "sent packet" is not included). */
+        /* reply icmp packet (ICMPv6 header) followed by "sent packet" (IPv6 + ICMPv6 header) */
+        if (reply_buf_len < ICMP_MINLEN + sizeof(struct ip6_hdr) + sizeof(struct icmp6_hdr)) {
+            /* discard ICMPv6 message if we can't tell that it was caused by us (i.e. if the "sent packet" is not included). */
             return 0;
         }
 
-        sent_icmp = (struct icmp6_hdr *)(reply_buf + sizeof(struct icmp6_hdr) + sizeof(struct ip));
+        sent_ipv6 = (struct ip6_hdr *)(reply_buf + sizeof(struct icmp6_hdr));
+        if (sent_ipv6->ip6_nxt != IPPROTO_ICMPV6) {
+            /* discard ICMPv6 message if we can't tell that it was caused by
+             * us, because the IPv6 header is not directly followed by an
+             * ICMPv6 header
+             */
+            dbg_printf("invoking packet next header is %d\n", sent_ipv6->ip6_nxt);
+            return 0;
+        }
+        sent_icmp = (struct icmp6_hdr *)(reply_buf + sizeof(struct icmp6_hdr) + sizeof(struct ip6_hdr));
 
-        if (sent_icmp->icmp6_type != ICMP_ECHO || sent_icmp->icmp6_id != ident6) {
+        if (sent_icmp->icmp6_type != ICMP6_ECHO_REQUEST || sent_icmp->icmp6_id != ident6) {
             /* not caused by us */
             return 0;
         }
@@ -2897,37 +2948,54 @@ int decode_icmp_ipv6(
         }
 
         getnameinfo(response_addr, response_addr_len, addr_ascii, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+        h = table[seqmap_value->host_nr];
 
         switch (icp->icmp6_type) {
-        case ICMP_UNREACH:
-            h = table[seqmap_value->host_nr];
-            if (icp->icmp6_code > ICMP_UNREACH_MAXTYPE) {
-                print_warning("ICMP Unreachable (Invalid Code) from %s for ICMP Echo sent to %s",
-                    addr_ascii, h->host);
+        case ICMP6_DST_UNREACH:
+            if (icp->icmp6_code > ICMP6_UNREACH_MAXCODE) {
+                print_warning("ICMPv6 Destination Unreachable (Code %d) from %s for ICMPv6 Echo Request sent to %s",
+                    icp->icmp6_code, addr_ascii, h->host);
+            } else {
+                print_warning("ICMPv6 Destination Unreachable (%s) from %s for ICMPv6 Echo Request sent to %s",
+                    icmp6_unreach_str[icp->icmp6_code], addr_ascii, h->host);
             }
-            else {
-                print_warning("%s from %s for ICMP Echo sent to %s",
-                    icmp_unreach_str[icp->icmp6_code], addr_ascii, h->host);
-            }
-
             print_warning("\n");
             num_othericmprcvd++;
             break;
 
-        case ICMP_SOURCEQUENCH:
-        case ICMP_REDIRECT:
-        case ICMP_TIMXCEED:
-        case ICMP_PARAMPROB:
-            h = table[seqmap_value->host_nr];
-            if (icp->icmp6_type <= ICMP_TYPE_STR_MAX) {
-                print_warning("%s from %s for ICMP Echo sent to %s",
-                    icmp_type_str[icp->icmp6_type], addr_ascii, h->host);
-            }
-            else {
-                print_warning("ICMP %d from %s for ICMP Echo sent to %s",
-                    icp->icmp6_type, addr_ascii, h->host);
+        case ICMP6_PACKET_TOO_BIG:
+            print_warning("ICMPv6 Packet Too Big from %s for ICMPv6 Echo Request sent to %s\n",
+                addr_ascii, h->host);
+            num_othericmprcvd++;
+            break;
+
+        case ICMP6_TIME_EXCEEDED:
+            if (icp->icmp6_code > ICMP6_TIME_EXCEEDED_MAXCODE) {
+                print_warning("ICMPv6 Time Exceeded (Code %d) from %s for ICMPv6 Echo Request sent to %s",
+                    icp->icmp6_code, addr_ascii, h->host);
+            } else {
+                print_warning("ICMPv6 Time Exceeded (%s) from %s for ICMPv6 Echo Request sent to %s",
+                    icmp6_time_exceeded_str[icp->icmp6_code], addr_ascii, h->host);
             }
             print_warning("\n");
+            num_othericmprcvd++;
+            break;
+
+        case ICMP6_PARAM_PROB:
+            if (icp->icmp6_code > ICMP6_PARAM_PROB_MAXCODE) {
+                print_warning("ICMPv6 Parameter Problem (Code %d) from %s for ICMPv6 Echo Request sent to %s",
+                    icp->icmp6_code, addr_ascii, h->host);
+            } else {
+                print_warning("ICMPv6 Parameter Problem (%s) from %s for ICMPv6 Echo Request sent to %s",
+                    icmp6_param_prob_str[icp->icmp6_code], addr_ascii, h->host);
+            }
+            print_warning("\n");
+            num_othericmprcvd++;
+            break;
+
+        default:
+            print_warning("ICMPv6 Type %d Code %d from %s for ICMPv6 Echo Request sent to %s\n",
+                icp->icmp6_type, icp->icmp6_code, addr_ascii, h->host);
             num_othericmprcvd++;
             break;
         }

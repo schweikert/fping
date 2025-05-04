@@ -3119,7 +3119,7 @@ int wait_for_reply(int64_t wait_time)
     }
 
     /* discard duplicates */
-    if (!loop_flag && h->resp_times[this_count] >= 0) {
+    if (!loop_flag && !(count_flag && quiet_flag) && h->resp_times[this_count] >= 0) {
         if (!per_recv_flag) {
             fprintf(stderr, "%s : duplicate for [%d], %d bytes, %s ms",
                 h->host, this_count, result, sprint_tm(this_reply));

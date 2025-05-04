@@ -7,7 +7,6 @@ Next
   @JoshIPT, @sebast-gsnw and @auerswal)
 - The -g, --generate option now also supports IPv6 addresses (#376,
   thanks @auerswal)
-
 - New option --seqmap-timeout to control the time after which sequence numbers
   can be used again (#388, thanks @auerswal)
 
@@ -16,17 +15,15 @@ Next
 - Fix OpenBSD warning sprintf() is often misused, please use snprintf() (#394, thanks @gsnw-sebast)
 - Fix fallback to SO\_TIMESTAMP if SO\_TIMESTAMPNS is not available (#375,
   thanks @auerswal)
-
 - When reading target names from file or standard input, lines longer
   than the static buffer are no longer interpreted as more than one line
   (#378, thanks @auerswal)
-
 - Typo fix in error message when SO\_BINDTODEVICE fails
-
 - Options --print-tos and --print-ttl now also work for IPv6, and no
   longer require privileges (#384, thanks @auerswal)
-
 - Report received ICMPv6 error messages (#391, thanks @auerswal)
+- Suppress duplicate reports in count mode with -q, --quiet or -Q, --squiet
+  (#392, thanks @gsnw-sebast and @auerswal)
 
 fping 5.3 (2025-01-02)
 ======================

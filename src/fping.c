@@ -1526,6 +1526,7 @@ void add_range(char *start, char *end)
         exit(1);
     }
 
+#ifdef IPV6
     /* IPv6 addresses can have a scope */
     if (hints_ai_family == AF_INET6) {
         start_scope_str = strchr(start, '%');
@@ -1537,6 +1538,7 @@ void add_range(char *start, char *end)
                 exit(1);
         }
     }
+#endif
 
     /* parse end address */
     memset(&addr_hints, 0, sizeof(struct addrinfo));

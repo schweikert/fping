@@ -8,6 +8,7 @@ Next
 
 ## Bugfixes and other changes
 
+- Fix OpenBSD warning sprintf() is often misused, please use snprintf() (#394, thanks @gsnw-sebast)
 - Fix fallback to SO\_TIMESTAMP if SO\_TIMESTAMPNS is not available (#375,
   thanks @auerswal)
 

@@ -3127,26 +3127,26 @@ const char *sprint_tm(int64_t ns)
 
     if (t < 0.0) {
         /* negative (unexpected) */
-        sprintf(buf, "%.2g", t);
+        snprintf(buf, sizeof(buf), "%.2g", t);
     }
     else if (t < 1.0) {
         /* <= 0.99 ms */
-        sprintf(buf, "%.3f", t);
+        snprintf(buf, sizeof(buf), "%.3f", t);
     }
     else if (t < 10.0) {
         /* 1.00 - 9.99 ms */
-        sprintf(buf, "%.2f", t);
+        snprintf(buf, sizeof(buf), "%.2f", t);
     }
     else if (t < 100.0) {
         /* 10.0 - 99.9 ms */
-        sprintf(buf, "%.1f", t);
+        snprintf(buf, sizeof(buf), "%.1f", t);
     }
     else if (t < 1000000.0) {
         /* 100 - 1'000'000 ms */
-        sprintf(buf, "%.0f", t);
+        snprintf(buf, sizeof(buf), "%.0f", t);
     }
     else {
-        sprintf(buf, "%.3e", t);
+        snprintf(buf, sizeof(buf), "%.3e", t);
     }
 
     return (buf);

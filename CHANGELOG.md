@@ -3,6 +3,8 @@ Next
 
 ## New features
 
+- New option -J / --json for the JSON output (#386, thanks @bonkf,
+  @JoshIPT, @sebast-gsnw and @auerswal)
 - The -g, --generate option now also supports IPv6 addresses (#376,
   thanks @auerswal)
 

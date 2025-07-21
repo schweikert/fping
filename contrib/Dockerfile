@@ -1,17 +1,22 @@
-FROM debian:stable
+FROM alpine:3.22.1 AS builder
 
-# Base
-RUN apt-get update && apt-get install -y \
-  build-essential \
+RUN apk add --no-cache \
+  build-base \
   automake \
   autoconf \
-  m4
+  m4 \
+  git
 
-# Add source code
 COPY ./ /app
-
-# Compile
 WORKDIR /app
-RUN autoreconf --install
-RUN ./configure && make && make install
+RUN autoreconf --install && ./configure && make
+
+FROM alpine:3.22.1
+
+LABEL org.opencontainers.image.title="fping" \
+      org.opencontainers.image.description="High performance ping tool " \
+      org.opencontainers.image.source="https://github.com/schweikert/fping" \
+
+COPY --from=builder /app/src/fping /usr/local/bin/fping
+
 ENTRYPOINT ["fping"]

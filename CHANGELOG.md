@@ -24,6 +24,8 @@ Next
 - Report received ICMPv6 error messages (#391, thanks @auerswal)
 - Suppress duplicate reports in count mode with -q, --quiet or -Q, --squiet
   (#392, thanks @gsnw-sebast and @auerswal)
+- Switch to alpine-based multi-stage Docker build to reduce image size
+  Add OpenContainers-compatible labels (#399)
 
 fping 5.3 (2025-01-02)
 ======================

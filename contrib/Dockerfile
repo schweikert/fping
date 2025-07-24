@@ -16,6 +16,7 @@ FROM alpine:3.22.1
 LABEL org.opencontainers.image.title="fping" \
       org.opencontainers.image.authors="fping Community" \
       org.opencontainers.image.description="High performance ping tool" \
+      org.opencontainers.image.base.name="docker.io/library/alpine:3.22.1" \
       org.opencontainers.image.source="https://github.com/schweikert/fping" \
       org.opencontainers.image.documentation="https://fping.org/fping.8.html"
 

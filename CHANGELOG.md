@@ -7,12 +7,13 @@ Next
   @JoshIPT, @sebast-gsnw and @auerswal)
 - The -g, --generate option now also supports IPv6 addresses (#376,
   thanks @auerswal)
-- New option --seqmap-timeout to control the time after which sequence numbers
-  can be used again (#388, thanks @auerswal)
+- New option --seqmap-timeout to control the time after which sequence
+  numbers can be used again (#388, thanks @auerswal)
 
 ## Bugfixes and other changes
 
-- Fix OpenBSD warning sprintf() is often misused, please use snprintf() (#394, thanks @gsnw-sebast)
+- Fix OpenBSD warning sprintf() is often misused, please use snprintf()
+  (#394, thanks @gsnw-sebast)
 - Fix fallback to SO\_TIMESTAMP if SO\_TIMESTAMPNS is not available (#375,
   thanks @auerswal)
 - When reading target names from file or standard input, lines longer
@@ -24,8 +25,9 @@ Next
 - Report received ICMPv6 error messages (#391, thanks @auerswal)
 - Suppress duplicate reports in count mode with -q, --quiet or -Q, --squiet
   (#392, thanks @gsnw-sebast and @auerswal)
-- Switch to alpine-based multi-stage Docker build to reduce image size and improve build performance
-  Add OpenContainers-compatible labels (#399)
+- Switch to alpine-based multi-stage Docker build to reduce image size
+  and improve build performance; add OpenContainers-compatible labels
+  (#399, thanks @hoodadt)
 - Print receive ping moved to new functions (#400, thanks @gsnw-sebast)
 - Avoid unsigned overflow when determining the memory size to save
   response times on systems where size\_t is the same as unsigned int

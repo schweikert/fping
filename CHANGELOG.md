@@ -27,9 +27,19 @@ Next
 - Switch to alpine-based multi-stage Docker build to reduce image size and improve build performance
   Add OpenContainers-compatible labels (#399)
 
-fping 5.3 (2025-01-02)
+fping 5.4 (UNRELEASED)
 ======================
 
+## Bugfixes
+
+- Memory allocation safety checks for event storage (thanks David.A for bug report)
+- Fix off-by-one boundary check in seqmap code (thanks David.A for bug report)
+- The minimum value for the per-host interval (-i flag) is now 0.001 (milliseconds),
+  since it probably never makes sense to use a smaller value, and to avoid trying
+  to do a too large memory allocation.
+
+fping 5.3 (2025-01-02)
+======================
 
 ## New features
 

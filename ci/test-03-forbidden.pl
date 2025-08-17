@@ -7,8 +7,7 @@ my $cmd1 = Test::Command->new(cmd => "fping -i 0 -T10 -g 127.0.0.1/29");
 $cmd1->exit_is_num(1);
 $cmd1->stdout_is_eq("");
 $cmd1->stderr_is_eq(<<END);
-fping: these options are too risky for mere mortals.
-fping: You need -i >= 1 and -p >= 10
+fping: -i must be >= 1
 END
 
 # fping -p 9
@@ -16,8 +15,7 @@ my $cmd2 = Test::Command->new(cmd => "fping -c3 -p 9 127.0.0.1");
 $cmd2->exit_is_num(1);
 $cmd2->stdout_is_eq("");
 $cmd2->stderr_is_eq(<<END);
-fping: these options are too risky for mere mortals.
-fping: You need -i >= 1 and -p >= 10
+fping: -p must be >= 10
 END
 
 # fping -H 300

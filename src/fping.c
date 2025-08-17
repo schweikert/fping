@@ -147,13 +147,16 @@ extern int h_errno;
 /* ICMP Timestamp has a fixed payload size of 12 bytes */
 #define ICMP_TIMESTAMP_DATA_SIZE 12
 
-/* maxima and minima */
 #ifdef FPING_SAFE_LIMITS
-#define MIN_INTERVAL 1 /* in millisec */
-#define MIN_PERHOST_INTERVAL 10 /* in millisec */
+#define MIN_INTERVAL_MS 1 /* in millisec */
+#define MIN_PERHOST_INTERVAL_MS 10 /* in millisec */
 #else
-#define MIN_INTERVAL 0
-#define MIN_PERHOST_INTERVAL 0
+#define MIN_INTERVAL_MS 0
+/* Set a very low limit for the per-host interval, even if safe limits are
+ * disabled, so that the memory allocation of the event storage is not
+ * unreasonably high. 0.001 ms would mean in theory at least 592 mbps of data
+ * sent to a single host, which probably doesn't make sense in any scenario. */
+#define MIN_PERHOST_INTERVAL_MS 0.001
 #endif
 
 /* response time array flags */
@@ -962,15 +965,15 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-#ifdef FPING_SAFE_LIMITS
-    if ((interval < (int64_t)MIN_INTERVAL * 1000000 || perhost_interval < (int64_t)MIN_PERHOST_INTERVAL * 1000000)
-        && getuid()) {
-        fprintf(stderr, "%s: these options are too risky for mere mortals.\n", prog);
-        fprintf(stderr, "%s: You need -i >= %u and -p >= %u\n",
-            prog, MIN_INTERVAL, MIN_PERHOST_INTERVAL);
+    if (interval < (float)MIN_INTERVAL_MS * 1000000 && getuid()) {
+        fprintf(stderr, "%s: -i must be >= %g\n", prog, (float)MIN_INTERVAL_MS);
         exit(1);
     }
-#endif
+
+    if (perhost_interval < (float)MIN_PERHOST_INTERVAL_MS * 1000000 && getuid()) {
+        fprintf(stderr, "%s: -p must be >= %g\n", prog, (float)MIN_PERHOST_INTERVAL_MS);
+        exit(1);
+    }
 
     if (ping_data_size > MAX_PING_DATA) {
         fprintf(stderr, "%s: data size %u not valid, must not be larger than %u\n",
@@ -2806,7 +2809,13 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
 
     /* allocate event storage */
     p->event_storage_ping = (struct event *)calloc(event_storage_count, sizeof(struct event));
+    if (!p->event_storage_ping) {
+        errno_crash_and_burn("can't allocate event_storage_ping");
+    }
     p->event_storage_timeout = (struct event *)calloc(event_storage_count, sizeof(struct event));
+    if (!p->event_storage_timeout) {
+        errno_crash_and_burn("can't allocate event_storage_timeout");
+    }
 
     /* schedule first ping */
     host_add_ping_event(p, 0, current_time_ns);

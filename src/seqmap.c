@@ -106,7 +106,7 @@ SEQMAP_VALUE* seqmap_fetch(unsigned int id, int64_t now)
 {
     SEQMAP_VALUE* value;
 
-    if (id > SEQMAP_MAXSEQ) {
+    if (id >= SEQMAP_MAXSEQ) {
         return NULL;
     }
 

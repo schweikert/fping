@@ -8,6 +8,7 @@ Makefile.in
 aclocal.m4
 autom4te.cache
 ci/build
+ci/tmp*
 compile
 compile_commands.json
 config.guess

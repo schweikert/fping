@@ -5,9 +5,9 @@ fping 5.4 (2025-08-19)
 
 - Memory allocation safety checks for event storage (thanks David.A for bug report)
 - Fix off-by-one boundary check in seqmap code (thanks David.A for bug report)
-- The minimum value for the per-host interval (-i flag) is now 0.001 (milliseconds),
-  since it probably never makes sense to use a smaller value, and to avoid trying
-  to do a too large memory allocation.
+- The minimum value for the period (-p flag) is now 0.001 milliseconds,
+  since it probably never makes sense to use a smaller value, and to avoid doing
+  a very large memory allocation for event storage.
 
 fping 5.3 (2025-01-02)
 ======================

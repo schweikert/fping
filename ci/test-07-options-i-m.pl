@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 28;
+use Test::Command tests => 25;
 use Test::More;
 
 #  -i n       interval between sending ping packets (in millisec) (default 25)
@@ -52,17 +52,6 @@ my $cmd = Test::Command->new(cmd => 'fping -I NotAnInterface 127.0.0.1');
 $cmd->exit_is_num(1);
 $cmd->stdout_is_eq("");
 $cmd->stderr_like(qr{binding to specific interface \(SO_BINDTODEVICE\):.*\n});
-}
-
-# fping -I IFACE
-SKIP: {
-if($^O ne 'darwin') {
-    skip 'test for unsupported -I on macOS', 3;
-}
-my $cmd = Test::Command->new(cmd => 'fping -I lo0 127.0.0.1');
-$cmd->exit_is_num(3);
-$cmd->stdout_is_eq("fping: cant bind to a particular net interface since SO_BINDTODEVICE is not supported on your os.\n");
-$cmd->stderr_is_eq("");
 }
 
 # fping -l

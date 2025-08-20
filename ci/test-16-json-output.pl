@@ -136,7 +136,7 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -C 1 -q 127.0.0.1 127.0.0.2");
 $cmd->exit_is_num(0);  # Both hosts are reachable in this test
-$cmd->stdout_like(qr/^\{"vSum":\s\{"host":\s"\d+\.\d+\.\d+\.\d+",\s"values":\s\[\d+\.\d+\]}}
+$cmd->stdout_like(qr/^\{"vSum":\s\{"host":\s"\d+\.\d+\.\d+\.\d+",\s"values":\s\[\d+\.\d+\]\}\}
 \{"vSum":\s\{"host":\s"\d+\.\d+\.\d+\.\d+",\s"values":\s\[\d+\.\d+\]\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }

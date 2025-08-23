@@ -26,6 +26,9 @@ Next
   (#392, thanks @gsnw-sebast and @auerswal)
 - Switch to alpine-based multi-stage Docker build to reduce image size and improve build performance
   Add OpenContainers-compatible labels (#399)
+- Avoid unsigned overflow when determining the memory size to save
+  response times on systems where size\_t is the same as unsigned int
+  (#412 by @auerswal)
 
 fping 5.4 (UNRELEASED)
 ======================

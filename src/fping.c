@@ -42,7 +42,6 @@ extern "C" {
 
 #include <errno.h>
 #include <inttypes.h>
-#include <limits.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -3066,11 +3065,7 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
 
     /* array for response time results */
     if (!opt.loop_on) {
-#if SIZE_MAX <= UINT_MAX
-        if (trials > (SIZE_MAX / sizeof(int64_t)))
-            crash_and_burn("resp_times array too large for memory");
-#endif
-        i = (int64_t *)malloc(trials * sizeof(int64_t));
+        i = (int64_t *)calloc(trials, sizeof(int64_t));
         if (!i)
             crash_and_burn("can't allocate resp_times array"); /* LCOV_EXCL_LINE */
 

@@ -26,6 +26,7 @@ Next
   (#392, thanks @gsnw-sebast and @auerswal)
 - Switch to alpine-based multi-stage Docker build to reduce image size and improve build performance
   Add OpenContainers-compatible labels (#399)
+- Print receive ping moved to new functions (#400, thanks @gsnw-sebast)
 - Avoid unsigned overflow when determining the memory size to save
   response times on systems where size\_t is the same as unsigned int
   (#412 by @auerswal)

@@ -263,6 +263,18 @@ char *icmp6_param_prob_str[ICMP6_PARAM_PROB_MAXCODE + 1] = {
 };
 #endif
 
+typedef struct ip_header_result {
+    int tos;
+    int ttl;
+    uint32_t otime_ms;
+    uint32_t rtime_ms;
+    uint32_t ttime_ms;
+} IP_HEADER_RESULT;
+
+IP_HEADER_RESULT default_ip_header_result() {
+    return (IP_HEADER_RESULT){-1, -1, 0x80000000U, 0x80000000U, 0x80000000U};
+}
+
 struct event;
 typedef struct host_entry {
     int i; /* index into array */
@@ -436,6 +448,10 @@ char *get_host_by_address(struct in_addr in);
 int send_ping(HOST_ENTRY *h, int index);
 void usage(int);
 int wait_for_reply(int64_t);
+void print_recv(HOST_ENTRY *h, int64_t recv_time, int result, int this_count, int64_t this_reply, int avg);
+void print_recv_json(HOST_ENTRY *h, int64_t recv_time, int result, int this_count, int64_t this_reply, int avg);
+void print_recv_ext(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t this_reply);
+void print_recv_ext_json(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t this_reply);
 void print_per_system_stats(void);
 void print_per_system_stats_json(void);
 void print_per_system_splits(void);
@@ -2064,6 +2080,163 @@ void finish()
 
 /************************************************************
 
+  Function: print_recv
+
+*************************************************************
+
+  Inputs: HOST_ENTRY *h, int64_t recv_time, int result,
+          int this_count, int64_t this_reply, int avg
+
+  Description:
+
+************************************************************/
+
+void print_recv(HOST_ENTRY *h, int64_t recv_time, int result, int this_count, int64_t this_reply, int avg) {
+    if (timestamp_flag)
+        print_timestamp_format(recv_time, timestamp_format_flag);
+
+    printf("%-*s : [%d], %d bytes, %s ms",
+        max_hostname_len, h->host, this_count, result, sprint_tm(this_reply));
+    
+    printf(" (%s avg, ", sprint_tm(avg));
+
+    if (h->num_recv <= h->num_sent) {
+        printf("%d%% loss)",
+            ((h->num_sent - h->num_recv) * 100) / h->num_sent);
+    }
+    else {
+        printf("%d%% return)",
+            (h->num_recv_total * 100) / h->num_sent);
+    }
+}
+
+/************************************************************
+
+  Function: print_recv_json
+
+*************************************************************
+
+  Inputs: HOST_ENTRY *h, int64_t recv_time, int result,
+          int this_count, int64_t this_reply, int avg
+
+  Description:
+
+************************************************************/
+
+void print_recv_json(HOST_ENTRY *h, int64_t recv_time, int result, int this_count, int64_t this_reply, int avg) {
+    printf("{\"resp\": {");
+
+    if (timestamp_flag)
+        print_timestamp_format(recv_time, timestamp_format_flag);
+    
+    printf("\"host\": \"%s\", ", h->host);
+    printf("\"seq\": %d, ", this_count);
+    printf("\"size\": %d, ", result);
+    printf("\"rtt\": %s, ", sprint_tm(this_reply));
+    printf("\"rttAvg\": %s", sprint_tm(avg));
+
+    if (h->num_recv <= h->num_sent) {
+        printf(", \"loss\": %d", ((h->num_sent - h->num_recv) * 100) / h->num_sent);
+    }
+    else {
+        printf(", \"return\": %d", (h->num_recv_total * 100) / h->num_sent);
+    }
+}
+
+/************************************************************
+
+  Function: print_recv_ext
+
+*************************************************************
+
+  Inputs:  IP_HEADER_RESULT *ip_header_res,
+           int64_t recv_time, int64_t this_reply
+
+  Description:
+
+************************************************************/
+
+void print_recv_ext(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t this_reply) { 
+    if (icmp_request_typ == 13) {
+        printf("%s timestamps: Originate=%u Receive=%u Transmit=%u Localreceive=%u",
+            alive_flag ? "" : ",",
+            ip_header_res->otime_ms, ip_header_res->rtime_ms, ip_header_res->ttime_ms,
+            ms_since_midnight_utc(recv_time));
+    }
+
+    if(print_tos_flag) {
+        if(ip_header_res->tos != -1) {
+            printf(" (TOS %d)", ip_header_res->tos);
+        }
+        else {
+            printf(" (TOS unknown)");
+        }
+    }
+
+    if (print_ttl_flag) {
+        if(ip_header_res->ttl != -1) {
+            printf(" (TTL %d)", ip_header_res->ttl);
+        }
+        else {
+            printf(" (TTL unknown)");
+        }
+    }
+
+    if (elapsed_flag && !per_recv_flag)
+        printf(" (%s ms)", sprint_tm(this_reply));
+    
+    printf("\n");
+}
+
+/************************************************************
+
+  Function: print_recv_ext_json
+
+*************************************************************
+
+  Inputs:  IP_HEADER_RESULT *ip_header_res,
+           int64_t recv_time, int64_t this_reply
+
+  Description:
+
+************************************************************/
+
+void print_recv_ext_json(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t this_reply) {
+    if (icmp_request_typ == 13) {
+        printf(", \"timestamps\": {");
+        printf("\"originate\": %u, ", ip_header_res->otime_ms);
+        printf("\"receive\": %u, ", ip_header_res->rtime_ms);
+        printf("\"transmit\": %u, ", ip_header_res->ttime_ms);
+        printf("\"localreceive\": %u}", ms_since_midnight_utc(recv_time));
+    }
+
+    if(print_tos_flag) {
+        if(ip_header_res->tos != -1) {
+            printf(", \"tos\": %d", ip_header_res->tos);
+        }
+        else {
+            printf(", \"tos\": -1");
+        }
+    }
+
+    if (print_ttl_flag) {
+        if(ip_header_res->ttl != -1) {
+            printf(", \"ttl\": %d", ip_header_res->ttl);
+        }
+        else {
+            printf(", \"ttl\": -1");
+        }
+    }
+
+    if (elapsed_flag && !per_recv_flag)
+        printf(" (%s ms)", sprint_tm(this_reply));
+
+    printf("}}");
+    printf("\n");
+}
+
+/************************************************************
+
   Function: print_per_system_stats
 
 *************************************************************
@@ -2768,19 +2941,15 @@ int decode_icmp_ipv4(
     size_t reply_buf_len,
     unsigned short *id,
     unsigned short *seq,
-    int *ip_header_tos,
-    int *ip_header_ttl,
-    uint32_t *ip_header_otime_ms,
-    uint32_t *ip_header_rtime_ms,
-    uint32_t *ip_header_ttime_ms)
+    IP_HEADER_RESULT *ip_header_res)
 {
     struct icmp *icp;
     int hlen = 0;
 
     if (!using_sock_dgram4) {
         struct ip *ip = (struct ip *)reply_buf;
-        *ip_header_tos = ip->ip_tos;
-        *ip_header_ttl = ip->ip_ttl;
+        ip_header_res->tos = ip->ip_tos;
+        ip_header_res->ttl = ip->ip_ttl;
 
 #if defined(__alpha__) && __STDC__ && !defined(__GLIBC__) && !defined(__NetBSD__) && !defined(__OpenBSD__)
         /* The alpha headers are decidedly broken.
@@ -2886,9 +3055,9 @@ int decode_icmp_ipv4(
             return -1;
         }
 
-        *ip_header_otime_ms = ntohl(icp->icmp_dun.id_ts.its_otime);
-        *ip_header_rtime_ms = ntohl(icp->icmp_dun.id_ts.its_rtime);
-        *ip_header_ttime_ms = ntohl(icp->icmp_dun.id_ts.its_ttime);
+        ip_header_res->otime_ms = ntohl(icp->icmp_dun.id_ts.its_otime);
+        ip_header_res->rtime_ms = ntohl(icp->icmp_dun.id_ts.its_rtime);
+        ip_header_res->ttime_ms = ntohl(icp->icmp_dun.id_ts.its_ttime);
     }
 
     return hlen;
@@ -3027,12 +3196,7 @@ int wait_for_reply(int64_t wait_time)
     SEQMAP_VALUE *seqmap_value;
     unsigned short id;
     unsigned short seq;
-    int ip_header_tos = -1;
-    int ip_header_ttl = -1;
-    // ICMP Timestamp
-    uint32_t ip_header_otime_ms = 0x80000000U;
-    uint32_t ip_header_rtime_ms = 0x80000000U;
-    uint32_t ip_header_ttime_ms = 0x80000000U;
+    IP_HEADER_RESULT ip_header_res = default_ip_header_result();
 
     /* Receive packet */
     result = receive_packet(wait_time, /* max. wait time, in ns */
@@ -3041,8 +3205,8 @@ int wait_for_reply(int64_t wait_time)
         sizeof(response_addr), /* reply_src_addr_len */
         buffer, /* reply_buf */
         sizeof(buffer), /* reply_buf_len */
-        &ip_header_tos, /* TOS resp. TC byte */
-        &ip_header_ttl /* TTL resp. hop limit */
+        &ip_header_res.tos, /* TOS resp. TC byte */
+        &ip_header_res.ttl /* TTL resp. hop limit */
     );
 
     if (result <= 0) {
@@ -3062,11 +3226,7 @@ int wait_for_reply(int64_t wait_time)
             sizeof(buffer),
             &id,
             &seq,
-            &ip_header_tos,
-            &ip_header_ttl,
-            &ip_header_otime_ms,
-            &ip_header_rtime_ms,
-            &ip_header_ttime_ms);
+            &ip_header_res);
         if (ip_hlen < 0) {
             return 1;
         }
@@ -3167,7 +3327,7 @@ int wait_for_reply(int64_t wait_time)
     if (h->num_recv == 1) {
         num_alive++;
         if (fast_reachable && num_alive >= min_reachable)
-                finish_requested = 1;
+            finish_requested = 1;
 
         if (verbose_flag || alive_flag) {
             printf("%s", h->host);
@@ -3179,102 +3339,42 @@ int wait_for_reply(int64_t wait_time)
 
     /* print received ping (unless --quiet) */
     if (per_recv_flag) {
-        if (json_flag)
-            printf("{\"resp\": {");
-
-        if (timestamp_flag)
-            print_timestamp_format(recv_time, timestamp_format_flag);
-
         avg = h->total_time / h->num_recv;
         if (json_flag) {
-            printf("\"host\": \"%s\", ", h->host);
-            printf("\"seq\": %d, ", this_count);
-            printf("\"size\": %d, ", result);
-            printf("\"rtt\": %s, ", sprint_tm(this_reply));
-            printf("\"rttAvg\": %s", sprint_tm(avg));
+            print_recv_json(h,
+                recv_time,
+                result,
+                this_count,
+                this_reply,
+                avg);
         }
         else {
-            printf("%-*s : [%d], %d bytes, %s ms", max_hostname_len, h->host, this_count, result, sprint_tm(this_reply));
-            printf(" (%s avg, ", sprint_tm(avg));
-        }
-
-        if (h->num_recv <= h->num_sent) {
-            if (json_flag)
-                printf(", \"loss\": %d", ((h->num_sent - h->num_recv) * 100) / h->num_sent);
-            else
-                printf("%d%% loss)", ((h->num_sent - h->num_recv) * 100) / h->num_sent);
-        }
-        else {
-            if (json_flag)
-                printf(", \"return\": %d", (h->num_recv_total * 100) / h->num_sent);
-            else
-                printf("%d%% return)", (h->num_recv_total * 100) / h->num_sent);
+            print_recv(h,
+                recv_time,
+                result,
+                this_count,
+                this_reply,
+                avg);
         }
     }
 
     if (verbose_flag || alive_flag || per_recv_flag) {
-
         if (addr_cmp((struct sockaddr *)&response_addr, (struct sockaddr *)&h->saddr)) {
             char buf[INET6_ADDRSTRLEN];
             getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
             fprintf(stderr, " [<- %s]", buf);
         }
-
-        if (icmp_request_typ == 13) {
-            if (json_flag) {
-              printf(", \"timestamps\": {");
-              printf("\"originate\": %u, ", ip_header_otime_ms);
-              printf("\"receive\": %u, ", ip_header_rtime_ms);
-              printf("\"transmit\": %u, ", ip_header_ttime_ms);
-              printf("\"localreceive\": %u}", ms_since_midnight_utc(recv_time));
-            }
-            else {
-                printf("%s timestamps: Originate=%u Receive=%u Transmit=%u Localreceive=%u",
-                      alive_flag ? "" : ",",
-                      ip_header_otime_ms, ip_header_rtime_ms, ip_header_ttime_ms,
-                      ms_since_midnight_utc(recv_time));
-            }
+        if (json_flag) {
+            print_recv_ext_json(&ip_header_res,
+                recv_time,
+                this_reply);
         }
-
-        if(print_tos_flag) {
-            if(ip_header_tos != -1) {
-                if (json_flag)
-                    printf(", \"tos\": %d", ip_header_tos);
-                else
-                    printf(" (TOS %d)", ip_header_tos);
-            }
-            else {
-                if (json_flag)
-                    printf(", \"tos\": -1");
-                else
-                    printf(" (TOS unknown)");
-            }
+        else {
+            print_recv_ext(&ip_header_res,
+                recv_time,
+                this_reply);
         }
-
-        if (print_ttl_flag) {
-          if(ip_header_ttl != -1) {
-              if (json_flag)
-                  printf(", \"ttl\": %d", ip_header_ttl);
-              else
-                  printf(" (TTL %d)", ip_header_ttl);
-          }
-          else {
-              if (json_flag)
-                  printf(", \"ttl\": -1");
-              else
-                  printf(" (TTL unknown)");
-          }
-        }
-
-        if (elapsed_flag && !per_recv_flag)
-                printf(" (%s ms)", sprint_tm(this_reply));
-
-        if (json_flag)
-            printf("}}");
-
-        printf("\n");
     }
-
     return 1;
 }
 

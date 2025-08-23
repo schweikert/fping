@@ -3439,7 +3439,7 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
 
     /* array for response time results */
     if (!loop_flag) {
-        i = (int64_t *)malloc(trials * sizeof(int64_t));
+        i = (int64_t *)calloc(trials, sizeof(int64_t));
         if (!i)
             crash_and_burn("can't allocate resp_times array");
 

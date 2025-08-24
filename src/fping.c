@@ -3548,7 +3548,7 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
         if (!i)
             crash_and_burn("can't allocate resp_times array");
 
-        for (n = 1; n < trials; n++)
+        for (n = 0; n < trials; n++)
             i[n] = RESP_UNUSED;
 
         p->resp_times = i;

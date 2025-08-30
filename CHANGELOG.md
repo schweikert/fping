@@ -32,6 +32,7 @@ Next
 - Avoid unsigned overflow when determining the memory size to save
   response times on systems where size\_t is the same as unsigned int
   (#412 by @auerswal)
+- Document the new minimum value for the -p option (#414 by @auerswal)
 
 fping 5.4 (UNRELEASED)
 ======================

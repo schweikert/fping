@@ -150,7 +150,8 @@ If B<fping> cannot read the TTL value, "(TTL unknown)" is returned.
 =item B<-i>, B<--interval>=I<MSEC>
 
 The minimum amount of time (in milliseconds) between sending a ping packet
-to any target (default is 10, minimum is 1).
+to any target (default is 10, minimum is 0 (1 for non-root users if fping
+was configured with C<--enable-safe-limits>)).
 
 =item B<-I>, B<--iface>=I<IFACE>
 
@@ -222,7 +223,8 @@ Displays the TOS value in the output. If B<fping> cannot read the TOS value,
 
 In looping or counting modes (B<-l>, B<-c>, or B<-C>), this parameter sets
 the time in milliseconds that B<fping> waits between successive packets to
-an individual target. Default is 1000 and minimum is 10.
+an individual target. Default is 1000 and minimum is 0.001 (10 for non-root
+users if fping was configured with C<--enable-safe-limits>).
 
 =item B<-q>, B<--quiet>
 
@@ -338,12 +340,15 @@ line arguments, and 4 for a system call failure.
 
 =head1 RESTRICTIONS
 
-The number of addresses that can be generated using the C<-g>, C<--generate>
+The number of addresses that can be generated using the B<-g>, B<--generate>
 option is limited to 131072 (the number of host addresses in one 111-bit IPv6
 prefix, two addresses more than the host addresses in one 15-bit IPv4 prefix).
 
 The length of target names read from file or standard input is limited to
 255 bytes.
+
+The minimum interval for sending successive packets to an individual target
+set with the B<-p> I<n> option is 0.001 msec.
 
 If fping was configured with C<--enable-safe-limits>, the following values are
 not allowed for non-root users:

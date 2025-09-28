@@ -1,4 +1,9 @@
-[![Build Status](https://travis-ci.org/schweikert/fping.svg?branch=develop)](https://travis-ci.org/schweikert/fping)
+## Github Status
+[![Github Build Status](https://github.com/schweikert/fping/actions/workflows/test.yml/badge.svg)](https://github.com/schweikert/fping/actions/workflows/test.yml)
+[![Github Build and Push Docker Image Status](https://github.com/schweikert/fping/actions/workflows/docker-deployment.yml/badge.svg)](https://github.com/schweikert/fping/actions/workflows/docker-deployment.yml)
+[![Github CodeQL Status](https://github.com/schweikert/fping/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/schweikert/fping/actions/workflows/codeql-analysis.yml)
+
+## External Services
 [![Coverage Status](https://coveralls.io/repos/github/schweikert/fping/badge.svg?branch=develop)](https://coveralls.io/github/schweikert/fping?branch=develop)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/11559/badge.svg?flat=1")](https://scan.coverity.com/projects/schweikert-fping)
 

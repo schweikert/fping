@@ -5,7 +5,7 @@
 
 ## External Services
 [![Coverage Status](https://coveralls.io/repos/github/schweikert/fping/badge.svg?branch=develop)](https://coveralls.io/github/schweikert/fping?branch=develop)
-[![Coverity Scan Build Status](https://scan.coverity.com/projects/11559/badge.svg?flat=1")](https://scan.coverity.com/projects/schweikert-fping)
+[![Coverity Scan Build Status](https://scan.coverity.com/projects/11559/badge.svg?flat=1)](https://scan.coverity.com/projects/schweikert-fping)
 
 # fping
 

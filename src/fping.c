@@ -1072,8 +1072,8 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    if (json_flag && !count_flag) {
-        fprintf(stderr, "%s: option -J, --json requires -c or -C\n", prog);
+    if (json_flag && !count_flag && !loop_flag) {
+        fprintf(stderr, "%s: option -J, --json requires -c, -C, or -l\n", prog);
         exit(1);
     }
 
@@ -3944,7 +3944,7 @@ void usage(int is_error)
     fprintf(out, "   -D, --timestamp    print timestamp before each output line\n");
     fprintf(out, "       --timestamp-format=FORMAT  show timestamp in the given format (-D required): ctime|iso|rfc3339\n");
     fprintf(out, "   -e, --elapsed      show elapsed time on return packets\n");
-    fprintf(out, "   -J, --json         output in JSON format (-c or -C required)\n");
+    fprintf(out, "   -J, --json         output in JSON format (-c, -C, or -l required)\n");
     fprintf(out, "   -n, --name         show targets by name (reverse-DNS lookup for target IPs)\n");
     fprintf(out, "   -N, --netdata      output compatible for netdata (-l -Q are required)\n");
     fprintf(out, "   -o, --outage       show the accumulated outage time (lost packets * packet interval)\n");

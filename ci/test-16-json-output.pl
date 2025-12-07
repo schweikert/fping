@@ -189,5 +189,5 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping -J 127.0.0.1");
 $cmd->exit_is_num(1);
 $cmd->stdout_is_eq("");
-$cmd->stderr_is_eq("fping: option -J, --json requires -c or -C\n");
+$cmd->stderr_is_eq("fping: option -J, --json requires -c, -C, or -l\n");
 }

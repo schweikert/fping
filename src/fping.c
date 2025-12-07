@@ -449,7 +449,7 @@ int send_ping(HOST_ENTRY *h, int index);
 void usage(int);
 int wait_for_reply(int64_t);
 void print_recv(HOST_ENTRY *h, int64_t recv_time, int result, int this_count, int64_t this_reply, int avg);
-void print_recv_json(HOST_ENTRY *h, int64_t recv_time, int result, int this_count, int64_t this_reply, int avg);
+void print_timeout(HOST_ENTRY *h, int ping_index);
 void print_recv_ext(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t this_reply);
 void print_recv_ext_json(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t this_reply);
 void print_per_system_stats(void);
@@ -1773,56 +1773,7 @@ void main_loop()
             stats_add(h, event->ping_index, 0, -1);
 
             if (per_recv_flag) {
-                if (json_flag)
-                    printf("{\"timeout\": {");
-
-                if (timestamp_flag)
-                    print_timestamp_format(current_time_ns, timestamp_format_flag);
-
-                if (json_flag)
-                {
-                  printf("\"host\": \"%s\", ", h->host);
-                  printf("\"seq\": %d", event->ping_index);
-                }
-                else {
-                    printf("%-*s : [%d], timed out",
-                        max_hostname_len, h->host, event->ping_index);
-                }
-                if (h->num_recv > 0) {
-                    if (json_flag)
-                        printf(", \"rttAvg\": %s", sprint_tm(h->total_time / h->num_recv));
-                    else
-                        printf(" (%s avg, ", sprint_tm(h->total_time / h->num_recv));
-                }
-                else {
-                    if (json_flag)
-                        printf(", \"rttAvg\": \"NaN\"");
-                    else
-                        printf(" (NaN avg, ");
-                }
-                if (h->num_recv <= h->num_sent) {
-                    if (json_flag) {
-                        printf(", \"loss\": %d", ((h->num_sent - h->num_recv) * 100) / h->num_sent);
-                    }
-                    else {
-                        printf("%d%% loss)",
-                            ((h->num_sent - h->num_recv) * 100) / h->num_sent);
-                    }
-                }
-                else {
-                    if (json_flag) {
-                        printf(", \"return\": %d", (h->num_recv_total * 100) / h->num_sent);
-                    }
-                    else {
-                        printf("%d%% return)",
-                            (h->num_recv_total * 100) / h->num_sent);
-                    }
-                }
-
-                if (json_flag)
-                    printf("}}");
-                
-                printf("\n");
+                print_timeout(h, event->ping_index);
             }
 
             /* do we need to send a retry? */
@@ -2092,12 +2043,26 @@ void finish()
 ************************************************************/
 
 void print_recv(HOST_ENTRY *h, int64_t recv_time, int result, int this_count, int64_t this_reply, int avg) {
+    if (json_flag) {
+        printf("{\"resp\": {");
+
+        if (timestamp_flag)
+            print_timestamp_format(recv_time, timestamp_format_flag);
+
+        printf("\"host\": \"%s\", ", h->host);
+        printf("\"seq\": %d, ", this_count);
+        printf("\"size\": %d, ", result);
+        printf("\"rtt\": %s", sprint_tm(this_reply));
+        return;
+    }
+
+    /* Normal Output */
     if (timestamp_flag)
         print_timestamp_format(recv_time, timestamp_format_flag);
 
     printf("%-*s : [%d], %d bytes, %s ms",
         max_hostname_len, h->host, this_count, result, sprint_tm(this_reply));
-    
+
     printf(" (%s avg, ", sprint_tm(avg));
 
     if (h->num_recv <= h->num_sent) {
@@ -2112,35 +2077,51 @@ void print_recv(HOST_ENTRY *h, int64_t recv_time, int result, int this_count, in
 
 /************************************************************
 
-  Function: print_recv_json
+  Function: print_timeout
 
 *************************************************************
 
-  Inputs: HOST_ENTRY *h, int64_t recv_time, int result,
-          int this_count, int64_t this_reply, int avg
+  Inputs: HOST_ENTRY *h, int ping_index
 
   Description:
 
 ************************************************************/
 
-void print_recv_json(HOST_ENTRY *h, int64_t recv_time, int result, int this_count, int64_t this_reply, int avg) {
-    printf("{\"resp\": {");
+void print_timeout(HOST_ENTRY *h, int ping_index) {
+    if (json_flag) {
+        printf("{\"timeout\": {");
+        if (timestamp_flag)
+            print_timestamp_format(current_time_ns, timestamp_format_flag);
 
+        printf("\"host\": \"%s\", ", h->host);
+        printf("\"seq\": %d", ping_index);
+        printf("}}\n");
+        return;
+    }
+
+    /* Normal Output */
     if (timestamp_flag)
-        print_timestamp_format(recv_time, timestamp_format_flag);
-    
-    printf("\"host\": \"%s\", ", h->host);
-    printf("\"seq\": %d, ", this_count);
-    printf("\"size\": %d, ", result);
-    printf("\"rtt\": %s, ", sprint_tm(this_reply));
-    printf("\"rttAvg\": %s", sprint_tm(avg));
+        print_timestamp_format(current_time_ns, timestamp_format_flag);
 
-    if (h->num_recv <= h->num_sent) {
-        printf(", \"loss\": %d", ((h->num_sent - h->num_recv) * 100) / h->num_sent);
+    printf("%-*s : [%d], timed out",
+        max_hostname_len, h->host, ping_index);
+
+    if (h->num_recv > 0) {
+        printf(" (%s avg, ", sprint_tm(h->total_time / h->num_recv));
     }
     else {
-        printf(", \"return\": %d", (h->num_recv_total * 100) / h->num_sent);
+        printf(" (NaN avg, ");
     }
+
+    if (h->num_recv <= h->num_sent) {
+        printf("%d%% loss)",
+            ((h->num_sent - h->num_recv) * 100) / h->num_sent);
+    }
+    else {
+        printf("%d%% return)",
+            (h->num_recv_total * 100) / h->num_sent);
+    }
+    printf("\n");
 }
 
 /************************************************************
@@ -3340,22 +3321,12 @@ int wait_for_reply(int64_t wait_time)
     /* print received ping (unless --quiet) */
     if (per_recv_flag) {
         avg = h->total_time / h->num_recv;
-        if (json_flag) {
-            print_recv_json(h,
-                recv_time,
-                result,
-                this_count,
-                this_reply,
-                avg);
-        }
-        else {
-            print_recv(h,
-                recv_time,
-                result,
-                this_count,
-                this_reply,
-                avg);
-        }
+        print_recv(h,
+            recv_time,
+            result,
+            this_count,
+            this_reply,
+            avg);
     }
 
     if (verbose_flag || alive_flag || per_recv_flag) {

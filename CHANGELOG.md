@@ -3,8 +3,10 @@ Next
 
 ## New features
 
-- New option -J / --json for the JSON output (#386, thanks @bonkf,
-  @JoshIPT, @sebast-gsnw and @auerswal)
+- New option -J / --json for JSON output. See doc/fping-json.md for
+  the JSON schema. This feature is still in alpha and the schema
+  might change in future releases (#386, thanks @bonkf,
+  @JoshIPT, @sebast-gsnw, and @auerswal).
 - The -g, --generate option now also supports IPv6 addresses (#376,
   thanks @auerswal)
 - New option --seqmap-timeout to control the time after which sequence

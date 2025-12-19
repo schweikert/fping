@@ -53,7 +53,7 @@ jobs:
           target: ""
 
       - name: Install cosign
-        uses: sigstore/cosign-installer@v4
+        uses: sigstore/cosign-installer@v3
 
       - name: Sign image with Cosign
         run: cosign sign --yes ${{ env.REGISTRY }}/${{ github.repository }}@${{ steps.build.outputs.digest }}

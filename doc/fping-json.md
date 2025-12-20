@@ -2,7 +2,8 @@
 
 last updated for: fping 5.5
 
-> [!IMPORTANT] The JSON output feature is currently in **alpha**. The format is
+> [!IMPORTANT]
+> The JSON output feature is currently in **alpha**. The format is
 > subject to change in future versions.
 
 When using the `--json` (or `-J`) option, fping outputs results as a **stream of
@@ -40,7 +41,8 @@ $ fping -J -c3 8.8.8.8
 
 ## JSON Object Types
 
-> [!NOTE] In the actual output, each JSON object is compacted onto a single
+> [!NOTE]
+> In the actual output, each JSON object is compacted onto a single
 > line. The examples in this document are formatted across multiple lines for
 > readability.
 

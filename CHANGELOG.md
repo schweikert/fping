@@ -1,5 +1,5 @@
-Next
-====
+fping 5.5-rc1 (2025-12-21)
+==========================
 
 ## New features
 
@@ -14,8 +14,7 @@ Next
 
 ## Bugfixes and other changes
 
-- Fix OpenBSD warning sprintf() is often misused, please use snprintf()
-  (#394, thanks @gsnw-sebast)
+- Fix OpenBSD sprintf() warning (#394, thanks @gsnw-sebast)
 - Fix fallback to SO\_TIMESTAMP if SO\_TIMESTAMPNS is not available (#375,
   thanks @auerswal)
 - When reading target names from file or standard input, lines longer
@@ -34,9 +33,13 @@ Next
 - Avoid unsigned overflow when determining the memory size to save
   response times on systems where size\_t is the same as unsigned int
   (#412 by @auerswal)
-- Document the new minimum value for the -p option (#414 by @auerswal)
+- Document the new minimum value for the -p option (#414, thanks @auerswal)
+- Fix build without IPv6 support (#416, thanks @auerswal)
+- Fix debug build use of dbg_printf in fping.c (#415, thanks @auerswal)
+- Remove MacOS-specific test for -I option (#407)
+- GitHub Actions fixes (thanks @gsnw-sebast)
 
-fping 5.4 (UNRELEASED)
+fping 5.4 (2025-04-19)
 ======================
 
 ## Bugfixes

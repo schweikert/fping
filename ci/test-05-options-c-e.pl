@@ -92,12 +92,12 @@ SKIP: {
 ff02::1 : xmt/rcv/%loss = 1/1/0%, min/avg/max = \d\.\d+/\d\.\d+/\d\.\d+\n});
 }
 
-# fping --icmp-timestamp -c n 127.0.0.1
+# fping --icmp-timestamp -c 2 127.0.0.1
 SKIP: {
 if($^O eq 'darwin') {
     skip 'On macOS, this test is unreliable', 3;
 }
-my $cmd = Test::Command->new(cmd => "fping -4 --icmp-timestamp -c 2 127.0.0.1");
+my $cmd = Test::Command->new(cmd => "fping -4 -p 100 --icmp-timestamp -c 2 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 20 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\), timestamps: Originate=\d+ Receive=\d+ Transmit=\d+ Localreceive=\d+
 127\.0\.0\.1 : \[1\], 20 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\), timestamps: Originate=\d+ Receive=\d+ Transmit=\d+ Localreceive=\d+
@@ -225,7 +225,7 @@ SKIP: {
     if($ENV{SKIP_IPV6}) {
         skip 'Skip IPv6 tests', 3;
     }
-    my $cmd = Test::Command->new(cmd => "fping --check-source ff02::1");
+    my $cmd = Test::Command->new(cmd => "fping -r1 -t100 --check-source ff02::1");
     $cmd->exit_is_num(1);
     $cmd->stdout_is_eq("ff02::1 is unreachable\n");
     $cmd->stderr_is_eq("");
@@ -236,7 +236,7 @@ SKIP: {
     if($ENV{SKIP_IPV6}) {
         skip 'Skip IPv6 tests', 3;
     }
-    my $cmd = Test::Command->new(cmd => "fping -c1 --check-source 127.0.0.1 ff02::1");
+    my $cmd = Test::Command->new(cmd => "fping -c1 -t100 --check-source 127.0.0.1 ff02::1");
     $cmd->exit_is_num(1);
     $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
 ff02::1   : \[0\], timed out \(NaN avg, 100% loss\)
@@ -252,7 +252,7 @@ SKIP: {
     if($ENV{SKIP_IPV6}) {
         skip 'Skip IPv6 tests', 3;
     }
-    my $cmd = Test::Command->new(cmd => "fping -C1 --check-source 127.0.0.1 ff02::1");
+    my $cmd = Test::Command->new(cmd => "fping -C1 -t100 --check-source 127.0.0.1 ff02::1");
     $cmd->exit_is_num(1);
     $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0% loss\)
 ff02::1   : \[0\], timed out \(NaN avg, 100% loss\)
@@ -267,7 +267,7 @@ ff02::1   : -
 {
 my $cmd = Test::Command->new(cmd => "fping -d 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_is_eq("localhost is alive\n");
+$cmd->stdout_like(qr/^localhost(\.localdomain)? is alive\n$/);
 $cmd->stderr_is_eq("");
 }
 

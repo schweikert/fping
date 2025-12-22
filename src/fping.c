@@ -1434,6 +1434,10 @@ int main(int argc, char **argv)
 #endif
     setlinebuf(stdout);
 
+    // Last time we updated current_time_ns was before adding the hosts and
+    // possibly doing DNS resolution, which means that it isn't accurate
+    // anymore.
+    update_current_time();
     if (report_interval) {
         next_report_time = current_time_ns + report_interval;
     }

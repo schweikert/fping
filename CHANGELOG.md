@@ -38,6 +38,8 @@ fping 5.5-rc1 (2025-12-21)
 - Fix debug build use of dbg_printf in fping.c (#415, thanks @auerswal)
 - Remove MacOS-specific test for -I option (#407)
 - GitHub Actions fixes (thanks @gsnw-sebast)
+- Fix measurement of time for timed reports (-Q) to start after DNS name
+  resolution.
 
 fping 5.4 (2025-04-19)
 ======================

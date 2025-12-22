@@ -180,7 +180,7 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping -J -s -q -c 2 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}
-\{"globalSum":\s\{"targets":\s\d+,\s"alive":\s\d+,\s"unreachable":\s\d+,\s"unknown\saddresses":\s\d+,\s"timeouts\s\(waiting\sfor\sresponse\)":\s\d+,\s"ICMP\sEchos\ssent":\s\d+,\s"ICMP\sEcho\sReplies\sreceived":\s\d+,\s"other\sICMP\sreceived":\s0,\s"ms\s\(min\sround\strip\stime\)":\s\d+\.\d+,\s"ms\s\(avg\sround\strip\stime\)":\s\d+\.\d+,\s"ms\s\(max\sround\strip\stime\)":\s\d+\.\d+,\s"sec\s\(elapsed\sreal\stime\)":\s\d+\.\d+\}\}?$/);
+\{"stats":\s\{"targets":\s\d+,\s"alive":\s\d+,\s"unreachable":\s\d+,\s"unknownAddresses":\s\d+,\s"timeouts":\s\d+,\s"icmpEchosSent":\s\d+,\s"icmpEchoRepliesReceived":\s\d+,\s"otherIcmpReceived":\s0,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+,\s"elapsed":\s\d+\.\d+\}\}?$/);
 $cmd->stderr_is_eq("");
 }
 

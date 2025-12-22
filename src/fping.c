@@ -2608,15 +2608,15 @@ void print_global_stats(void)
 
 void print_global_stats_json(void)
 {
-    fprintf(stdout, "{\"globalSum\": {");
+    fprintf(stdout, "{\"stats\": {");
     fprintf(stdout, "\"targets\": %d, ", num_hosts);
     fprintf(stdout, "\"alive\": %d, ", num_alive);
     fprintf(stdout, "\"unreachable\": %d, ", num_unreachable);
-    fprintf(stdout, "\"unknown addresses\": %d, ", num_noaddress);
-    fprintf(stdout, "\"timeouts (waiting for response)\": %d, ", num_timeout);
-    fprintf(stdout, "\"ICMP Echos sent\": %d, ", num_pingsent);
-    fprintf(stdout, "\"ICMP Echo Replies received\": %d, ", num_pingreceived);
-    fprintf(stdout, "\"other ICMP received\": %d, ", num_othericmprcvd);
+    fprintf(stdout, "\"unknownAddresses\": %d, ", num_noaddress);
+    fprintf(stdout, "\"timeouts\": %d, ", num_timeout);
+    fprintf(stdout, "\"icmpEchosSent\": %d, ", num_pingsent);
+    fprintf(stdout, "\"icmpEchoRepliesReceived\": %d, ", num_pingreceived);
+    fprintf(stdout, "\"otherIcmpReceived\": %d, ", num_othericmprcvd);
 
     if (total_replies == 0) {
         min_reply = 0;
@@ -2625,10 +2625,10 @@ void print_global_stats_json(void)
         sum_replies = 0;
     }
 
-    fprintf(stdout, "\"ms (min round trip time)\": %s, ", sprint_tm(min_reply));
-    fprintf(stdout, "\"ms (avg round trip time)\": %s, ", sprint_tm(sum_replies / total_replies));
-    fprintf(stdout, "\"ms (max round trip time)\": %s, ", sprint_tm(max_reply));
-    fprintf(stdout, "\"sec (elapsed real time)\": %.3f", (end_time - start_time) / 1e9);
+    fprintf(stdout, "\"rttMin\": %s, ", sprint_tm(min_reply));
+    fprintf(stdout, "\"rttAvg\": %s, ", sprint_tm(sum_replies / total_replies));
+    fprintf(stdout, "\"rttMax\": %s, ", sprint_tm(max_reply));
+    fprintf(stdout, "\"elapsed\": %.3f", (end_time - start_time) / 1e9);
     fprintf(stdout, "}}\n");
 }
 

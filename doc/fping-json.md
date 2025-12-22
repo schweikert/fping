@@ -53,7 +53,7 @@ JSON object:
 - `timeout`: Timeout waiting for a packet response.
 - `summary`: Summary statistics for a host (used with `-c`).
 - `vSum`: Summary of all RTT values for a host (used with `-C`).
-- `globalSum`: Global statistics for the entire run (used with `-s`).
+- `stats`: Global statistics for the entire run (used with `-s`).
 - `intSum`: Interval summary statistics (used with `-Q`).
 
 ### `resp`: Response
@@ -163,27 +163,25 @@ Generated periodically when using `-Q` (quiet with interval reporting).
 - `time`: Unix timestamp of the report.
 - Other fields are similar to `summary`.
 
-### `globalSum`: Global Summary
+### `stats`: Overall Statistics
 
 Generated at end of execution when using `-s` (stats).
 
 ```json
 {
-  "globalSum": {
+  "stats": {
     "targets": 1,
     "alive": 1,
     "unreachable": 0,
-    "unknown addresses": 0,
-    "timeouts (waiting for response)": 0,
-    "ICMP Echos sent": 5,
-    "ICMP Echo Replies received": 5,
-    "other ICMP received": 0,
-    "ms (min round trip time)": 0.045,
-    "ms (avg round trip time)": 0.062,
-    "ms (max round trip time)": 0.081,
-    "sec (elapsed real time)": 5.012
+    "unknownAddresses": 0,
+    "timeouts": 0,
+    "icmpEchosSent": 5,
+    "icmpEchoRepliesReceived": 5,
+    "otherIcmpReceived": 0,
+    "rttMin": 0.045,
+    "rttAvg": 0.062,
+    "rttMax": 0.081,
+    "elapsed": 5.012
   }
 }
 ```
-
-Contains aggregate statistics for the entire fping run.

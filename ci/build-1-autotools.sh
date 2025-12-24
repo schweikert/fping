@@ -7,9 +7,9 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     exit 0
 fi
 
-AUTOCONF=http://ftp.gnu.org/gnu/autoconf/autoconf-2.71.tar.gz
-AUTOMAKE=http://ftp.gnu.org/gnu/automake/automake-1.16.5.tar.gz
-LIBTOOL=http://ftp.gnu.org/gnu/libtool/libtool-2.4.6.tar.gz
+AUTOCONF=https://ftpmirror.gnu.org/autoconf/autoconf-2.71.tar.gz
+AUTOMAKE=https://ftpmirror.gnu.org/automake/automake-1.16.5.tar.gz
+LIBTOOL=https://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.gz
 PREFIX=$(pwd)/ci/build
 PATH=$(pwd)/ci/build/bin:$PATH
 
@@ -31,7 +31,7 @@ cd build/src
 (
 AUTOCONF_FILE=$(basename $AUTOCONF)
 AUTOCONF_DIR=$(echo $AUTOCONF_FILE | sed -e 's/\.tar.*//')
-wget $AUTOCONF
+wget -t 5 --retry-connrefused --waitretry=5 $AUTOCONF
 tar xf $AUTOCONF_FILE
 cd $AUTOCONF_DIR
 ./configure --prefix=$PREFIX
@@ -42,7 +42,7 @@ make install
 (
 AUTOMAKE_FILE=$(basename $AUTOMAKE)
 AUTOMAKE_DIR=$(echo $AUTOMAKE_FILE | sed -e 's/\.tar.*//')
-wget $AUTOMAKE
+wget -t 5 --retry-connrefused --waitretry=5 $AUTOMAKE
 tar xf $AUTOMAKE_FILE
 cd $AUTOMAKE_DIR
 ./configure --prefix=$PREFIX
@@ -53,7 +53,7 @@ make install
 (
 LIBTOOL_FILE=$(basename $LIBTOOL)
 LIBTOOL_DIR=$(echo $LIBTOOL_FILE | sed -e 's/\.tar.*//')
-wget $LIBTOOL
+wget -t 5 --retry-connrefused --waitretry=5 $LIBTOOL
 tar xf $LIBTOOL_FILE
 cd $LIBTOOL_DIR
 ./configure --prefix=$PREFIX

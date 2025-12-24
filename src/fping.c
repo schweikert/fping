@@ -547,6 +547,7 @@ int main(int argc, char **argv)
 #endif /* DEBUG || _DEBUG */
 
     int c;
+    char *endptr;
     const uid_t suid = geteuid();
     int tos = 0;
     struct optparse optparse_state;
@@ -793,14 +794,18 @@ int main(int argc, char **argv)
             break;
 
         case 'c':
-            if (!(count = (unsigned int)atoi(optparse_state.optarg)))
+            errno = 0;
+            count = (unsigned int)strtoul(optparse_state.optarg, &endptr, 10);
+            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0' || !count)
                 usage(1);
 
             count_flag = 1;
             break;
 
         case 'C':
-            if (!(count = (unsigned int)atoi(optparse_state.optarg)))
+            errno = 0;
+            count = (unsigned int)strtoul(optparse_state.optarg, &endptr, 10);
+            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0' || !count)
                 usage(1);
 
             count_flag = 1;
@@ -875,7 +880,9 @@ int main(int argc, char **argv)
             break;
 
         case 'B':
-            if (!(backoff = atof(optparse_state.optarg)))
+            errno = 0;
+            backoff = strtod(optparse_state.optarg, &endptr);
+            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0' || backoff == 0.0)
                 usage(1);
 
             break;
@@ -906,7 +913,9 @@ int main(int argc, char **argv)
             break;
 
         case 'H':
-            if (!(ttl = (unsigned int)atoi(optparse_state.optarg)))
+            errno = 0;
+            ttl = (unsigned int)strtoul(optparse_state.optarg, &endptr, 10);
+            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0' || !ttl)
                 usage(1);
             break;
 
@@ -924,12 +933,16 @@ int main(int argc, char **argv)
             exit(0);
 
         case 'x':
-            if (!(min_reachable = (unsigned int)atoi(optparse_state.optarg)))
+            errno = 0;
+            min_reachable = (unsigned int)strtoul(optparse_state.optarg, &endptr, 10);
+            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0' || !min_reachable)
                 usage(1);
             break;
 
         case 'X':
-            if (!(min_reachable = (unsigned int)atoi(optparse_state.optarg)))
+            errno = 0;
+            min_reachable = (unsigned int)strtoul(optparse_state.optarg, &endptr, 10);
+            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0' || !min_reachable)
                 usage(1);
             fast_reachable = 1;
             break;
@@ -939,7 +952,9 @@ int main(int argc, char **argv)
             break;
 #ifdef SO_MARK
         case 'k':
-            if (!(fwmark = (unsigned int)atol(optparse_state.optarg)))
+            errno = 0;
+            fwmark = (unsigned int)strtoul(optparse_state.optarg, &endptr, 10);
+            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0' || !fwmark)
                 usage(1);
 
             if (socket4 >= 0)
@@ -1505,7 +1520,7 @@ void add_cidr(char *addr)
 #endif /*IPV6 */
 
     *addr_end = '\0';
-    mask = atoi(mask_str);
+    mask = strtoul_strict(mask_str, 10);
 
     /* parse address */
     memset(&addr_hints, 0, sizeof(struct addrinfo));

@@ -652,7 +652,7 @@ int main(int argc, char **argv)
         { 0, 0, 0 }
     };
 
-    float opt_value_float;
+    double opt_val_double;
     while ((c = optparse_long(&optparse_state, longopts, NULL)) != EOF) {
         switch (c) {
         case '0':
@@ -707,11 +707,13 @@ int main(int argc, char **argv)
                 }
 #endif
             } else if (strstr(optparse_state.optlongname, "seqmap-timeout") != NULL) {
-                if (sscanf(optparse_state.optarg, "%f", &opt_value_float) != 1)
+                errno = 0;
+                opt_val_double = strtod(optparse_state.optarg, &endptr);
+                if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0')
                     usage(1);
-                if (opt_value_float < 0)
+                if (opt_val_double < 0)
                     usage(1);
-                seqmap_timeout = opt_value_float * 1000000;
+                seqmap_timeout = opt_val_double * 1000000;
             } else {
                 usage(1);
             }
@@ -760,36 +762,44 @@ int main(int argc, char **argv)
             break;
 
         case 't':
-            if (sscanf(optparse_state.optarg, "%f", &opt_value_float) != 1)
+            errno = 0;
+            opt_val_double = strtod(optparse_state.optarg, &endptr);
+            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0')
                 usage(1);
-            if (opt_value_float < 0) {
+            if (opt_val_double < 0) {
                 usage(1);
             }
-            timeout = opt_value_float * 1000000;
+            timeout = opt_val_double * 1000000;
             timeout_flag = 1;
             break;
 
         case 'r':
-            if (sscanf(optparse_state.optarg, "%u", &retry) != 1)
+            errno = 0;
+            retry = (unsigned int)strtoul(optparse_state.optarg, &endptr, 10);
+            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0')
                 usage(1);
             break;
 
         case 'i':
-            if (sscanf(optparse_state.optarg, "%f", &opt_value_float) != 1)
+            errno = 0;
+            opt_val_double = strtod(optparse_state.optarg, &endptr);
+            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0')
                 usage(1);
-            if (opt_value_float < 0) {
+            if (opt_val_double < 0) {
                 usage(1);
             }
-            interval = opt_value_float * 1000000;
+            interval = opt_val_double * 1000000;
             break;
 
         case 'p':
-            if (sscanf(optparse_state.optarg, "%f", &opt_value_float) != 1)
+            errno = 0;
+            opt_val_double = strtod(optparse_state.optarg, &endptr);
+            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0')
                 usage(1);
-            if (opt_value_float < 0) {
+            if (opt_val_double < 0) {
                 usage(1);
             }
-            perhost_interval = opt_value_float * 1000000;
+            perhost_interval = opt_val_double * 1000000;
 
             break;
 
@@ -813,7 +823,9 @@ int main(int argc, char **argv)
             break;
 
         case 'b':
-            if (sscanf(optparse_state.optarg, "%u", &ping_data_size) != 1)
+            errno = 0;
+            ping_data_size = (unsigned int)strtoul(optparse_state.optarg, &endptr, 10);
+            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0')
                 usage(1);
             size_flag = 1;
             break;
@@ -830,12 +842,14 @@ int main(int argc, char **argv)
         case 'Q':
             verbose_flag = 0;
             quiet_flag = 1;
-            if (sscanf(optparse_state.optarg, "%f", &opt_value_float) != 1)
+            errno = 0;
+            opt_val_double = strtod(optparse_state.optarg, &endptr);
+            if (errno != 0 || optparse_state.optarg == endptr || (*endptr != '\0' && *endptr != ','))
                 usage(1);
-            if (opt_value_float < 0) {
+            if (opt_val_double < 0) {
                 usage(1);
             }
-            report_interval = opt_value_float * 1e9;
+            report_interval = opt_val_double * 1e9;
 
             /* recognize keyword(s) after number, ignore everything else */
             {
@@ -921,9 +935,10 @@ int main(int argc, char **argv)
 
 #if defined(DEBUG) || defined(_DEBUG)
         case 'z':
-            if (sscanf(optparse_state.optarg, "0x%x", &debugging) != 1)
-                if (sscanf(optparse_state.optarg, "%u", &debugging) != 1)
-                    usage(1);
+            errno = 0;
+            debugging = (unsigned int)strtoul(optparse_state.optarg, &endptr, 0);
+            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0')
+                usage(1);
 
             break;
 #endif /* DEBUG || _DEBUG */

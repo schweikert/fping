@@ -40,6 +40,9 @@ fping 5.5-rc1 (2025-12-21)
 - GitHub Actions fixes (thanks @gsnw-sebast)
 - Fix measurement of time for timed reports (-Q) to start after DNS name
   resolution.
+- Updated autoconf from 2.71 to 2.72
+- Updated automake from 1.16.5 to 1.18.1
+- Updated libtool from 2.4.6 to 2.5.4
 
 fping 5.4 (2025-04-19)
 ======================

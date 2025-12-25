@@ -7,9 +7,9 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     exit 0
 fi
 
-AUTOCONF=https://ftpmirror.gnu.org/autoconf/autoconf-2.71.tar.gz
-AUTOMAKE=https://ftpmirror.gnu.org/automake/automake-1.16.5.tar.gz
-LIBTOOL=https://ftpmirror.gnu.org/libtool/libtool-2.4.6.tar.gz
+AUTOCONF=https://ftpmirror.gnu.org/autoconf/autoconf-2.72.tar.gz
+AUTOMAKE=https://ftpmirror.gnu.org/automake/automake-1.18.1.tar.gz
+LIBTOOL=https://ftpmirror.gnu.org/libtool/libtool-2.5.4.tar.gz
 PREFIX=$(pwd)/ci/build
 PATH=$(pwd)/ci/build/bin:$PATH
 

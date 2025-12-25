@@ -7,9 +7,18 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     exit 0
 fi
 
-AUTOCONF=https://ftpmirror.gnu.org/autoconf/autoconf-2.72.tar.gz
-AUTOMAKE=https://ftpmirror.gnu.org/automake/automake-1.18.1.tar.gz
-LIBTOOL=https://ftpmirror.gnu.org/libtool/libtool-2.5.4.tar.gz
+# We keep our own list of mirrors because https://ftpmirror.gnu.org is
+# unreliable (frequent errors from selected mirror).
+MIRRORS=(
+    https://mirror.cs.odu.edu/gnu
+    https://mirrors.ocf.berkeley.edu/gnu
+    https://ftp.gnu.org/gnu
+)
+
+AUTOCONF_REL=autoconf/autoconf-2.72.tar.gz
+AUTOMAKE_REL=automake/automake-1.18.1.tar.gz
+LIBTOOL_REL=libtool/libtool-2.5.4.tar.gz
+
 PREFIX=$(pwd)/ci/build
 PATH=$(pwd)/ci/build/bin:$PATH
 
@@ -27,35 +36,39 @@ rm -rf build
 mkdir -p build/src
 cd build/src
 
+install_release() {
+    local relpath=$1
+    local file=$(basename "$relpath")
+    local dir="${file%%.tar.*}"
+
+    local success=0
+    for mirror in "${MIRRORS[@]}"; do
+        local url="$mirror/$relpath"
+        if wget -t 3 -O "$file" "$url"; then
+            success=1
+            break
+        fi
+    done
+
+    if [ $success -eq 0 ]; then
+        echo "Failed to download $relpath from any mirror" >&2
+        exit 1
+    fi
+
+    tar xf "$file"
+    (
+        cd "$dir"
+        ./configure --prefix=$PREFIX
+        make install
+    )
+    rm "$file"
+}
+
 # autoconf
-(
-AUTOCONF_FILE=$(basename $AUTOCONF)
-AUTOCONF_DIR=$(echo $AUTOCONF_FILE | sed -e 's/\.tar.*//')
-wget -t 5 --retry-connrefused --waitretry=5 $AUTOCONF
-tar xf $AUTOCONF_FILE
-cd $AUTOCONF_DIR
-./configure --prefix=$PREFIX
-make install
-)
+install_release $AUTOCONF_REL
 
 # automake
-(
-AUTOMAKE_FILE=$(basename $AUTOMAKE)
-AUTOMAKE_DIR=$(echo $AUTOMAKE_FILE | sed -e 's/\.tar.*//')
-wget -t 5 --retry-connrefused --waitretry=5 $AUTOMAKE
-tar xf $AUTOMAKE_FILE
-cd $AUTOMAKE_DIR
-./configure --prefix=$PREFIX
-make install
-)
+install_release $AUTOMAKE_REL
 
 # libtool
-(
-LIBTOOL_FILE=$(basename $LIBTOOL)
-LIBTOOL_DIR=$(echo $LIBTOOL_FILE | sed -e 's/\.tar.*//')
-wget -t 5 --retry-connrefused --waitretry=5 $LIBTOOL
-tar xf $LIBTOOL_FILE
-cd $LIBTOOL_DIR
-./configure --prefix=$PREFIX
-make install
-)
+install_release $LIBTOOL_REL

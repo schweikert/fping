@@ -3,6 +3,7 @@
 .*.swp
 .cache
 .deps
+.local
 Makefile
 Makefile.in
 aclocal.m4

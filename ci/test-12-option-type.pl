@@ -1,11 +1,11 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 177;
+use Test::Command tests => 267;
 use Test::More;
 
 # some options require a numeric argument
 for my $arg (qw(b B c C H i O p Q r t x X -seqmap-timeout)) {
-    for my $test_input (qw(xxx '')) {
+    for my $test_input ('xxx', "''", '-2', '" -2"') {
         my $cmd = Test::Command->new(cmd => "fping -$arg $test_input");
         $cmd->exit_is_num(1);
         $cmd->stdout_is_eq("");
@@ -46,9 +46,9 @@ for my $arg (qw(B i p t Q -seqmap-timeout)) {
 # fping -k, only supported on Linux, requires a number
 SKIP: {
     if($^O ne 'linux') {
-        skip '-k option is only supported on Linux', 6;
+        skip '-k option is only supported on Linux', 12;
     }
-    for my $test_input (qw(xxx '')) {
+    for my $test_input ('xxx', "''", '-2', '" -2"') {
         my $cmd = Test::Command->new(cmd => "fping -k $test_input 127.0.0.1");
         $cmd->exit_is_num(1);
         $cmd->stdout_is_eq("");

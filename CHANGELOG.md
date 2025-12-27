@@ -44,6 +44,7 @@ fping 5.5-rc1 (2025-12-21)
 - Updated automake from 1.16.5 to 1.18.1
 - Updated libtool from 2.4.6 to 2.5.4
 - Implemented verification of autotools tarballs in Github actions.
+- Implemented stricter flag value checking (e.g. -c 10xyz is not accepted anymore).
 
 fping 5.4 (2025-04-19)
 ======================

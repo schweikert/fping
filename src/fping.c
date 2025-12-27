@@ -523,6 +523,38 @@ int p_setsockopt(uid_t p_uid, int sockfd, int level, int optname,
     return res;
 }
 
+unsigned long strtoul_strict(const char *arg, int base)
+{
+    char *endptr;
+    unsigned long val;
+
+    while (isspace(*arg))
+        arg++;
+
+    if (arg[0] == '-')
+        usage(1);
+
+    errno = 0;
+    val = strtoul(arg, &endptr, base);
+    if (errno != 0 || arg == endptr || *endptr != '\0')
+        usage(1);
+
+    return val;
+}
+
+double strtod_strict(const char *arg)
+{
+    char *endptr;
+    double val;
+
+    errno = 0;
+    val = strtod(arg, &endptr);
+    if (errno != 0 || arg == endptr || *endptr != '\0' || val < 0)
+        usage(1);
+
+    return val;
+}
+
 /************************************************************
 
   Function: main
@@ -707,13 +739,7 @@ int main(int argc, char **argv)
                 }
 #endif
             } else if (strstr(optparse_state.optlongname, "seqmap-timeout") != NULL) {
-                errno = 0;
-                opt_val_double = strtod(optparse_state.optarg, &endptr);
-                if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0')
-                    usage(1);
-                if (opt_val_double < 0)
-                    usage(1);
-                seqmap_timeout = opt_val_double * 1000000;
+                seqmap_timeout = strtod_strict(optparse_state.optarg) * 1000000;
             } else {
                 usage(1);
             }
@@ -762,60 +788,33 @@ int main(int argc, char **argv)
             break;
 
         case 't':
-            errno = 0;
-            opt_val_double = strtod(optparse_state.optarg, &endptr);
-            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0')
-                usage(1);
-            if (opt_val_double < 0) {
-                usage(1);
-            }
-            timeout = opt_val_double * 1000000;
+            timeout = strtod_strict(optparse_state.optarg) * 1000000;
             timeout_flag = 1;
             break;
 
         case 'r':
-            errno = 0;
-            retry = (unsigned int)strtoul(optparse_state.optarg, &endptr, 10);
-            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0')
-                usage(1);
+            retry = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
             break;
 
         case 'i':
-            errno = 0;
-            opt_val_double = strtod(optparse_state.optarg, &endptr);
-            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0')
-                usage(1);
-            if (opt_val_double < 0) {
-                usage(1);
-            }
-            interval = opt_val_double * 1000000;
+            interval = strtod_strict(optparse_state.optarg) * 1000000;
             break;
 
         case 'p':
-            errno = 0;
-            opt_val_double = strtod(optparse_state.optarg, &endptr);
-            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0')
-                usage(1);
-            if (opt_val_double < 0) {
-                usage(1);
-            }
-            perhost_interval = opt_val_double * 1000000;
-
+            perhost_interval = strtod_strict(optparse_state.optarg) * 1000000;
             break;
 
         case 'c':
-            errno = 0;
-            count = (unsigned int)strtoul(optparse_state.optarg, &endptr, 10);
-            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0' || !count)
+            count = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
+            if (!count)
                 usage(1);
 
             count_flag = 1;
             break;
 
         case 'C':
-            errno = 0;
-            count = (unsigned int)strtoul(optparse_state.optarg, &endptr, 10);
-            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0' || !count)
+            count = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
+            if (!count)
                 usage(1);
 
             count_flag = 1;
@@ -823,10 +822,7 @@ int main(int argc, char **argv)
             break;
 
         case 'b':
-            errno = 0;
-            ping_data_size = (unsigned int)strtoul(optparse_state.optarg, &endptr, 10);
-            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0')
-                usage(1);
+            ping_data_size = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
             size_flag = 1;
             break;
 
@@ -894,11 +890,7 @@ int main(int argc, char **argv)
             break;
 
         case 'B':
-            errno = 0;
-            backoff = strtod(optparse_state.optarg, &endptr);
-            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0' || backoff == 0.0)
-                usage(1);
-
+            backoff = strtod_strict(optparse_state.optarg);
             break;
 
         case 's':
@@ -927,19 +919,14 @@ int main(int argc, char **argv)
             break;
 
         case 'H':
-            errno = 0;
-            ttl = (unsigned int)strtoul(optparse_state.optarg, &endptr, 10);
-            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0' || !ttl)
+            ttl = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
+            if (!ttl)
                 usage(1);
             break;
 
 #if defined(DEBUG) || defined(_DEBUG)
         case 'z':
-            errno = 0;
-            debugging = (unsigned int)strtoul(optparse_state.optarg, &endptr, 0);
-            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0')
-                usage(1);
-
+            debugging = (unsigned int)strtoul_strict(optparse_state.optarg, 0);
             break;
 #endif /* DEBUG || _DEBUG */
 
@@ -948,16 +935,14 @@ int main(int argc, char **argv)
             exit(0);
 
         case 'x':
-            errno = 0;
-            min_reachable = (unsigned int)strtoul(optparse_state.optarg, &endptr, 10);
-            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0' || !min_reachable)
+            min_reachable = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
+            if (!min_reachable)
                 usage(1);
             break;
 
         case 'X':
-            errno = 0;
-            min_reachable = (unsigned int)strtoul(optparse_state.optarg, &endptr, 10);
-            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0' || !min_reachable)
+            min_reachable = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
+            if (!min_reachable)
                 usage(1);
             fast_reachable = 1;
             break;
@@ -967,9 +952,8 @@ int main(int argc, char **argv)
             break;
 #ifdef SO_MARK
         case 'k':
-            errno = 0;
-            fwmark = (unsigned int)strtoul(optparse_state.optarg, &endptr, 10);
-            if (errno != 0 || optparse_state.optarg == endptr || *endptr != '\0' || !fwmark)
+            fwmark = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
+            if (!fwmark)
                 usage(1);
 
             if (socket4 >= 0)
@@ -1037,23 +1021,24 @@ int main(int argc, char **argv)
             break;
 
         case 'O':
-            if (sscanf(optparse_state.optarg, "%i", &tos) == 1) {
-                if (socket4 >= 0) {
-                    if (setsockopt(socket4, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
-                        perror("setting type of service octet IP_TOS");
-                    }
+            {
+                unsigned long val = strtoul_strict(optparse_state.optarg, 0);
+                if (val > 255)
+                    usage(1);
+                tos = (int)val;
+            }
+            if (socket4 >= 0) {
+                if (setsockopt(socket4, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
+                    perror("setting type of service octet IP_TOS");
                 }
+            }
 #if defined(IPV6) && defined(IPV6_TCLASS)
-                if (socket6 >= 0) {
-                    if (setsockopt(socket6, IPPROTO_IPV6, IPV6_TCLASS, &tos, sizeof(tos))) {
-                        perror("setting type of service octet IPV6_TCLASS");
-                    }
+            if (socket6 >= 0) {
+                if (setsockopt(socket6, IPPROTO_IPV6, IPV6_TCLASS, &tos, sizeof(tos))) {
+                    perror("setting type of service octet IPV6_TCLASS");
                 }
+            }
 #endif
-            }
-            else {
-                usage(1);
-            }
             break;
 
         case 'o':

@@ -1,3 +1,12 @@
+Next
+====
+
+## New features
+
+## Bugfixes and other changes
+
+- ci: Removing travis-ci (#446, thanks @gsnw-sebast)
+
 fping 5.5 (2025-12-31)
 ======================
 

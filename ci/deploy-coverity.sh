@@ -17,9 +17,16 @@ tar xfz /tmp/cov-analysis-linux64.tgz
 ./configure --enable-ipv4 --enable-ipv6 --enable-safe-limits --prefix=/opt/fping
 cov-analysis-linux64-*/bin/cov-build --dir cov-int make -j4
 tar cfz cov-int.tar.gz cov-int
+
+if [ -n "$GITHUB_RUN_ID" ]; then
+    BUILD_ID="$GITHUB_RUN_ID"
+else
+    BUILD_ID="manual"
+fi
+
 curl https://scan.coverity.com/builds?project=$COVERITY_SCAN_PROJECT_NAME \
     --form token=$COVERITY_SCAN_TOKEN \
     --form email=$COVERITY_SCAN_EMAIL \
     --form file=@cov-int.tar.gz \
     --form version="`git rev-parse --short HEAD`" \
-    --form description="`git rev-parse --short HEAD` / $TRAVIS_BUILD_ID "
+    --form description="`git rev-parse --short HEAD` / $BUILD_ID "

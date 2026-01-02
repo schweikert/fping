@@ -2806,24 +2806,36 @@ int receive_packet(int64_t wait_time,
     struct cmsghdr *cmsg;
 
     /* Wait for a socket to become ready */
-    if (wait_time) {
-        to.tv_sec = wait_time / UINT64_C(1000000000);
-        to.tv_usec = (wait_time % UINT64_C(1000000000)) / 1000 + 1;
+#if HAVE_MSG_DONTWAIT
+    if (wait_time == 0) {
+        /* Optimization: if wait_time is 0, we can skip select() and just try to
+         * read from the sockets with MSG_DONTWAIT */
+        recv_len = (socket4 >= 0) ? recvmsg(socket4, &recv_msghdr, MSG_TRUNC | MSG_DONTWAIT) : -1;
+#ifdef IPV6
+        if (recv_len <= 0 && socket6 >= 0) {
+            /* Reset fields potentially modified by failed recvmsg */
+            recv_msghdr.msg_namelen = reply_src_addr_len;
+            recv_msghdr.msg_controllen = sizeof(msg_control);
+            recv_len = recvmsg(socket6, &recv_msghdr, MSG_TRUNC | MSG_DONTWAIT);
+        }
+#endif
+        if (recv_len > 0) {
+            goto packet_received;
+        }
+        return 0;
     }
-    else {
-        to.tv_sec = 0;
-        to.tv_usec = 0;
-    }
-    s = socket_can_read(&to);
-    if (s == -1) {
-        return 0; /* timeout */
-    }
+#endif
 
-    recv_len = recvmsg(s, &recv_msghdr, MSG_TRUNC);
-    if (recv_len <= 0) {
+    int64_t wait_us = (wait_time + 999) / 1000; // round up (1 ns -> 1 us)
+    to.tv_sec = wait_us / 1000000;
+    to.tv_usec = wait_us % 1000000;
+
+    s = socket_can_read(&to);
+    if (s == -1 || (recv_len = recvmsg(s, &recv_msghdr, MSG_TRUNC)) <= 0) {
         return 0;
     }
 
+packet_received:
     /* ancilliary data */
     {
 #if HAVE_SO_TIMESTAMPNS

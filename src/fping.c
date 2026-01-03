@@ -168,6 +168,9 @@ extern int h_errno;
 #define RESP_ERROR -3
 #define RESP_TIMEOUT -4
 
+/* Traceroute */
+#define TRACEROUTE_DONE_TTL 100
+
 /* debugging flags */
 #if defined(DEBUG) || defined(_DEBUG)
 #define DBG_TRACE 1
@@ -297,6 +300,7 @@ typedef struct host_entry {
     int64_t min_reply_i; /* shortest response time */
     int64_t total_time_i; /* sum of response times */
     int64_t *resp_times; /* individual response times */
+    int trace_ttl; /* current traceroute ttl */
 
     /* to avoid allocating two struct events each time that we send a ping, we
      * preallocate here two struct events for each ping that we might send for
@@ -423,6 +427,7 @@ int timestamp_flag = 0;
 int timestamp_format_flag = 0;
 int random_data_flag = 0;
 int cumulative_stats_flag = 0;
+int traceroute_flag = 0;
 int check_source_flag = 0;
 int icmp_request_typ = 0;
 int print_tos_flag = 0;
@@ -642,6 +647,7 @@ int main(int argc, char **argv)
         { "rdns", 'd', OPTPARSE_NONE },
         { "timestamp", 'D', OPTPARSE_NONE },
         { "timestamp-format", '0', OPTPARSE_REQUIRED },
+        { "traceroute", '0', OPTPARSE_NONE },
         { "elapsed", 'e', OPTPARSE_NONE },
         { "file", 'f', OPTPARSE_REQUIRED },
         { "generate", 'g', OPTPARSE_NONE },
@@ -698,6 +704,8 @@ int main(int argc, char **argv)
                 }else{
                   usage(1);
                 }
+            } else if (strstr(optparse_state.optlongname, "traceroute") != NULL) {
+                traceroute_flag = 1;
             } else if (strstr(optparse_state.optlongname, "check-source") != NULL) {
                 check_source_flag = 1;
             } else if (strstr(optparse_state.optlongname, "icmp-timestamp") != NULL) {
@@ -1092,6 +1100,26 @@ int main(int argc, char **argv)
         exit(1);
     }
 
+    if (traceroute_flag && (count_flag || loop_flag || netdata_flag || quiet_flag || stats_flag)) {
+        fprintf(stderr, "%s: can't combine --traceroute with -c, -C, -l, -N, -q, -Q or -s\n", prog);
+        exit(1);
+    }
+
+    if (traceroute_flag) {
+#ifdef __linux__
+        if (using_sock_dgram4) {
+            fprintf(stderr, "%s: traceroute mode requires raw sockets (run as root)\n", prog);
+            exit(1);
+        }
+#endif
+        if (ttl == 0) {
+            ttl = 30; /* Default traceroute limit */
+        } else if (ttl > 30) {
+            fprintf(stderr, "%s: traceroute ttl max is 30, clamping.\n", prog);
+            ttl = 30;
+        }
+    }
+
     if (interval < (float)MIN_INTERVAL_MS * 1000000 && getuid()) {
         fprintf(stderr, "%s: -i must be >= %g\n", prog, (float)MIN_INTERVAL_MS);
         exit(1);
@@ -1137,6 +1165,9 @@ int main(int argc, char **argv)
         verbose_flag = 0;
 
     trials = (count > retry + 1) ? count : retry + 1;
+
+    if (traceroute_flag)
+        trials = 255; /* Ensure enough space for up to 255 hops */
 
     /* auto-tune default timeout for count/loop modes
      * see also github #32 */
@@ -1270,7 +1301,7 @@ int main(int argc, char **argv)
     if (count_flag) {
         event_storage_count = count;
     }
-    else if (loop_flag) {
+    else if (loop_flag || traceroute_flag) {
         if (perhost_interval > timeout) {
             event_storage_count = 1;
         }
@@ -1460,6 +1491,26 @@ int main(int argc, char **argv)
     last_send_time = 0;
 
     seqmap_init(seqmap_timeout);
+
+    /* Traceroute header output */
+    if (traceroute_flag) {
+        int i;
+        for (i = 0; i < num_hosts; i++) {
+            HOST_ENTRY *h = table[i];
+            char ip_str[INET6_ADDRSTRLEN];
+            int total_len = ping_data_size + SIZE_ICMP_HDR;
+
+            /* Resolve IP string and calculate header length */
+            getnameinfo((struct sockaddr *)&h->saddr, h->saddr_len, ip_str, sizeof(ip_str), NULL, 0, NI_NUMERICHOST);
+
+            if (h->saddr.ss_family == AF_INET6)
+                total_len += 40; /* IPv6 Header fix 40 bytes */
+            else
+                total_len += 20; /* IPv4 Header min 20 bytes */
+            
+            printf("fping traceroute to %s (%s), %d hops max, %d byte packets\n", h->name, ip_str, (int)ttl, total_len);
+        }
+    }
 
     /* main loop */
     main_loop();
@@ -1791,6 +1842,14 @@ void main_loop()
 
             stats_add(h, event->ping_index, 0, -1);
 
+            if (traceroute_flag) {
+                printf("%s: hop %d no reply\n", h->host, h->trace_ttl);
+                h->trace_ttl++;
+                if (h->trace_ttl > (int)ttl) h->trace_ttl = (int)ttl;
+                /* Continue to the next hop, no retry for this hop */
+                continue;
+            }
+
             if (per_recv_flag) {
                 print_timeout(h, event->ping_index);
             }
@@ -1825,11 +1884,33 @@ void main_loop()
 
             dbg_printf("%s [%d]: ping event\n", h->host, event->ping_index);
 
+            /* Traceroute */
+            if (traceroute_flag) {
+                if (traceroute_flag && h->trace_ttl == TRACEROUTE_DONE_TTL) {
+                    continue;
+                }
+
+                int ttl_set = h->trace_ttl;
+                if (ttl_set > (int)ttl) ttl_set = (int)ttl;
+                if (socket4 >= 0) {
+                    if (setsockopt(socket4, IPPROTO_IP, IP_TTL, &ttl_set, sizeof(ttl_set)))
+                        perror("setsockopt IP_TTL");
+                }
+#ifdef IPV6
+                if (socket6 >= 0) {
+                    /* Set hop limit for IPv6 */
+                    if (setsockopt(socket6, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &ttl_set, sizeof(ttl_set))) {
+                        perror("setsockopt IPV6_UNICAST_HOPS");
+                    }
+                }
+#endif
+            }
+
             /* Send the ping */
             send_ping(h, event->ping_index);
 
-            /* Loop and count mode: schedule next ping */
-            if (loop_flag || (count_flag && event->ping_index + 1 < count)) {
+            /* Loop, count and traceroute mode: schedule next ping */
+            if (loop_flag || (count_flag && event->ping_index + 1 < count) || (traceroute_flag && h->trace_ttl < (int)ttl)) {
                 host_add_ping_event(h, event->ping_index + 1, event->ev_time + perhost_interval);
             }
         }
@@ -2974,6 +3055,23 @@ int decode_icmp_ipv4(
 
     icp = (struct icmp *)(reply_buf + hlen);
 
+    if (traceroute_flag && icp->icmp_type == ICMP_TIMXCEED) {
+        struct ip *inner_ip;
+        int inner_hlen;
+        struct icmp *inner_icmp;
+
+        if (reply_buf_len >= hlen + ICMP_MINLEN + sizeof(struct ip) + ICMP_MINLEN) {
+            inner_ip = (struct ip *) (reply_buf + hlen + ICMP_MINLEN);
+            inner_hlen = inner_ip->ip_hl << 2;
+            inner_icmp = (struct icmp *) ((char *)inner_ip + inner_hlen);
+            if (inner_icmp->icmp_id == ident4) {
+                *id = inner_icmp->icmp_id;
+                *seq = ntohs(inner_icmp->icmp_seq);
+                return hlen;
+            }
+        }
+    }
+
     if ((icmp_request_typ == 0 && icp->icmp_type != ICMP_ECHOREPLY) ||
         (icmp_request_typ == 13 && icp->icmp_type != ICMP_TSTAMPREPLY)) {
         /* Handle other ICMP packets */
@@ -3085,6 +3183,27 @@ int decode_icmp_ipv6(
 
     icp = (struct icmp6_hdr *)reply_buf;
 
+    /* Traceroute Logic for IPv6 Time Exceeded */
+    if (traceroute_flag && icp->icmp6_type == ICMP6_TIME_EXCEEDED) {
+        struct ip6_hdr *inner_ip6;
+        struct icmp6_hdr *inner_icmp6;
+
+        if (reply_buf_len >= sizeof(struct icmp6_hdr) + sizeof(struct ip6_hdr) + sizeof(struct icmp6_hdr)) {
+            inner_ip6 = (struct ip6_hdr *)(reply_buf + sizeof(struct icmp6_hdr));
+
+            /* Check whether the inner packet is ICMPv6 */
+            if (inner_ip6->ip6_nxt == IPPROTO_ICMPV6) {
+                inner_icmp6 = (struct icmp6_hdr *)(reply_buf + sizeof(struct icmp6_hdr) + sizeof(struct ip6_hdr));
+
+                if (inner_icmp6->icmp6_id == ident6) {
+                    *id = inner_icmp6->icmp6_id;
+                    *seq = ntohs(inner_icmp6->icmp6_seq);
+                    return 1;
+                }
+            }
+        }
+    }
+
     if (icp->icmp6_type != ICMP6_ECHO_REPLY) {
         /* Handle other ICMPv6 packets */
         struct ip6_hdr *sent_ipv6;
@@ -3189,6 +3308,7 @@ int wait_for_reply(int64_t wait_time)
     static char buffer[RECV_BUFSIZE];
     struct sockaddr_storage response_addr;
     int n, avg;
+    int ip_hlen = 0;
     HOST_ENTRY *h;
     int64_t this_reply;
     int this_count;
@@ -3219,7 +3339,7 @@ int wait_for_reply(int64_t wait_time)
 
     /* Process ICMP packet and retrieve id/seq */
     if (response_addr.ss_family == AF_INET) {
-        int ip_hlen = decode_icmp_ipv4(
+        ip_hlen = decode_icmp_ipv4(
             (struct sockaddr *)&response_addr,
             sizeof(response_addr),
             buffer,
@@ -3269,6 +3389,69 @@ int wait_for_reply(int64_t wait_time)
     h = table[n];
     this_count = seqmap_value->ping_count;
     this_reply = recv_time - seqmap_value->ping_ts;
+
+    if (traceroute_flag && response_addr.ss_family == AF_INET) {
+        struct icmp *icp = (struct icmp *)(buffer + ip_hlen);
+        char ip_str[INET_ADDRSTRLEN];
+        getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), ip_str, sizeof(ip_str), NULL, 0, NI_NUMERICHOST);
+
+        if (icp->icmp_type == ICMP_TIMXCEED) {
+            printf("%s: hop %d reached %s (%s ms)\n", h->host, h->trace_ttl, ip_str, sprint_tm(this_reply));
+            h->trace_ttl++;
+            if (h->trace_ttl > (int)ttl) h->trace_ttl = (int)ttl;
+
+            stats_add(h, this_count, 1, this_reply);
+            struct event *timeout_event = host_get_timeout_event(h, this_count);
+            if (timeout_event) {
+                ev_remove(&event_queue_timeout, timeout_event);
+            }
+            return 1;
+        } else if (icp->icmp_type == ICMP_ECHOREPLY) {
+            printf("%s: hop %d reached DESTINATION %s (%s ms)\n", h->host, h->trace_ttl, ip_str, sprint_tm(this_reply));
+            h->trace_ttl = TRACEROUTE_DONE_TTL; /* Goal achieved: artificially increase TTL to stop loop in main_loop */
+
+            /* Update stats and exit function to prevent duplicate outputs “is alive” or “hop 100” */
+            stats_add(h, this_count, 1, this_reply);
+            struct event *timeout_event = host_get_timeout_event(h, this_count);
+            if (timeout_event) {
+                ev_remove(&event_queue_timeout, timeout_event);
+            }
+            return 1;
+        }
+    }
+#ifdef IPV6
+    else if (traceroute_flag && response_addr.ss_family == AF_INET6) {
+        struct icmp6_hdr *icp = (struct icmp6_hdr *)buffer;
+
+        /* With IPv6, buffer is directly the ICMP header payload, since receive_packet uses recvmsg */
+        char ip_str[INET6_ADDRSTRLEN];
+        getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), ip_str, sizeof(ip_str), NULL, 0, NI_NUMERICHOST);
+
+        if (icp->icmp6_type == ICMP6_TIME_EXCEEDED) {
+            printf("%s: hop %d reached %s (%s ms)\n", h->host, h->trace_ttl, ip_str, sprint_tm(this_reply));
+            h->trace_ttl++;
+            if (h->trace_ttl > (int)ttl) h->trace_ttl = (int)ttl;
+
+            stats_add(h, this_count, 1, this_reply);
+            struct event *timeout_event = host_get_timeout_event(h, this_count);
+            if (timeout_event) {
+                ev_remove(&event_queue_timeout, timeout_event);
+            }
+            return 1;
+        } else if (icp->icmp6_type == ICMP6_ECHO_REPLY) {
+            printf("%s: hop %d reached DESTINATION %s (%s ms)\n", h->host, h->trace_ttl, ip_str, sprint_tm(this_reply));
+            h->trace_ttl = TRACEROUTE_DONE_TTL; /* Goal achieved: artificially increase TTL to stop loop in main_loop */
+
+            /* Update stats and exit function to prevent duplicate outputs “is alive” or “hop 100” */
+            stats_add(h, this_count, 1, this_reply);
+            struct event *timeout_event = host_get_timeout_event(h, this_count);
+            if (timeout_event) {
+                ev_remove(&event_queue_timeout, timeout_event);
+            }
+            return 1;
+        }
+    }
+#endif
 
     /* update stats that include invalid replies */
     h->num_recv_total++;
@@ -3515,6 +3698,7 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
     p->saddr_len = ipaddr_len;
     p->timeout = timeout;
     p->min_reply = 0;
+    p->trace_ttl = 1;
 
     if (netdata_flag) {
         char *s = p->name;
@@ -3925,6 +4109,7 @@ void usage(int is_error)
     fprintf(out, "                      except with -l/-c/-C, where it's the -p period up to 2000 ms)\n");
     fprintf(out, "       --check-source discard replies not from target address\n");
     fprintf(out, "       --icmp-timestamp use ICMP Timestamp instead of ICMP Echo\n");
+    fprintf(out, "       --traceroute   Send traceroute\n");
     fprintf(out, "\n");
     fprintf(out, "Output options:\n");
     fprintf(out, "   -a, --alive        show targets that are alive\n");

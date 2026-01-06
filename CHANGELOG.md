@@ -8,6 +8,7 @@ Next
 - ci: Removed travis-ci (#446, thanks @gsnw-sebast)
 - Performance optimization: reduce number of select calls and use
   recvmsg with MSG_DONTWAIT instead (#449)
+- Improved compatibility with NetBSD (#452, thanks @auerswal)
 
 fping 5.5 (2025-12-31)
 ======================

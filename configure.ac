@@ -39,7 +39,7 @@ AS_IF([test "x$enable_ipv6" != "xno"], [
       #include <sys/types.h>
   ]])
 ])
-AS_IF([test "x$have_ipv6" == "xyes"], [
+AS_IF([test "x$have_ipv6" = "xyes"], [
     dnl Test if IPv6 is supported
        AC_CHECK_HEADERS([netinet/ip6.h], [have_ipv6="yes"], [have_ipv6="no"], [[
       #include <netinet/in.h>

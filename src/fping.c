@@ -712,11 +712,13 @@ int main(int argc, char **argv)
                 ping_data_size = ICMP_TIMESTAMP_DATA_SIZE;
             } else if (strstr(optparse_state.optlongname, "print-tos") != NULL) {
                 print_tos_flag = 1;
+#if defined(IP_RECVTOS)
                 if (socket4 >= 0 && (socktype4 == SOCK_DGRAM)) {
                     if (setsockopt(socket4, IPPROTO_IP, IP_RECVTOS, &sock_opt_on, sizeof(sock_opt_on))) {
                         perror("setsockopt IP_RECVTOS");
                     }
                 }
+#endif
 #if defined(IPV6) && defined(IPV6_RECVTCLASS)
                 if (socket6 >= 0) {
                     if (setsockopt(socket6, IPPROTO_IPV6, IPV6_RECVTCLASS, &sock_opt_on, sizeof(sock_opt_on))) {

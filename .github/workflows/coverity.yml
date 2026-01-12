@@ -7,6 +7,8 @@ on:
 
 jobs:
   coverity:
+    env:
+      COVERITY_SCAN_TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout repository
@@ -18,7 +20,6 @@ jobs:
           sudo apt-get install -y build-essential autotools-dev automake curl git libcap2-bin libtest-command-perl
 
       - name: Run Coverity Scan
-        env:
-          COVERITY_SCAN_TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
+        if: ${{ env.COVERITY_SCAN_TOKEN != '' }}
         run: |
           ci/deploy-coverity.sh

@@ -10,6 +10,7 @@ Next
   recvmsg with MSG_DONTWAIT instead (#449)
 - Improved compatibility with NetBSD (#452, thanks @auerswal)
 - Consistent variable names for command-line options (#453, thanks @gsnw-sebast)
+- Avoid crash with option `-0` (#457, thanks @auerswal)
 
 fping 5.5 (2025-12-31)
 ======================

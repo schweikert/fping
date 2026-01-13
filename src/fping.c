@@ -661,7 +661,7 @@ int main(int argc, char **argv)
         { "vcount", 'C', OPTPARSE_REQUIRED },
         { "rdns", 'd', OPTPARSE_NONE },
         { "timestamp", 'D', OPTPARSE_NONE },
-        { "timestamp-format", '0', OPTPARSE_REQUIRED },
+        { "timestamp-format", 0, OPTPARSE_REQUIRED },
         { "elapsed", 'e', OPTPARSE_NONE },
         { "file", 'f', OPTPARSE_REQUIRED },
         { "generate", 'g', OPTPARSE_NONE },
@@ -670,7 +670,7 @@ int main(int argc, char **argv)
         { "interval", 'i', OPTPARSE_REQUIRED },
         { "iface", 'I', OPTPARSE_REQUIRED },
         { "json", 'J', OPTPARSE_NONE },
-        { "icmp-timestamp", '0', OPTPARSE_NONE },
+        { "icmp-timestamp", 0, OPTPARSE_NONE },
 #ifdef SO_MARK
         { "fwmark", 'k', OPTPARSE_REQUIRED },
 #endif
@@ -694,10 +694,10 @@ int main(int argc, char **argv)
         { "version", 'v', OPTPARSE_NONE },
         { "reachable", 'x', OPTPARSE_REQUIRED },
         { "fast-reachable", 'X', OPTPARSE_REQUIRED },
-        { "check-source", '0', OPTPARSE_NONE },
-        { "print-tos", '0', OPTPARSE_NONE },
-        { "print-ttl", '0', OPTPARSE_NONE },
-        { "seqmap-timeout", '0', OPTPARSE_REQUIRED },
+        { "check-source", 0, OPTPARSE_NONE },
+        { "print-tos", 0, OPTPARSE_NONE },
+        { "print-ttl", 0, OPTPARSE_NONE },
+        { "seqmap-timeout", 0, OPTPARSE_REQUIRED },
 #if defined(DEBUG) || defined(_DEBUG)
         { NULL, 'z', OPTPARSE_REQUIRED },
 #endif
@@ -707,7 +707,7 @@ int main(int argc, char **argv)
     double opt_val_double;
     while ((c = optparse_long(&optparse_state, longopts, NULL)) != EOF) {
         switch (c) {
-        case '0':
+        case 0:
             if(strstr(optparse_state.optlongname, "timestamp-format") != NULL) {
                 if(strcmp(optparse_state.optarg, "ctime") == 0) {
                   opt_timestamp_format = 1;

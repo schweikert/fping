@@ -7,10 +7,98 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <inttypes.h>
+#include <sys/time.h>
+#include <netdb.h>
+
+/* Structure definitions */
+typedef struct ip_header_result {
+    int tos;
+    int ttl;
+    uint32_t otime_ms;
+    uint32_t rtime_ms;
+    uint32_t ttime_ms;
+} IP_HEADER_RESULT;
+
+typedef struct host_entry {
+    int i; /* index into array */
+    char *name; /* name as given by user */
+    char *host; /* text description of host */
+    struct sockaddr_storage saddr; /* internet address */
+    socklen_t saddr_len;
+    int64_t timeout; /* time to wait for response */
+    int64_t last_send_time; /* time of last packet sent */
+    int num_sent; /* number of ping packets sent (for statistics) */
+    int num_recv; /* number of pings received (duplicates ignored) */
+    int num_recv_total; /* number of pings received, including duplicates */
+    int64_t max_reply; /* longest response time */
+    int64_t min_reply; /* shortest response time */
+    int64_t total_time; /* sum of response times */
+    /* _i -> splits (reset on every report interval) */
+    int num_sent_i; /* number of ping packets sent */
+    int num_recv_i; /* number of pings received */
+    int64_t max_reply_i; /* longest response time */
+    int64_t min_reply_i; /* shortest response time */
+    int64_t total_time_i; /* sum of response times */
+    int64_t *resp_times; /* individual response times */
+
+    /* to avoid allocating two struct events each time that we send a ping, we
+     * preallocate here two struct events for each ping that we might send for
+     * this host. */
+    struct event *event_storage_ping;
+    struct event *event_storage_timeout;
+} HOST_ENTRY;
+
+struct event {
+    HOST_ENTRY *host; /* pointer to associated host */
+    int ping_index; /* index/sequence for this ping within the host */
+    int64_t ev_time; /* time of the event */
+    struct event *ev_next; /* next event in linked list */
+    struct event *ev_prev; /* previous event in linked list */
+};
+
+struct event_queue {
+    struct event *first;
+    struct event *last;
+};
+
+/* Global variables */
+extern HOST_ENTRY **table;
+extern int num_hosts;
+extern int max_hostname_len;
+extern int64_t current_time_ns;
+extern struct timespec current_time;
+extern int64_t start_time;
+extern int64_t end_time;
+extern int64_t opt_perhost_interval;
+extern int64_t report_interval;
+
+// Stats globals
+extern int num_alive, num_unreachable, num_noaddress, num_timeout;
+extern int num_pingsent, num_pingreceived, num_othericmprcvd;
+extern int64_t max_reply, min_reply, total_replies, sum_replies;
+
+// Options
+extern int opt_print_json_on;
+extern int opt_timestamp_on;
+extern int opt_timestamp_format;
+extern int opt_alive_on;
+extern int opt_quiet_on;
+extern int opt_per_recv_on;
+extern int opt_verbose_on;
+extern int opt_print_tos_on;
+extern int opt_print_ttl_on;
+extern int opt_elapsed_on;
+extern int opt_icmp_request_typ;
+extern int opt_report_all_rtts_on;
+extern int opt_outage_on;
+extern int opt_cumulative_stats_on;
+extern int opt_print_netdata_on;
+extern int opt_random_data_on;
+
 
 /* this requires variadic macros, part of C99 */
 #if (defined(DEBUG) || defined(_DEBUG))
-extern int64_t current_time_ns;
 extern int opt_debug_trace_on;
 #define dbg_printf(fmt, ...) do { if (opt_debug_trace_on) { fprintf(stderr, "[%10.5f] ", (double)(current_time_ns / 1000)/1000000); fprintf(stderr, fmt, __VA_ARGS__); } } while (0)
             
@@ -18,14 +106,7 @@ extern int opt_debug_trace_on;
 #define dbg_printf(fmt, ...)
 #endif
 
-
 /* fping.c */
-typedef struct host_entry HOST_ENTRY;
-struct event;
-struct event_queue;
-typedef struct ip_header_result IP_HEADER_RESULT;
-extern int opt_random_data_on;
-
 void add_name(char *name);
 void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_len);
 char *na_cat(char *name, struct in_addr ipaddr);
@@ -33,18 +114,7 @@ char *get_host_by_address(struct in_addr in);
 int send_ping(HOST_ENTRY *h, int index);
 void usage(int);
 int wait_for_reply(int64_t);
-void print_recv(HOST_ENTRY *h, int64_t recv_time, int result, int this_count, int64_t this_reply, int avg);
-void print_timeout(HOST_ENTRY *h, int ping_index);
-void print_recv_ext(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t this_reply);
-void print_recv_ext_json(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t this_reply);
-void print_per_system_stats(void);
-void print_per_system_stats_json(void);
-void print_per_system_splits(void);
-void print_per_system_splits_json(void);
 void stats_reset_interval(HOST_ENTRY *h);
-void print_netdata(void);
-void print_global_stats(void);
-void print_global_stats_json(void);
 void main_loop();
 void signal_handler(int);
 void finish();

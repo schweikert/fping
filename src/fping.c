@@ -36,6 +36,7 @@ extern "C" {
 
 #include "config.h"
 #include "fping.h"
+#include "flags.h"
 #include "options.h"
 #include "optparse.h"
 
@@ -145,9 +146,6 @@ extern int h_errno;
 
 #define MAX_GENERATE 131072 /* maximum number of hosts that -g can generate */
 #define MAX_TARGET_NAME_LEN 255 /* maximum target name length read from file */
-
-/* sized so as to be like traditional ping */
-#define DEFAULT_PING_DATA_SIZE 56
 
 /* ICMP Timestamp has a fixed payload size of 12 bytes */
 #define ICMP_TIMESTAMP_DATA_SIZE 12
@@ -304,17 +302,6 @@ volatile sig_atomic_t finish_requested = 0;
 
 unsigned int debugging = 0;
 
-/* all time-related values are int64_t nanoseconds */
-unsigned int opt_retry = DEFAULT_RETRY;
-int64_t opt_timeout = (int64_t)DEFAULT_TIMEOUT * 1000000;
-int64_t opt_seqmap_timeout = (int64_t)DEFAULT_SEQMAP_TIMEOUT * 1000000;
-int64_t opt_interval = (int64_t)DEFAULT_INTERVAL * 1000000;
-int64_t opt_perhost_interval = (int64_t)DEFAULT_PERHOST_INTERVAL * 1000000;
-float opt_backoff = DEFAULT_BACKOFF_FACTOR;
-unsigned int opt_ping_data_size = DEFAULT_PING_DATA_SIZE;
-unsigned int opt_count = 1, opt_min_reachable = 0;
-unsigned int opt_ttl = 0;
-
 unsigned int trials;
 int64_t report_interval = 0;
 int src_addr_set = 0;
@@ -346,41 +333,7 @@ int64_t end_time;
 int64_t last_send_time; /* time last ping was sent */
 int64_t next_report_time; /* time next -Q report is expected */
 
-/* switches */
-int opt_version_on = 0;
 
-int opt_verbose_on = 0,
-    opt_unreachable_on = 0,
-    opt_alive_on = 0,
-    opt_quiet_on = 0,
-    opt_elapsed_on = 0,
-    opt_stats_on = 0,
-    opt_cumulative_stats_on = 0;
-int opt_generate_on = 0, /* flag for IP list generation */
-    opt_count_on = 0,
-    opt_loop_on;
-int opt_print_netdata_on = 0,
-    opt_print_json_on = 0,
-    opt_print_tos_on = 0,
-    opt_print_ttl_on = 0;
-int opt_per_recv_on = 0,
-    opt_report_all_rtts_on = 0,
-    opt_name_on = 0,
-    opt_addr_on = 0,
-    opt_rdns_on = 0;
-int opt_backoff_on = 0;
-int opt_multif_on = 0,
-    opt_timeout_on = 0,
-    opt_fast_reachable_on = 0;
-int opt_outage_on = 0,
-    opt_random_data_on = 0,
-    opt_check_source_on = 0,
-    opt_size_on = 0;
-
-int opt_timestamp_on = 0,
-    opt_timestamp_format = 0;
-
-int opt_icmp_request_typ = 0;
 #if defined(DEBUG) || defined(_DEBUG)
 int opt_debug_randomly_lose_on, opt_debug_trace_on, opt_debug_print_per_system_on;
 int lose_factor;

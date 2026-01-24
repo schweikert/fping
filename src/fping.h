@@ -78,24 +78,6 @@ extern int num_alive, num_unreachable, num_noaddress, num_timeout;
 extern int num_pingsent, num_pingreceived, num_othericmprcvd;
 extern int64_t max_reply, min_reply, total_replies, sum_replies;
 
-// Options
-extern int opt_print_json_on;
-extern int opt_timestamp_on;
-extern int opt_timestamp_format;
-extern int opt_alive_on;
-extern int opt_quiet_on;
-extern int opt_per_recv_on;
-extern int opt_verbose_on;
-extern int opt_print_tos_on;
-extern int opt_print_ttl_on;
-extern int opt_elapsed_on;
-extern int opt_icmp_request_typ;
-extern int opt_report_all_rtts_on;
-extern int opt_outage_on;
-extern int opt_cumulative_stats_on;
-extern int opt_print_netdata_on;
-extern int opt_random_data_on;
-
 
 /* this requires variadic macros, part of C99 */
 #if (defined(DEBUG) || defined(_DEBUG))

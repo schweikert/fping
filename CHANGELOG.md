@@ -13,6 +13,7 @@ Next
 - Move printing functions, stats functions (global stats) and
   function declarations to a separate file (#454, thanks @gsnw-sebast)
 - Avoid crash with option `-0` (#457, thanks @auerswal)
+- Move option parsing to a separate file fping.c and fping.h (#458, thanks @gsnw-sebast)
 
 fping 5.5 (2025-12-31)
 ======================

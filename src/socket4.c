@@ -32,6 +32,7 @@
 
 #include "config.h"
 #include "fping.h"
+#include "flags.h"
 
 #include <fcntl.h>
 #include <netdb.h>

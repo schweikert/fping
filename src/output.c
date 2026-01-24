@@ -1,5 +1,7 @@
 #include "output.h"
 #include "fping.h"
+#include "flags.h"
+
 #include <stdio.h>
 #include <time.h>
 #include <inttypes.h>

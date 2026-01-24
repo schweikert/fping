@@ -1,6 +1,8 @@
 #include "stats.h"
-#include "output.h"
 #include "fping.h"
+#include "flags.h"
+#include "output.h"
+
 #include <stdio.h>
 #include <inttypes.h>
 

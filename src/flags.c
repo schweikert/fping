@@ -32,6 +32,7 @@ int opt_print_netdata_on = 0;
 int opt_print_json_on = 0;
 int opt_print_tos_on = 0;
 int opt_print_ttl_on = 0;
+int opt_print_srcaddr_on = 0;
 int opt_per_recv_on = 0;
 int opt_report_all_rtts_on = 0;
 int opt_name_on = 0;

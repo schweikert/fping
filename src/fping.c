@@ -264,7 +264,14 @@ char *icmp6_param_prob_str[ICMP6_PARAM_PROB_MAXCODE + 1] = {
 #endif
 
 IP_HEADER_RESULT default_ip_header_result() {
-    return (IP_HEADER_RESULT){-1, -1, 0x80000000U, 0x80000000U, 0x80000000U};
+    IP_HEADER_RESULT res;
+    res.tos = -1;
+    res.ttl = -1;
+    res.otime_ms = 0x80000000U;
+    res.rtime_ms = 0x80000000U;
+    res.ttime_ms = 0x80000000U;
+    res.src_addr[0] = '\0';
+    return res;
 }
 
 int event_storage_count;
@@ -534,6 +541,7 @@ int main(int argc, char **argv)
         { "check-source", 0, OPTPARSE_NONE },
         { "print-tos", 0, OPTPARSE_NONE },
         { "print-ttl", 0, OPTPARSE_NONE },
+        { "print-srcaddr", 0, OPTPARSE_NONE },
         { "seqmap-timeout", 0, OPTPARSE_REQUIRED },
 #if defined(DEBUG) || defined(_DEBUG)
         { NULL, 'z', OPTPARSE_REQUIRED },
@@ -597,6 +605,8 @@ int main(int argc, char **argv)
                     }
                 }
 #endif
+            } else if (strstr(optparse_state.optlongname, "print-srcaddr") != NULL) {
+                opt_print_srcaddr_on = 1;
             } else if (strstr(optparse_state.optlongname, "seqmap-timeout") != NULL) {
                 opt_seqmap_timeout = strtod_strict(optparse_state.optarg) * 1000000;
             } else if (strstr(optparse_state.optlongname, "oiface") != NULL) {
@@ -2240,9 +2250,10 @@ int decode_icmp_ipv4(
 {
     struct icmp *icp;
     int hlen = 0;
+    struct ip *ip = NULL;
 
     if (!using_sock_dgram4) {
-        struct ip *ip = (struct ip *)reply_buf;
+        ip = (struct ip *)reply_buf;
         ip_header_res->tos = ip->ip_tos;
         ip_header_res->ttl = ip->ip_ttl;
 
@@ -2355,6 +2366,13 @@ int decode_icmp_ipv4(
         ip_header_res->ttime_ms = ntohl(icp->icmp_dun.id_ts.its_ttime);
     }
 
+    if (opt_print_srcaddr_on) {
+        if (ip == NULL || inet_ntop(AF_INET, &ip->ip_dst, ip_header_res->src_addr, sizeof(ip_header_res->src_addr)) == NULL) {
+            strncpy(ip_header_res->src_addr, "unknown", sizeof(ip_header_res->src_addr) - 1);
+            ip_header_res->src_addr[sizeof(ip_header_res->src_addr) - 1] = '\0';
+        }
+    }
+
     return hlen;
 }
 
@@ -2365,7 +2383,8 @@ int decode_icmp_ipv6(
     char *reply_buf,
     size_t reply_buf_len,
     unsigned short *id,
-    unsigned short *seq)
+    unsigned short *seq,
+    IP_HEADER_RESULT *ip_header_res)
 {
     struct icmp6_hdr *icp;
 
@@ -2474,6 +2493,11 @@ int decode_icmp_ipv6(
     *id = icp->icmp6_id;
     *seq = ntohs(icp->icmp6_seq);
 
+    if (opt_print_srcaddr_on) {
+        strncpy(ip_header_res->src_addr, "not supported", sizeof(ip_header_res->src_addr) - 1);
+        ip_header_res->src_addr[sizeof(ip_header_res->src_addr) - 1] = '\0';
+    }
+
     return 1;
 }
 #endif
@@ -2542,7 +2566,8 @@ int wait_for_reply(int64_t wait_time)
                 buffer,
                 sizeof(buffer),
                 &id,
-                &seq)) {
+                &seq,
+                &ip_header_res)) {
             return 1;
         }
         if (id != ident6) {
@@ -3140,5 +3165,6 @@ void usage(int is_error)
     fprintf(out, "   -X, --fast-reachable=N exits true immediately when N hosts are found\n");
     fprintf(out, "       --print-tos    show received TOS value\n");
     fprintf(out, "       --print-ttl    show IP TTL value\n");
+    fprintf(out, "       --print-srcaddr show used IP source address (IPv6 is currently not supported).\n");
     exit(is_error);
 }

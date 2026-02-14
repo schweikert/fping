@@ -233,6 +233,10 @@ void print_recv_ext(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t 
             ms_since_midnight_utc(recv_time));
     }
 
+    if (ip_header_res->src_addr[0]) {
+        printf(" (SRC %s)", ip_header_res->src_addr);
+    }
+
 #if defined(HAVE_IP_RECVTOS)
     if(opt_print_tos_on) {
         if(ip_header_res->tos != -1) {
@@ -279,6 +283,10 @@ void print_recv_ext_json(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int
         printf("\"receive\": %u, ", ip_header_res->rtime_ms);
         printf("\"transmit\": %u, ", ip_header_res->ttime_ms);
         printf("\"localreceive\": %u}", ms_since_midnight_utc(recv_time));
+    }
+
+    if (ip_header_res->src_addr[0]) {
+        printf(", \"src\": \"%s\"", ip_header_res->src_addr);
     }
 
 #if defined(HAVE_IP_RECVTOS)

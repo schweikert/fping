@@ -36,6 +36,7 @@ extern int opt_print_netdata_on;
 extern int opt_print_json_on;
 extern int opt_print_tos_on;
 extern int opt_print_ttl_on;
+extern int opt_print_srcaddr_on;
 extern int opt_per_recv_on;
 extern int opt_report_all_rtts_on;
 extern int opt_name_on;

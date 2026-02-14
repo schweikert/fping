@@ -40,12 +40,18 @@ else {
 }
 
 sub test_unprivileged_works {
-    plan tests => 18;
+    plan tests => 21;
 
     {
         my $cmd = Test::Command->new(cmd => "$fping_copy 127.0.0.1");
         $cmd->exit_is_num(0);
         $cmd->stdout_is_eq("127.0.0.1 is alive\n");
+        $cmd->stderr_is_eq("");
+    }
+    {
+        my $cmd = Test::Command->new(cmd => "$fping_copy --print-srcaddr 127.0.0.1");
+        $cmd->exit_is_num(0);
+        $cmd->stdout_like(qr{127\.0\.0\.1 is alive \(SRC (?:\d+\.\d+\.\d+\.\d+|unknown)\)\n});
         $cmd->stderr_is_eq("");
     }
     {

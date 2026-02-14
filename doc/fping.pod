@@ -259,6 +259,12 @@ Print cumulative statistics upon exit.
 
 Set source address.
 
+=item B<--print-srcaddr>
+
+Displays the used IP source address in the output. If B<fping> cannot read the source address,
+"(SRC unknown)" is returned.
+IPv6 is currently not supported.
+
 =item B<--seqmap-timeout>=I<MSEC>
 
 Timeout for sequence number mappings in milliseconds. Sequence numbers can

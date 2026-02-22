@@ -37,6 +37,7 @@
 #include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <net/if.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,6 +47,9 @@
 
 char* ping_buffer_ipv6 = 0;
 size_t ping_pkt_size_ipv6;
+
+/* Interface index for outgoing packets (0 = not set, use routing table) */
+static int outgoing_iface_idx_ipv6 = 0;
 
 int open_ping_socket_ipv6(int *socktype)
 {
@@ -94,6 +98,22 @@ int open_ping_socket_ipv6(int *socktype)
     }
 
     return s;
+}
+
+void socket_set_outgoing_iface_ipv6(int s, const char *iface_name)
+{
+    unsigned int idx = if_nametoindex(iface_name);
+    if (idx == 0) {
+        fprintf(stderr, "fping: unknown interface '%s'\n", iface_name);
+        exit(1);
+    }
+    outgoing_iface_idx_ipv6 = (int)idx;
+
+    int on = 1;
+    if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVPKTINFO, &on, sizeof(on)) < 0) {
+        perror("setsockopt IPV6_RECVPKTINFO");
+        exit(1);
+    }
 }
 
 void init_ping_buffer_ipv6(size_t ping_data_size)
@@ -145,7 +165,38 @@ int socket_sendto_ping_ipv6(int s, struct sockaddr* saddr, socklen_t saddr_len, 
 
     icp->icmp6_cksum = 0; /* The IPv6 stack calculates the checksum for us... */
 
-    n = sendto(s, icp, ping_pkt_size_ipv6, 0, saddr, saddr_len);
+    if (outgoing_iface_idx_ipv6 > 0) {
+        struct iovec iov = {
+            .iov_base = icp,
+            .iov_len  = ping_pkt_size_ipv6
+        };
+
+        char cmsg_buf[CMSG_SPACE(sizeof(struct in6_pktinfo))];
+        memset(cmsg_buf, 0, sizeof(cmsg_buf));
+
+        struct msghdr msg = {
+            .msg_name       = saddr,
+            .msg_namelen    = saddr_len,
+            .msg_iov        = &iov,
+            .msg_iovlen     = 1,
+            .msg_control    = cmsg_buf,
+            .msg_controllen = sizeof(cmsg_buf),
+            .msg_flags      = 0
+        };
+
+        struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+        cmsg->cmsg_level = IPPROTO_IPV6;
+        cmsg->cmsg_type  = IPV6_PKTINFO;
+        cmsg->cmsg_len   = CMSG_LEN(sizeof(struct in6_pktinfo));
+
+        struct in6_pktinfo *pktinfo = (struct in6_pktinfo *)CMSG_DATA(cmsg);
+        memset(pktinfo, 0, sizeof(*pktinfo));
+        pktinfo->ipi6_ifindex = outgoing_iface_idx_ipv6;
+
+        n = sendmsg(s, &msg, 0);
+    } else {
+        n = sendto(s, icp, ping_pkt_size_ipv6, 0, saddr, saddr_len);
+    }
 
     return n;
 }

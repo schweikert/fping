@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 25;
+use Test::Command tests => 28;
 use Test::More;
 
 #  -i n       interval between sending ping packets (in millisec) (default 25)
@@ -52,6 +52,17 @@ my $cmd = Test::Command->new(cmd => 'fping -I NotAnInterface 127.0.0.1');
 $cmd->exit_is_num(1);
 $cmd->stdout_is_eq("");
 $cmd->stderr_like(qr{binding to specific interface \(SO_BINDTODEVICE\):.*\n});
+}
+
+# fping --oiface=IFACE
+SKIP: {
+if($^O ne 'linux') {
+    skip '--oiface option functionality is only tested on Linux', 3;
+}
+my $cmd = Test::Command->new(cmd => 'fping --oiface=lo 127.0.0.1');
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("127.0.0.1 is alive\n");
+$cmd->stderr_is_eq("");
 }
 
 # fping -l

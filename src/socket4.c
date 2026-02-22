@@ -40,6 +40,7 @@
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
+#include <net/if.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,6 +49,9 @@
 
 char* ping_buffer_ipv4 = 0;
 size_t ping_pkt_size_ipv4;
+
+/* Interface index for outgoing packets (0 = not set, use routing table) */
+static int outgoing_iface_idx_ipv4 = 0;
 
 int open_ping_socket_ipv4(int *socktype)
 {
@@ -82,6 +86,22 @@ int open_ping_socket_ipv4(int *socktype)
     }
 
     return s;
+}
+
+void socket_set_outgoing_iface_ipv4(int s, const char *iface_name)
+{
+    unsigned int idx = if_nametoindex(iface_name);
+    if (idx == 0) {
+        fprintf(stderr, "fping: unknown interface '%s'\n", iface_name);
+        exit(1);
+    }
+    outgoing_iface_idx_ipv4 = (int)idx;
+
+    int on = 1;
+    if (setsockopt(s, IPPROTO_IP, IP_PKTINFO, &on, sizeof(on)) < 0) {
+        perror("setsockopt IP_PKTINFO");
+        exit(1);
+    }
 }
 
 void init_ping_buffer_ipv4(size_t ping_data_size)
@@ -161,7 +181,38 @@ int socket_sendto_ping_ipv4(int s, struct sockaddr* saddr, socklen_t saddr_len, 
 
     icp->icmp_cksum = calcsum((unsigned short*)icp, ping_pkt_size_ipv4);
 
-    n = sendto(s, icp, ping_pkt_size_ipv4, 0, saddr, saddr_len);
+    if (outgoing_iface_idx_ipv4 > 0) {
+        struct iovec iov = {
+            .iov_base = icp,
+            .iov_len  = ping_pkt_size_ipv4
+        };
+
+        char cmsg_buf[CMSG_SPACE(sizeof(struct in_pktinfo))];
+        memset(cmsg_buf, 0, sizeof(cmsg_buf));
+
+        struct msghdr msg = {
+            .msg_name       = saddr,
+            .msg_namelen    = saddr_len,
+            .msg_iov        = &iov,
+            .msg_iovlen     = 1,
+            .msg_control    = cmsg_buf,
+            .msg_controllen = sizeof(cmsg_buf),
+            .msg_flags      = 0
+        };
+
+        struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+        cmsg->cmsg_level = IPPROTO_IP;
+        cmsg->cmsg_type  = IP_PKTINFO;
+        cmsg->cmsg_len   = CMSG_LEN(sizeof(struct in_pktinfo));
+
+        struct in_pktinfo *pktinfo = (struct in_pktinfo *)CMSG_DATA(cmsg);
+        memset(pktinfo, 0, sizeof(*pktinfo));
+        pktinfo->ipi_ifindex = outgoing_iface_idx_ipv4;
+
+        n = sendmsg(s, &msg, 0);
+    } else {
+        n = sendto(s, icp, ping_pkt_size_ipv4, 0, saddr, saddr_len);
+    }
 
     return n;
 }

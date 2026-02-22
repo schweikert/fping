@@ -157,6 +157,10 @@ was configured with C<--enable-safe-limits>)).
 
 Set the interface (requires SO_BINDTODEVICE support).
 
+=item B<--oiface>=I<IFACE>
+
+Send pings via a specific outgoing interface (receive from any)
+
 =item B<--icmp-timestamp>
 
 Send ICMP timestamp requests (ICMP type 13) instead of ICMP Echo requests.

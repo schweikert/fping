@@ -505,6 +505,7 @@ int main(int argc, char **argv)
         { "ttl", 'H', OPTPARSE_REQUIRED },
         { "interval", 'i', OPTPARSE_REQUIRED },
         { "iface", 'I', OPTPARSE_REQUIRED },
+        { "oiface", 0, OPTPARSE_REQUIRED },
         { "json", 'J', OPTPARSE_NONE },
         { "icmp-timestamp", 0, OPTPARSE_NONE },
 #ifdef SO_MARK
@@ -598,6 +599,20 @@ int main(int argc, char **argv)
 #endif
             } else if (strstr(optparse_state.optlongname, "seqmap-timeout") != NULL) {
                 opt_seqmap_timeout = strtod_strict(optparse_state.optarg) * 1000000;
+            } else if (strstr(optparse_state.optlongname, "oiface") != NULL) {
+#ifdef IP_PKTINFO
+              if (socket4 >= 0) {
+                  socket_set_outgoing_iface_ipv4(socket4, optparse_state.optarg);
+              }
+#ifdef IPV6
+              if (socket6 >= 0) {
+                  socket_set_outgoing_iface_ipv6(socket6, optparse_state.optarg);
+              }
+#endif
+#else
+              fprintf(stderr, "%s: --oiface is not supported on this platform (IP_PKTINFO unavailable)\n", prog);
+              exit(3);
+#endif
             } else {
                 usage(1);
             }
@@ -3074,6 +3089,9 @@ void usage(int is_error)
     fprintf(out, "   -i, --interval=MSEC  interval between sending ping packets (default: %.0f ms)\n", opt_interval / 1e6);
 #ifdef SO_BINDTODEVICE
     fprintf(out, "   -I, --iface=IFACE  bind to a particular interface\n");
+#endif
+#ifdef IP_PKTINFO
+    fprintf(out, "       --oiface=IFACE  send pings via a specific outgoing interface (receive from any)\n");
 #endif
 #ifdef SO_MARK
     fprintf(out, "   -k, --fwmark=FWMARK set the routing mark\n");

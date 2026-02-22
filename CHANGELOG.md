@@ -3,6 +3,8 @@ Next
 
 ## New features
 
+- New option --oiface for outgoing interface (#463, thanks @gsnw-sebast)
+
 ## Bugfixes and other changes
 
 - ci: Removed travis-ci (#446, thanks @gsnw-sebast)

@@ -47,6 +47,26 @@ cap_net_admin.
 Have a look at the [fping(8)](doc/fping.pod) manual page for usage help.
 (`fping -h` will also give a minimal help output.)
 
+## Docker usage
+
+You can use the current Docker image from the develop branch directly from GitHub.
+
+Github Docker: `ghcr.io/schweikert/fping:latest`
+
+The following example uses podman, but you can replace `podman` with `docker` if you prefer.
+
+**Load or update Docker image**
+
+```
+podman pull ghcr.io/schweikert/fping:latest
+```
+
+**Run fping**
+
+```
+podman run --rm fping:latest 127.0.0.1
+```
+
 ## Credits
 
 * Original author:  Roland Schemers (schemers@stanford.edu)

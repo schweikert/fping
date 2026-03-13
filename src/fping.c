@@ -568,7 +568,7 @@ int main(int argc, char **argv)
                 opt_ping_data_size = ICMP_TIMESTAMP_DATA_SIZE;
             } else if (strstr(optparse_state.optlongname, "print-tos") != NULL) {
                 opt_print_tos_on = 1;
-#if defined(IP_RECVTOS)
+#if defined(HAVE_IP_RECVTOS)
                 if (socket4 >= 0 && (socktype4 == SOCK_DGRAM)) {
                     if (setsockopt(socket4, IPPROTO_IP, IP_RECVTOS, &sock_opt_on, sizeof(sock_opt_on))) {
                         perror("setsockopt IP_RECVTOS");
@@ -2114,9 +2114,11 @@ packet_received:
                 *reply_timestamp = timeval_ns(&reply_timestamp_tv);
             }
 #endif
+#if defined(HAVE_IP_RECVTOS)
             if (cmsg->cmsg_level == IPPROTO_IP && cmsg->cmsg_type == IP_TOS) {
                 memcpy(ip_header_tos, CMSG_DATA(cmsg), sizeof(*ip_header_tos));
             }
+#endif
             if (cmsg->cmsg_level == IPPROTO_IP && cmsg->cmsg_type == IP_TTL) {
                 memcpy(ip_header_ttl, CMSG_DATA(cmsg), sizeof(*ip_header_ttl));
             }

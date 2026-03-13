@@ -23,6 +23,31 @@ case "${target}" in
     ;;
 esac
 
+dnl Detect IBM i PASE environment
+AC_MSG_CHECKING([for IBM i PASE environment])
+AC_COMPILE_IFELSE(
+  [AC_LANG_PROGRAM([[]], [[
+#if !defined(__PASE__)
+#error not PASE
+#endif
+  ]])],
+  [
+    AC_MSG_RESULT([yes])
+    AC_MSG_NOTICE([IBM i PASE detected: applying required CPPFLAGS and library paths])
+    CPPFLAGS="-I/QOpenSys/pkgs/include -D_SIGSET_T -DHAVE_STDLIB_H $CPPFLAGS"
+    LDFLAGS="-L/QOpenSys/pkgs/lib $LDFLAGS"
+  ],
+  [AC_MSG_RESULT([no])]
+)
+
+dnl Check for IP_RECVTOS (missing on PASE/IBM i and some BSDs).
+AC_CHECK_DECL([IP_RECVTOS],
+  [AC_DEFINE([HAVE_IP_RECVTOS], [1], [IP_RECVTOS socket option is available])],
+  [],
+  [#include <sys/types.h>
+#include <netinet/in.h>
+#include <sys/socket.h>])
+
 dnl --disable-ipv4
 AC_ARG_ENABLE([ipv4],
   AS_HELP_STRING([--disable-ipv4], [Disable support for pinging IPv4 hosts]))

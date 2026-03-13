@@ -14,6 +14,7 @@ Next
   function declarations to a separate file (#454, thanks @gsnw-sebast)
 - Avoid crash with option `-0` (#457, thanks @auerswal)
 - Move option parsing to a separate file fping.c and fping.h (#458, thanks @gsnw-sebast)
+- Add IBM i PASE detection (#466, thanks @acerbis and @gsnw-sebast)
 - ci: Update autoconf to version 2.73 (#467, thanks @gsnw-sebast)
 
 fping 5.5 (2025-12-31)

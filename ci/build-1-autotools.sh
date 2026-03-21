@@ -15,7 +15,7 @@ MIRRORS=(
     https://ftp.gnu.org/gnu
 )
 
-AUTOCONF_REL=autoconf/autoconf-2.72.tar.gz
+AUTOCONF_REL=autoconf/autoconf-2.73.tar.gz
 AUTOMAKE_REL=automake/automake-1.18.1.tar.gz
 LIBTOOL_REL=libtool/libtool-2.5.4.tar.gz
 

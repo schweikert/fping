@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 28;
+use Test::Command tests => 31;
 use Test::More;
 
 #  -i n       interval between sending ping packets (in millisec) (default 25)
@@ -63,6 +63,20 @@ my $cmd = Test::Command->new(cmd => 'fping --oiface=lo 127.0.0.1');
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("127.0.0.1 is alive\n");
 $cmd->stderr_is_eq("");
+}
+
+# fping --oiface=IFACE (IPv6)
+SKIP: {
+    if($^O ne 'linux') {
+        skip '--oiface option functionality is only tested on Linux', 3;
+    }
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => 'fping -6 --oiface=lo ::1');
+    $cmd->exit_is_num(0);
+    $cmd->stdout_is_eq("::1 is alive\n");
+    $cmd->stderr_is_eq("");
 }
 
 # fping -l

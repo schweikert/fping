@@ -600,6 +600,7 @@ int main(int argc, char **argv)
             } else if (strstr(optparse_state.optlongname, "seqmap-timeout") != NULL) {
                 opt_seqmap_timeout = strtod_strict(optparse_state.optarg) * 1000000;
             } else if (strstr(optparse_state.optlongname, "oiface") != NULL) {
+              opt_oiface_on = 1;
 #ifdef IP_PKTINFO
               if (socket4 >= 0) {
                   socket_set_outgoing_iface_ipv4(socket4, optparse_state.optarg);
@@ -863,6 +864,7 @@ int main(int argc, char **argv)
             exit(1);
 
         case 'I':
+            opt_bindiface_on = 1;
 #ifdef SO_BINDTODEVICE
             if (socket4 >= 0) {
                 if (p_setsockopt(suid, socket4, SOL_SOCKET, SO_BINDTODEVICE, optparse_state.optarg, strlen(optparse_state.optarg))) {
@@ -952,6 +954,11 @@ int main(int argc, char **argv)
 
     if (opt_unreachable_on && opt_alive_on) {
         fprintf(stderr, "%s: specify only one of a, u\n", prog);
+        exit(1);
+    }
+
+    if (opt_oiface_on && opt_bindiface_on) {
+        fprintf(stderr, "%s: specify only --oiface or -I, --iface\n", prog);
         exit(1);
     }
 

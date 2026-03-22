@@ -49,6 +49,8 @@ extern int opt_outage_on;
 extern int opt_random_data_on;
 extern int opt_check_source_on;
 extern int opt_size_on;
+extern int opt_oiface_on;
+extern int opt_bindiface_on;
 extern int opt_timestamp_on;
 extern int opt_timestamp_format;
 extern int opt_icmp_request_typ;

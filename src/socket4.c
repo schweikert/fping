@@ -53,6 +53,10 @@ size_t ping_pkt_size_ipv4;
 /* Interface index for outgoing packets (0 = not set, use routing table) */
 static int outgoing_iface_idx_ipv4 = 0;
 
+/* Source address for outgoing packets (used to populate ipi_spec_dst) */
+static struct in_addr outgoing_src_addr_ipv4;
+static int outgoing_src_addr_set_ipv4 = 0;
+
 int open_ping_socket_ipv4(int *socktype)
 {
     struct protoent* proto;
@@ -117,6 +121,10 @@ void socket_set_src_addr_ipv4(int s, struct in_addr* src_addr, int *ident)
 {
     struct sockaddr_in sa;
     socklen_t len = sizeof(sa);
+
+    /* Remember source address so we can set ipi_spec_dst in sendmsg() */
+    outgoing_src_addr_ipv4 = *src_addr;
+    outgoing_src_addr_set_ipv4 = 1;
 
     memset(&sa, 0, len);
     sa.sin_family = AF_INET;
@@ -208,6 +216,9 @@ int socket_sendto_ping_ipv4(int s, struct sockaddr* saddr, socklen_t saddr_len, 
         struct in_pktinfo *pktinfo = (struct in_pktinfo *)CMSG_DATA(cmsg);
         memset(pktinfo, 0, sizeof(*pktinfo));
         pktinfo->ipi_ifindex = outgoing_iface_idx_ipv4;
+        if (outgoing_src_addr_set_ipv4) {
+            pktinfo->ipi_spec_dst = outgoing_src_addr_ipv4;
+        }
 
         n = sendmsg(s, &msg, 0);
     } else {

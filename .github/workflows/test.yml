@@ -44,7 +44,48 @@ jobs:
           flag-name: ${{ matrix.os }}
           parallel: true
 
+      - name: Upload fping binary
+        uses: actions/upload-artifact@v6
+        with:
+          name: fping-binary-${{ matrix.os }}-${{ github.sha }}
+          path: src/fping
 
+  Test-Asymmetric-Routing:
+    needs: [Test-Linux]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-24.04]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Download fping binary from Test-Linux
+        id: download
+        uses: actions/download-artifact@v6
+        with:
+          name: fping-binary-${{ matrix.os }}-${{ github.sha }}
+          path: src/
+        continue-on-error: true
+
+      - name: Fallback - Build fping if download failed
+        if: steps.download.outcome == 'failure'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libcap2-bin libtest-command-perl
+          ci/build-1-autotools.sh
+          ci/build-4-compile.sh
+
+      - name: Make fping executable
+        run: chmod +x src/fping
+
+      - name: Install tcpdump and net-tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y tcpdump net-tools
+
+      - name: Test asymmetric routing (--oiface)
+        run: sudo ci/test-oiface.sh
 
   Test-Mac:
     runs-on: macos-latest

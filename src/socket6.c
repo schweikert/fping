@@ -51,6 +51,10 @@ size_t ping_pkt_size_ipv6;
 /* Interface index for outgoing packets (0 = not set, use routing table) */
 static int outgoing_iface_idx_ipv6 = 0;
 
+/* Source address for outgoing packets (used to populate ipi6_addr) */
+static struct in6_addr outgoing_src_addr_ipv6;
+static int outgoing_src_addr_set_ipv6 = 0;
+
 int open_ping_socket_ipv6(int *socktype)
 {
     struct protoent* proto;
@@ -124,6 +128,9 @@ void socket_set_src_addr_ipv6(int s, struct in6_addr* src_addr, int *ident)
     struct sockaddr_in6 sa;
     socklen_t len = sizeof(sa);
 
+    outgoing_src_addr_ipv6 = *src_addr;
+    outgoing_src_addr_set_ipv6 = 1;
+
     memset(&sa, 0, sizeof(sa));
     sa.sin6_family = AF_INET6;
     sa.sin6_addr = *src_addr;
@@ -186,6 +193,10 @@ int socket_sendto_ping_ipv6(int s, struct sockaddr* saddr, socklen_t saddr_len, 
         struct in6_pktinfo *pktinfo = (struct in6_pktinfo *)CMSG_DATA(cmsg);
         memset(pktinfo, 0, sizeof(*pktinfo));
         pktinfo->ipi6_ifindex = outgoing_iface_idx_ipv6;
+
+        if (outgoing_src_addr_set_ipv6) {
+            pktinfo->ipi6_addr = outgoing_src_addr_ipv6;
+        }
 
         n = sendmsg(s, &msg, 0);
     } else {

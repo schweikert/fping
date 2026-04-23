@@ -82,6 +82,7 @@ Generated when a ping reply is received.
   contains `originate`, `receive`, `transmit`, and `localreceive` timestamps.
 - `tos`: If `--print-tos` is used, contains the Type of Service value.
 - `ttl`: If `--print-ttl` is used, contains the Time To Live value.
+- `src`: If `--print-src` is used, contains the source IP address of the responding host.
 
 ### `timeout`: Timeout
 

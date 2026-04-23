@@ -607,7 +607,7 @@ int main(int argc, char **argv)
               }
 #ifdef IPV6
               if (socket6 >= 0) {
-                  socket_set_outgoing_iface_ipv6(socket6, optparse_state.optarg);
+                  socket_set_outgoing_iface_ipv6(optparse_state.optarg);
               }
 #endif
 #else

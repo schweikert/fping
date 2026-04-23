@@ -100,7 +100,7 @@ int open_ping_socket_ipv6(int *socktype)
     return s;
 }
 
-void socket_set_outgoing_iface_ipv6(int s, const char *iface_name)
+void socket_set_outgoing_iface_ipv6(const char *iface_name)
 {
     unsigned int idx = if_nametoindex(iface_name);
     if (idx == 0) {
@@ -108,12 +108,6 @@ void socket_set_outgoing_iface_ipv6(int s, const char *iface_name)
         exit(1);
     }
     outgoing_iface_idx_ipv6 = (int)idx;
-
-    int on = 1;
-    if (setsockopt(s, IPPROTO_IPV6, IPV6_RECVPKTINFO, &on, sizeof(on)) < 0) {
-        perror("setsockopt IPV6_RECVPKTINFO");
-        exit(1);
-    }
 }
 
 void init_ping_buffer_ipv6(size_t ping_data_size)

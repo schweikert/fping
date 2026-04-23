@@ -600,19 +600,19 @@ int main(int argc, char **argv)
             } else if (strstr(optparse_state.optlongname, "seqmap-timeout") != NULL) {
                 opt_seqmap_timeout = strtod_strict(optparse_state.optarg) * 1000000;
             } else if (strstr(optparse_state.optlongname, "oiface") != NULL) {
-              opt_oiface_on = 1;
+                opt_oiface_on = 1;
 #ifdef IP_PKTINFO
-              if (socket4 >= 0) {
-                  socket_set_outgoing_iface_ipv4(socket4, optparse_state.optarg);
-              }
+                if (socket4 >= 0) {
+                    socket_set_outgoing_iface_ipv4(socket4, optparse_state.optarg);
+                }
 #ifdef IPV6
-              if (socket6 >= 0) {
-                  socket_set_outgoing_iface_ipv6(optparse_state.optarg);
-              }
+                if (socket6 >= 0) {
+                    socket_set_outgoing_iface_ipv6(optparse_state.optarg);
+                }
 #endif
 #else
-              fprintf(stderr, "%s: --oiface is not supported on this platform (IP_PKTINFO unavailable)\n", prog);
-              exit(3);
+                fprintf(stderr, "%s: --oiface is not supported on this platform (IP_PKTINFO unavailable)\n", prog);
+                exit(3);
 #endif
             } else {
                 usage(1);

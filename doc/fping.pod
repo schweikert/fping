@@ -169,6 +169,14 @@ the local receive time in the same format, in addition to normal output.
 Cannot be used together with B<-b> because ICMP timestamp messages have a fixed size.
 IPv4 only, requires root privileges or cap_net_raw.
 
+=item B<--traceroute>
+
+Sends a traceroute based on ICMP echo request. Root privileges are required.
+
+Example usage:
+
+$: fping --traceroute 127.0.0.1
+
 =item B<-J>, B<--json>
 
 Format output JSON (-c, -C, or -l required)

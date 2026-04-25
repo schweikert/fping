@@ -147,7 +147,7 @@ void socket_set_src_addr_ipv6(int s, struct in6_addr* src_addr, int *ident)
     }
 }
 
-int socket_sendto_ping_ipv6(int s, struct sockaddr* saddr, socklen_t saddr_len, uint16_t icmp_seq_nr, uint16_t icmp_id_nr)
+int socket_sendto_ping_ipv6(int s, struct sockaddr* saddr, socklen_t saddr_len, uint16_t icmp_seq_nr, uint16_t icmp_id_nr, int ttl)
 {
     struct icmp6_hdr* icp;
     int n;
@@ -166,38 +166,58 @@ int socket_sendto_ping_ipv6(int s, struct sockaddr* saddr, socklen_t saddr_len, 
 
     icp->icmp6_cksum = 0; /* The IPv6 stack calculates the checksum for us... */
 
+    /* Prepare msghdr for sendmsg */
+    struct iovec iov = {
+        .iov_base = icp,
+        .iov_len  = ping_pkt_size_ipv6
+    };
+
+    /* Buffer for ancillary data (Interface info and/or Hop Limit) */
+    char cmsg_buf[CMSG_SPACE(sizeof(struct in6_pktinfo)) + CMSG_SPACE(sizeof(int))];
+    memset(cmsg_buf, 0, sizeof(cmsg_buf));
+
+    struct msghdr msg = {
+        .msg_name       = saddr,
+        .msg_namelen    = saddr_len,
+        .msg_iov        = &iov,
+        .msg_iovlen     = 1,
+        .msg_control    = cmsg_buf,
+        .msg_controllen = sizeof(cmsg_buf),
+        .msg_flags      = 0
+    };
+
+    size_t actual_cmsg_len = 0;
+    struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+
+    /* Handle Interface Index and Source Address */
     if (outgoing_iface_idx_ipv6 > 0) {
-        struct iovec iov = {
-            .iov_base = icp,
-            .iov_len  = ping_pkt_size_ipv6
-        };
-
-        char cmsg_buf[CMSG_SPACE(sizeof(struct in6_pktinfo))];
-        memset(cmsg_buf, 0, sizeof(cmsg_buf));
-
-        struct msghdr msg = {
-            .msg_name       = saddr,
-            .msg_namelen    = saddr_len,
-            .msg_iov        = &iov,
-            .msg_iovlen     = 1,
-            .msg_control    = cmsg_buf,
-            .msg_controllen = sizeof(cmsg_buf),
-            .msg_flags      = 0
-        };
-
-        struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msg);
+        msg.msg_controllen += CMSG_SPACE(sizeof(struct in6_pktinfo));
         cmsg->cmsg_level = IPPROTO_IPV6;
         cmsg->cmsg_type  = IPV6_PKTINFO;
         cmsg->cmsg_len   = CMSG_LEN(sizeof(struct in6_pktinfo));
 
         struct in6_pktinfo *pktinfo = (struct in6_pktinfo *)CMSG_DATA(cmsg);
-        memset(pktinfo, 0, sizeof(*pktinfo));
         pktinfo->ipi6_ifindex = outgoing_iface_idx_ipv6;
-
         if (outgoing_src_addr_set_ipv6) {
             pktinfo->ipi6_addr = outgoing_src_addr_ipv6;
         }
+        actual_cmsg_len += CMSG_SPACE(sizeof(struct in6_pktinfo));
+        cmsg = CMSG_NXTHDR(&msg, cmsg);
+    }
 
+    /* Handle Hop Limit (TTL) */
+    if (ttl > 0 && cmsg != NULL) {
+        cmsg->cmsg_level = IPPROTO_IPV6;
+        cmsg->cmsg_type  = IPV6_HOPLIMIT;
+        cmsg->cmsg_len   = CMSG_LEN(sizeof(int));
+        memcpy(CMSG_DATA(cmsg), &ttl, sizeof(int));
+        actual_cmsg_len += CMSG_SPACE(sizeof(int));
+    }
+
+    msg.msg_controllen = actual_cmsg_len;
+
+    /* Use sendmsg if we have ancillary data, otherwise fallback to sendto */
+    if (msg.msg_controllen > 0) {
         n = sendmsg(s, &msg, 0);
     } else {
         n = sendto(s, icp, ping_pkt_size_ipv6, 0, saddr, saddr_len);

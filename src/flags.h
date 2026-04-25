@@ -29,6 +29,7 @@ extern int opt_quiet_on;
 extern int opt_elapsed_on;
 extern int opt_stats_on;
 extern int opt_cumulative_stats_on;
+extern int opt_traceroute_on;
 extern int opt_generate_on;
 extern int opt_count_on;
 extern int opt_loop_on;

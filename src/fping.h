@@ -41,6 +41,7 @@ typedef struct host_entry {
     int64_t min_reply_i; /* shortest response time */
     int64_t total_time_i; /* sum of response times */
     int64_t *resp_times; /* individual response times */
+    int trace_ttl; /* current traceroute ttl */
 
     /* to avoid allocating two struct events each time that we send a ping, we
      * preallocate here two struct events for each ping that we might send for
@@ -125,19 +126,20 @@ void print_timestamp_format(int64_t current_time_ns, int timestamp_format);
 void crash_and_burn( char *message );
 void errno_crash_and_burn( char *message );
 int in_cksum( unsigned short *p, int n );
+void handle_traceroute_hop(HOST_ENTRY *h, const char *ip_str, int reached_destination, int64_t this_reply);
 
 /* socket.c */
 int  open_ping_socket_ipv4(int *socktype);
 void socket_set_outgoing_iface_ipv4(int s, const char *iface_name);
 void init_ping_buffer_ipv4(size_t ping_data_size);
 void socket_set_src_addr_ipv4(int s, struct in_addr *src_addr, int *ident);
-int  socket_sendto_ping_ipv4(int s, struct sockaddr *saddr, socklen_t saddr_len, uint16_t icmp_seq, uint16_t icmp_id, uint8_t icmp_proto);
+int socket_sendto_ping_ipv4(int s, struct sockaddr* saddr, socklen_t saddr_len, uint16_t icmp_seq_nr, uint16_t icmp_id_nr, uint8_t icmp_proto, int ttl);
 #ifdef IPV6
 int  open_ping_socket_ipv6(int *socktype);
 void socket_set_outgoing_iface_ipv6(const char *iface_name);
 void init_ping_buffer_ipv6(size_t ping_data_size);
 void socket_set_src_addr_ipv6(int s, struct in6_addr *src_addr, int *ident);
-int  socket_sendto_ping_ipv6(int s, struct sockaddr *saddr, socklen_t saddr_len, uint16_t icmp_seq, uint16_t icmp_id);
+int socket_sendto_ping_ipv6(int s, struct sockaddr* saddr, socklen_t saddr_len, uint16_t icmp_seq_nr, uint16_t icmp_id_nr, int ttl);
 #endif
 
 #endif

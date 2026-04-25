@@ -25,6 +25,7 @@ int opt_quiet_on = 0;
 int opt_elapsed_on = 0;
 int opt_stats_on = 0;
 int opt_cumulative_stats_on = 0;
+int opt_traceroute_on = 0;
 int opt_generate_on = 0; /* flag for IP list generation */
 int opt_count_on = 0;
 int opt_loop_on = 0;

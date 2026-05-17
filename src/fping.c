@@ -508,7 +508,7 @@ int main(int argc, char **argv)
         { "oiface", 0, OPTPARSE_REQUIRED },
         { "json", 'J', OPTPARSE_NONE },
         { "icmp-timestamp", 0, OPTPARSE_NONE },
-#ifdef SO_MARK
+#if defined(SO_MARK) && defined(USE_SO_MARK)
         { "fwmark", 'k', OPTPARSE_REQUIRED },
 #endif
         { "loop", 'l', OPTPARSE_NONE },
@@ -824,7 +824,7 @@ int main(int argc, char **argv)
         case 'f':
             filename = optparse_state.optarg;
             break;
-#ifdef SO_MARK
+#if defined(SO_MARK) && defined(USE_SO_MARK)
         case 'k':
             fwmark = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
             if (!fwmark)
@@ -3100,7 +3100,7 @@ void usage(int is_error)
 #ifdef IP_PKTINFO
     fprintf(out, "       --oiface=IFACE  send pings via a specific outgoing interface (receive from any)\n");
 #endif
-#ifdef SO_MARK
+#if defined(SO_MARK) && defined(USE_SO_MARK)
     fprintf(out, "   -k, --fwmark=FWMARK set the routing mark\n");
 #endif
     fprintf(out, "   -l, --loop         loop mode: send pings forever\n");

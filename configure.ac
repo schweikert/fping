@@ -104,6 +104,14 @@ AC_ARG_ENABLE([debug],
 AS_IF([test "x$enable_debug" = "xyes"], [
   AC_DEFINE([DEBUG], [1], [Define if debugging is enabled])])
 
+
+AC_ARG_ENABLE([getprotobyname],
+  AS_HELP_STRING([--disable-getprotobyname], [Disable use of getprotobyname]),
+  [], [enable_getprotobyname=yes])
+AS_IF([test "x$enable_getprotobyname" = "xyes"], [
+  AC_DEFINE([USE_GETPROTOBYNAME], [1], [Enable use of getprotobyname])
+])
+
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_MAINTAINER_MODE
 

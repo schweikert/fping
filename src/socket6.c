@@ -61,10 +61,10 @@ int open_ping_socket_ipv6(int *socktype)
     int p_proto = IPPROTO_ICMPV6;
 
 #if defined(USE_GETPROTOBYNAME) && !(defined(ANDROID) || defined(__ANDROID__))
-	/* confirm that ICMP6 is available on this machine */
-	if (getprotobyname("ipv6-icmp") == NULL ) {
-		crash_and_burn("ipv6-icmp: unknown protocol");
-	}
+    /* confirm that ICMP6 is available on this machine */
+    if (getprotobyname("ipv6-icmp") == NULL) {
+        crash_and_burn("ipv6-icmp: unknown protocol");
+    }
 #endif
 
     /* create raw socket for ICMP6 calls (ping) */

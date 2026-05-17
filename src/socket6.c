@@ -67,9 +67,9 @@ int open_ping_socket_ipv6(int *socktype)
 #ifdef USE_RAWSOCKET
     /* create raw socket for ICMP6 calls (ping) */
     *socktype = SOCK_RAW;
-	s = socket(AF_INET6, *socktype, proto->p_proto);
-    if (s > -1) {
-		/* receive only ICMP6 messages relevant for fping on raw socket */
+    s = socket(AF_INET6, *socktype, proto->p_proto);
+    if (s >= 0) {
+        /* receive only ICMP6 messages relevant for fping on raw socket */
         struct icmp6_filter recv_filter;
 
         ICMP6_FILTER_SETBLOCKALL(&recv_filter);

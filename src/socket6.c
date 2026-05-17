@@ -58,7 +58,7 @@ static int outgoing_src_addr_set_ipv6 = 0;
 int open_ping_socket_ipv6(int *socktype)
 {
     struct protoent* proto;
-    int s;
+    int s = -1;
 
     /* confirm that ICMP6 is available on this machine */
     if ((proto = getprotobyname("ipv6-icmp")) == NULL)
@@ -67,8 +67,8 @@ int open_ping_socket_ipv6(int *socktype)
 #ifdef USE_RAWSOCKET
     /* create raw socket for ICMP6 calls (ping) */
     *socktype = SOCK_RAW;
-    if ((s = socket(AF_INET6, *socktype, proto->p_proto)) > -1 )
-	{
+	s = socket(AF_INET6, *socktype, proto->p_proto);
+    if (s > -1) {
 		/* receive only ICMP6 messages relevant for fping on raw socket */
         struct icmp6_filter recv_filter;
 
@@ -82,21 +82,21 @@ int open_ping_socket_ipv6(int *socktype)
         if (setsockopt(s, IPPROTO_ICMPV6, ICMP6_FILTER, &recv_filter, sizeof(recv_filter))) {
             errno_crash_and_burn("cannot set icmp6 message type filter");
         }
-    } else
+    }
 #endif
+
 #ifdef SOCK_DGRAM
-	{
+	if (s < 0) {
         /* try non-privileged icmp6 (works on Mac OSX without privileges, for example) */
         *socktype = SOCK_DGRAM;
-        if ((s = socket(AF_INET6, *socktype, proto->p_proto)) < 0) {
-            return -1;
-        }
-    }
-#else
-    {
-        return -1;
+		s = socket(AF_INET6, *socktype, proto->p_proto);
     }
 #endif
+
+    if (s < 0) {
+        return -1;
+    }
+
 
     /* Make sure that we use non-blocking IO */
     {

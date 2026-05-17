@@ -104,13 +104,6 @@ AC_ARG_ENABLE([debug],
 AS_IF([test "x$enable_debug" = "xyes"], [
   AC_DEFINE([DEBUG], [1], [Define if debugging is enabled])])
 
-AC_ARG_ENABLE([raw-sockets],
-  AS_HELP_STRING([--disable-raw-sockets], [Disable use of raw sockets]),
-  [], [enable_raw_sockets=yes])
-AS_IF([test "x$enable_raw_sockets" = "xyes"], [
-  AC_DEFINE([USE_RAWSOCKET], [1], [Enable use of raw sockets])
-])
-
 dnl Check for SOCK_DGRAM support
 AC_CHECK_HEADERS([sys/socket.h])
 AC_CHECK_DECL([SOCK_DGRAM],

@@ -71,7 +71,6 @@ int open_ping_socket_ipv6(int *socktype)
     }
 #endif
 
-
     /* create raw socket for ICMP6 calls (ping) */
     *socktype = SOCK_RAW;
     s = socket(AF_INET6, *socktype, p_proto);

@@ -87,6 +87,9 @@ jobs:
       - name: Test asymmetric routing (--oiface)
         run: sudo ci/test-oiface.sh
 
+      - name: Test asymmetric ipv6 routing (--oiface)
+        run: sudo ci/test-oiface-ipv6.sh
+
   Test-Mac:
     runs-on: macos-latest
     steps:

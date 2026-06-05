@@ -18,6 +18,7 @@ Next
 - Move option parsing to a separate file fping.c and fping.h (#458, thanks @gsnw-sebast)
 - Add IBM i PASE detection (#466, thanks @acerbis and @gsnw-sebast)
 - ci: Update autoconf to version 2.73 (#467, thanks @gsnw-sebast)
+- ci: Add Test asymmetric ipv6 routing [--oiface] (#468, thanks @gsnw-sebast)
 
 fping 5.5 (2025-12-31)
 ======================

@@ -10,7 +10,7 @@ m4_ifdef([AC_AUTOCONF_VERSION],[AC_USE_SYSTEM_EXTENSIONS], [AC_GNU_SOURCE])
 # Detect Operatingsystem
 AC_CANONICAL_TARGET
 only_clock_realtime=no
-use_getprotobyname=yes
+disable_getprotobyname=no
 
 case "${target}" in
   *darwin*)
@@ -23,7 +23,7 @@ case "${target}" in
     only_clock_realtime=yes
     ;;
   *android*)
-    use_getprotobyname=no
+    disable_getprotobyname=yes
     ;;
 esac
 
@@ -108,7 +108,20 @@ AC_ARG_ENABLE([debug],
 AS_IF([test "x$enable_debug" = "xyes"], [
   AC_DEFINE([DEBUG], [1], [Define if debugging is enabled])])
 
-AS_IF([test "x$use_getprotobyname" = "xyes"], [AC_DEFINE([USE_GETPROTOBYNAME], [1], [Enable use of getprotobyname])])
+AS_IF([test "x$only_clock_realtime" = "xyes"], [AC_DEFINE(ONLY_CLOCK_REALTIME, [1], [ONLY_CLOCK_REALTIME is defined])])
+
+dnl check for getprotobyname support
+
+AC_CHECK_FUNCS([getprotobyname])
+
+AS_IF([test "x$disable_getprotobyname" = "xyes"], [
+  AC_MSG_NOTICE([Android detected: Disabling getprotobyname])
+  ac_cv_func_getprotobyname=no
+])
+
+if test $ac_cv_func_getprotobyname = yes; then
+  AC_DEFINE([USE_GETPROTOBYNAME], [1], [Define if getprotobyname is available and should be used.])
+fi
 
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_MAINTAINER_MODE

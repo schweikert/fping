@@ -661,10 +661,28 @@ int main(int argc, char **argv)
 #endif
             break;
 
-        case 't':
-            opt_timeout = strtod_strict(optparse_state.optarg) * 1000000;
+        case 't': {
+            size_t len = strlen(optparse_state.optarg);
+            char *arg = strdup(optparse_state.optarg);
+            if (!arg) {
+                fprintf(stderr, "%s: out of memory\n", prog);
+                exit(1);
+            }
+            /* Strip trailing 's' or 'ms' suffix for user convenience;
+             * opt_timeout is in nanoseconds. */
+            if (len > 2 && strcmp(arg + len - 2, "ms") == 0) {
+                arg[len - 2] = '\0';
+                opt_timeout = strtod_strict(arg) * 1000000;
+            } else if (len > 0 && arg[len - 1] == 's') {
+                arg[len - 1] = '\0';
+                opt_timeout = strtod_strict(arg) * 1000000000;
+            } else {
+                opt_timeout = strtod_strict(arg) * 1000000;
+            }
+            free(arg);
             opt_timeout_on = 1;
             break;
+        }
 
         case 'r':
             opt_retry = (unsigned int)strtoul_strict(optparse_state.optarg, 10);

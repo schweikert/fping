@@ -3,7 +3,7 @@ Next
 
 ## New features
 
-- New option --print-srcaddr to show used IP source address in output (#461, thanks @gsnw-sebast)
+- New option --print-reply-dst to show the destination address of the received reply packet (#461, thanks @gsnw-sebast)
 - New option --oiface for outgoing interface (#463, thanks @gsnw-sebast)
 
 ## Bugfixes and other changes

@@ -259,11 +259,12 @@ Print cumulative statistics upon exit.
 
 Set source address.
 
-=item B<--print-srcaddr>
+=item B<--print-reply-dst>
 
-Displays the used IP source address in the output. If B<fping> cannot read the source address,
-"(SRC unknown)" is returned.
-IPv6 is currently not supported.
+Displays the destination address of the received reply packet. (IPv6 is currently not supported).
+Note this reflects the address as seen on the reply packet, not necessarily the
+address the request was sent from. It is only printed for hosts that reply (not for timeouts),
+and NAT between fping and the target can make it differ from the request's source or the reply's real origin.
 
 =item B<--seqmap-timeout>=I<MSEC>
 

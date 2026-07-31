@@ -49,9 +49,9 @@ sub test_unprivileged_works {
         $cmd->stderr_is_eq("");
     }
     {
-        my $cmd = Test::Command->new(cmd => "$fping_copy --print-srcaddr 127.0.0.1");
+        my $cmd = Test::Command->new(cmd => "$fping_copy --print-reply-dst 127.0.0.1");
         $cmd->exit_is_num(0);
-        $cmd->stdout_like(qr{127\.0\.0\.1 is alive \(SRC (?:\d+\.\d+\.\d+\.\d+|unknown)\)\n});
+        $cmd->stdout_like(qr{127\.0\.0\.1 is alive \(Reply-DST (?:\d+\.\d+\.\d+\.\d+|unknown)\)\n});
         $cmd->stderr_is_eq("");
     }
     {

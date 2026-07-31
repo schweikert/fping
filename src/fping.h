@@ -18,7 +18,7 @@ typedef struct ip_header_result {
     uint32_t otime_ms;
     uint32_t rtime_ms;
     uint32_t ttime_ms;
-    char src_addr[INET6_ADDRSTRLEN];
+    char reply_dst_addr[INET6_ADDRSTRLEN];
 } IP_HEADER_RESULT;
 
 typedef struct host_entry {

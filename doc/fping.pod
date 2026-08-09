@@ -261,7 +261,7 @@ Set source address.
 
 =item B<--print-reply-dst>
 
-Displays the destination address of the received reply packet. (IPv6 is currently not supported).
+Displays the destination address of the received reply packet.
 Note this reflects the address as seen on the reply packet, not necessarily the
 address the request was sent from. It is only printed for hosts that reply (not for timeouts),
 and NAT between fping and the target can make it differ from the request's source or the reply's real origin.

@@ -40,7 +40,7 @@ else {
 }
 
 sub test_unprivileged_works {
-    plan tests => 21;
+    plan tests => 24;
 
     {
         my $cmd = Test::Command->new(cmd => "$fping_copy 127.0.0.1");
@@ -52,6 +52,12 @@ sub test_unprivileged_works {
         my $cmd = Test::Command->new(cmd => "$fping_copy --print-reply-dst 127.0.0.1");
         $cmd->exit_is_num(0);
         $cmd->stdout_like(qr{127\.0\.0\.1 is alive \(Reply-DST unknown\)\n});
+        $cmd->stderr_is_eq("");
+    }
+    {
+        my $cmd = Test::Command->new(cmd => "$fping_copy --print-reply-dst ::1");
+        $cmd->exit_is_num(0);
+        $cmd->stdout_like(qr{::1 is alive \(Reply-DST ::1\)\n});
         $cmd->stderr_is_eq("");
     }
     {

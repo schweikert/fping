@@ -5,6 +5,7 @@ Next
 
 - New option --print-reply-dst to show the destination address of the received reply packet (#461, thanks @gsnw-sebast)
 - New option --oiface for outgoing interface (#463, thanks @gsnw-sebast)
+- Add IPv6 support to --print-reply-dst (#462, thanks @gsnw-sebast)
 
 ## Bugfixes and other changes
 

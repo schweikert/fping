@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 66;
+use Test::Command tests => 69;
 use Test::More;
 
 # fping -J -c 2 127.0.0.1
@@ -98,12 +98,23 @@ $cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"[\d+-]+\s[\d+:]+",\s"host":\s"
 $cmd->stderr_is_eq("");
 }
 
-# fping -J -c 1 --print-srcaddr 127.0.0.1
+# fping -J -c 1 --print-reply-dst 127.0.0.1
+{
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 --print-reply-dst 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"replyDst":\s"127\.0\.0\.1"\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");
+}
+
+# fping -J -c 1 --print-reply-dst ::1
+{
+my $cmd = Test::Command->new(cmd => "fping -J -c 1 --print-reply-dst ::1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"::1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"replyDst":\s"::1"\}\}
+\{"summary":\s\{"host":\s"::1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
+$cmd->stderr_is_eq("");
+}
 
 # fping -J -c 1 -q 127.0.0.1
 {

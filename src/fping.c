@@ -607,6 +607,13 @@ int main(int argc, char **argv)
 #endif
             } else if (strstr(optparse_state.optlongname, "print-reply-dst") != NULL) {
                 opt_print_reply_dst_on = 1;
+#if defined(IPV6) && defined(IPV6_RECVPKTINFO)
+                if (socket6 >= 0) {
+                    if (setsockopt(socket6, IPPROTO_IPV6, IPV6_RECVPKTINFO, &sock_opt_on, sizeof(sock_opt_on))) {
+                        perror("setsockopt IPV6_RECVPKTINFO");
+                    }
+                }
+#endif
             } else if (strstr(optparse_state.optlongname, "seqmap-timeout") != NULL) {
                 opt_seqmap_timeout = strtod_strict(optparse_state.optarg) * 1000000;
             } else if (strstr(optparse_state.optlongname, "oiface") != NULL) {
@@ -2077,7 +2084,13 @@ int receive_packet(int64_t wait_time,
     char *reply_buf,
     size_t reply_buf_len,
     int *ip_header_tos,
-    int *ip_header_ttl)
+    int *ip_header_ttl,
+#ifdef IPV6
+    struct in6_addr *recv_dst_addr_ipv6
+#else
+    void *recv_dst_addr_ipv6
+#endif
+  )
 {
     struct timeval to;
     int s = 0;
@@ -2160,6 +2173,11 @@ packet_received:
             }
             if (cmsg->cmsg_level == IPPROTO_IPV6 && cmsg->cmsg_type == IPV6_HOPLIMIT) {
                 memcpy(ip_header_ttl, CMSG_DATA(cmsg), sizeof(*ip_header_ttl));
+            }
+            if (cmsg->cmsg_level == IPPROTO_IPV6 && cmsg->cmsg_type == IPV6_PKTINFO) {
+                struct in6_pktinfo *pktinfo = (struct in6_pktinfo *)CMSG_DATA(cmsg);
+                if (recv_dst_addr_ipv6)
+                    memcpy(recv_dst_addr_ipv6, &pktinfo->ipi6_addr, sizeof(*recv_dst_addr_ipv6));
             }
 #endif
         }
@@ -2384,7 +2402,8 @@ int decode_icmp_ipv6(
     size_t reply_buf_len,
     unsigned short *id,
     unsigned short *seq,
-    IP_HEADER_RESULT *ip_header_res)
+    IP_HEADER_RESULT *ip_header_res,
+    struct in6_addr *local_addr)
 {
     struct icmp6_hdr *icp;
 
@@ -2494,8 +2513,10 @@ int decode_icmp_ipv6(
     *seq = ntohs(icp->icmp6_seq);
 
     if (opt_print_reply_dst_on) {
-        strncpy(ip_header_res->reply_dst_addr, "not supported", sizeof(ip_header_res->reply_dst_addr) - 1);
-        ip_header_res->reply_dst_addr[sizeof(ip_header_res->reply_dst_addr) - 1] = '\0';
+        if (local_addr == NULL || IN6_IS_ADDR_UNSPECIFIED(local_addr) || inet_ntop(AF_INET6, local_addr, ip_header_res->reply_dst_addr, sizeof(ip_header_res->reply_dst_addr)) == NULL) {
+            strncpy(ip_header_res->reply_dst_addr, "unknown", sizeof(ip_header_res->reply_dst_addr) - 1);
+            ip_header_res->reply_dst_addr[sizeof(ip_header_res->reply_dst_addr) - 1] = '\0';
+        }
     }
 
     return 1;
@@ -2517,6 +2538,11 @@ int wait_for_reply(int64_t wait_time)
     unsigned short seq;
     IP_HEADER_RESULT ip_header_res = default_ip_header_result();
 
+#ifdef IPV6
+    struct in6_addr recv_dst_addr_ipv6;
+    memset(&recv_dst_addr_ipv6, 0, sizeof(recv_dst_addr_ipv6));
+#endif
+
     /* Receive packet */
     result = receive_packet(wait_time, /* max. wait time, in ns */
         &recv_time, /* reply_timestamp */
@@ -2525,7 +2551,12 @@ int wait_for_reply(int64_t wait_time)
         buffer, /* reply_buf */
         sizeof(buffer), /* reply_buf_len */
         &ip_header_res.tos, /* TOS resp. TC byte */
-        &ip_header_res.ttl /* TTL resp. hop limit */
+        &ip_header_res.ttl, /* TTL resp. hop limit */
+#ifdef IPV6
+        &recv_dst_addr_ipv6
+#else
+        NULL
+#endif
     );
 
     if (result <= 0) {
@@ -2567,7 +2598,8 @@ int wait_for_reply(int64_t wait_time)
                 sizeof(buffer),
                 &id,
                 &seq,
-                &ip_header_res)) {
+                &ip_header_res,
+                &recv_dst_addr_ipv6)) {
             return 1;
         }
         if (id != ident6) {
@@ -3165,6 +3197,6 @@ void usage(int is_error)
     fprintf(out, "   -X, --fast-reachable=N exits true immediately when N hosts are found\n");
     fprintf(out, "       --print-tos    show received TOS value\n");
     fprintf(out, "       --print-ttl    show IP TTL value\n");
-    fprintf(out, "       --print-reply-dst show the destination address of the received reply packet (IPv6 is currently not supported).\n");
+    fprintf(out, "       --print-reply-dst show the destination address of the received reply packet\n");
     exit(is_error);
 }

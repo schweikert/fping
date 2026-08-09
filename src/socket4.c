@@ -60,23 +60,30 @@ static int outgoing_src_addr_set_ipv4 = 0;
 int open_ping_socket_ipv4(int *socktype)
 {
     struct protoent* proto;
-    int s;
+    int s = -1;
 
     /* confirm that ICMP is available on this machine */
     if ((proto = getprotobyname("icmp")) == NULL)
         crash_and_burn("icmp: unknown protocol");
 
+#ifdef USE_RAWSOCKET
     /* create raw socket for ICMP calls (ping) */
     *socktype = SOCK_RAW;
     s = socket(AF_INET, *socktype, proto->p_proto);
+#endif
+
+#ifdef SOCK_DGRAM
     if (s < 0) {
         /* try non-privileged icmp (works on Mac OSX without privileges, for example) */
         *socktype = SOCK_DGRAM;
         s = socket(AF_INET, *socktype, proto->p_proto);
-        if (s < 0) {
-            return -1;
-        }
     }
+#endif
+
+    if (s < 0) {
+        return -1;
+    }
+
 
     /* Make sure that we use non-blocking IO */
     {

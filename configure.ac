@@ -104,6 +104,32 @@ AC_ARG_ENABLE([debug],
 AS_IF([test "x$enable_debug" = "xyes"], [
   AC_DEFINE([DEBUG], [1], [Define if debugging is enabled])])
 
+dnl Check for SOCK_DGRAM support
+AC_CHECK_HEADERS([sys/socket.h])
+AC_CHECK_DECL([SOCK_DGRAM],
+  [have_sock_dgram=yes],
+  [have_sock_dgram=no],
+  [#include <sys/socket.h>])
+
+if test "x$have_sock_dgram" = "xyes"; then
+  AC_ARG_ENABLE([raw-sockets],
+    AS_HELP_STRING([--disable-raw-sockets], [Disable use of raw sockets]),
+    [], [enable_raw_sockets=yes])
+  AS_IF([test "x$enable_raw_sockets" = "xyes"], [
+    AC_DEFINE([USE_RAWSOCKET], [1], [Enable use of raw sockets])
+  ])
+else
+  AC_DEFINE([USE_RAWSOCKET], [1], [Enable use of raw sockets])
+  AC_MSG_NOTICE([SOCK_DGRAM support missing; --disable-raw-sockets ignored])
+fi
+
+AC_ARG_ENABLE([fwmark],
+  AS_HELP_STRING([--disable-fwmark], [Disable use of SO_MARK / fwmark]),
+  [], [enable_fwmark=yes])
+AS_IF([test "x$enable_fwmark" = "xyes"], [
+  AC_DEFINE([USE_SO_MARK], [1], [Enable use of fwmark (SO_MARK)])
+])
+
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_MAINTAINER_MODE
 

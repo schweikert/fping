@@ -8,6 +8,7 @@ Next
 
 ## Bugfixes and other changes
 
+- Fix getprotobyname missing on Android preventing use (#470, thanks Paliak. Merged #475)
 - ci: Removed travis-ci (#446, thanks @gsnw-sebast)
 - Performance optimization: reduce number of select calls and use
   recvmsg with MSG_DONTWAIT instead (#449)

@@ -200,6 +200,10 @@ is recommended).
 
 Set the "Don't Fragment" bit in the IP header (used to determine/test the MTU).
 
+=item B<--frag>
+
+Set the "Fragment" bit in the IP header.
+
 =item B<-n>, B<--name>
 
 If targets are specified as IP addresses, do a reverse-DNS lookup on them

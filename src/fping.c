@@ -521,6 +521,7 @@ int main(int argc, char **argv)
         { "loop", 'l', OPTPARSE_NONE },
         { "all", 'm', OPTPARSE_NONE },
         { "dontfrag", 'M', OPTPARSE_NONE },
+        { "frag", 0, OPTPARSE_NONE },
         { "name", 'n', OPTPARSE_NONE },
         { "netdata", 'N', OPTPARSE_NONE },
         { "outage", 'o', OPTPARSE_NONE },
@@ -624,6 +625,17 @@ int main(int argc, char **argv)
                 fprintf(stderr, "%s: --oiface is not supported on this platform (IP_PKTINFO unavailable)\n", prog);
                 exit(3);
 #endif
+            } else if (strstr(optparse_state.optlongname, "frag") != NULL) {
+                opt_frag_on = 1;
+#ifdef IP_MTU_DISCOVER
+                opt_pmtu = IP_PMTUDISC_DONT;
+#ifdef IPV6
+                opt_pmtu_ipv6 = IPV6_PMTUDISC_DONT;
+#endif
+#else
+                fprintf(stderr, "%s: --frag option not supported on this platform\n", prog);
+                exit(1);
+#endif
             } else {
                 usage(1);
             }
@@ -650,20 +662,11 @@ int main(int argc, char **argv)
 #endif
             break;
         case 'M':
+            opt_dontfrag_on = 1;
 #ifdef IP_MTU_DISCOVER
-            if (socket4 >= 0) {
-                int val = IP_PMTUDISC_DO;
-                if (setsockopt(socket4, IPPROTO_IP, IP_MTU_DISCOVER, &val, sizeof(val))) {
-                    perror("setsockopt IP_MTU_DISCOVER");
-                }
-            }
+            opt_pmtu = IP_PMTUDISC_DO;
 #ifdef IPV6
-            if (socket6 >= 0) {
-                int val = IPV6_PMTUDISC_DO;
-                if (setsockopt(socket6, IPPROTO_IPV6, IPV6_MTU_DISCOVER, &val, sizeof(val))) {
-                    perror("setsockopt IPV6_MTU_DISCOVER");
-                }
-            }
+            opt_pmtu_ipv6 = IPV6_PMTUDISC_DO;
 #endif
 #else
             fprintf(stderr, "%s, -M option not supported on this platform\n", prog);
@@ -1009,6 +1012,11 @@ int main(int argc, char **argv)
         exit(1);
     }
 
+    if (opt_dontfrag_on && opt_frag_on) {
+        fprintf(stderr, "%s: --dontfrag (-M) and --frag cannot be used together\n", prog);
+        exit(1);
+    }
+
     if (opt_count_on) {
         if (opt_verbose_on)
             opt_per_recv_on = 1;
@@ -1124,6 +1132,25 @@ int main(int argc, char **argv)
         }
 #endif
     }
+
+#ifdef IP_MTU_DISCOVER
+    if (opt_pmtu != 0) {
+        if (socket4 >= 0) {
+            if (setsockopt(socket4, IPPROTO_IP, IP_MTU_DISCOVER, &opt_pmtu, sizeof(opt_pmtu))) {
+                perror("setsockopt IP_MTU_DISCOVER (pmtu)");
+            }
+        }
+    }
+#ifdef IPV6
+    if (opt_pmtu_ipv6 != 0) {
+        if (socket6 >= 0) {
+            if (setsockopt(socket6, IPPROTO_IPV6, IPV6_MTU_DISCOVER, &opt_pmtu_ipv6, sizeof(opt_pmtu_ipv6))) {
+                perror("setsockopt IPV6_MTU_DISCOVER (pmtu)");
+            }
+        }
+    }
+#endif
+#endif
 
 #if HAVE_SO_TIMESTAMPNS
     {
@@ -3131,6 +3158,7 @@ void usage(int is_error)
     fprintf(out, "   -l, --loop         loop mode: send pings forever\n");
     fprintf(out, "   -m, --all          use all IPs of provided hostnames (e.g. IPv4 and IPv6), use with -A\n");
     fprintf(out, "   -M, --dontfrag     set the Don't Fragment flag\n");
+    fprintf(out, "       --frag         set the Fragment flag\n");
     fprintf(out, "   -O, --tos=N        set the type of service (tos) flag on the ICMP packets\n");
     fprintf(out, "   -p, --period=MSEC  interval between ping packets to one target (in ms)\n");
     fprintf(out, "                      (in loop and count modes, default: %.0f ms)\n", opt_perhost_interval / 1e6);

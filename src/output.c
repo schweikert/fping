@@ -88,7 +88,7 @@ void print_timestamp_format(int64_t current_time_ns, int timestamp_format)
         case 1:
             // timestamp-format ctime
             strftime(time_buffer, sizeof(time_buffer), "%c", local_time);
-            if (opt_print_json_on)
+            if (opt.print_json_on)
                 printf("\"timestamp\": \"%s\", ", time_buffer);
             else
                 printf("[%s] ", time_buffer);
@@ -96,7 +96,7 @@ void print_timestamp_format(int64_t current_time_ns, int timestamp_format)
         case 2:
             // timestamp-format iso
             strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%dT%T%z", local_time);
-            if (opt_print_json_on)
+            if (opt.print_json_on)
                 printf("\"timestamp\": \"%s\", ", time_buffer);
             else
                 printf("[%s] ", time_buffer);
@@ -104,13 +104,13 @@ void print_timestamp_format(int64_t current_time_ns, int timestamp_format)
         case 3:
             // timestamp-format rfc3339
             strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S", local_time);
-            if (opt_print_json_on)
+            if (opt.print_json_on)
                 printf("\"timestamp\": \"%s\", ", time_buffer);
             else
                 printf("[%s] ", time_buffer);
             break;
         default:
-            if (opt_print_json_on)
+            if (opt.print_json_on)
                 printf("\"timestamp\": \"%.5f\", ", (double)current_time_ns / 1e9);
             else
                 printf("[%.5f] ", (double)current_time_ns / 1e9);
@@ -131,11 +131,11 @@ void print_timestamp_format(int64_t current_time_ns, int timestamp_format)
 ************************************************************/
 
 void print_recv(HOST_ENTRY *h, int64_t recv_time, int result, int this_count, int64_t this_reply, int avg) {
-    if (opt_print_json_on) {
+    if (opt.print_json_on) {
         printf("{\"resp\": {");
 
-        if (opt_timestamp_on)
-            print_timestamp_format(recv_time, opt_timestamp_format);
+        if (opt.timestamp_on)
+            print_timestamp_format(recv_time, opt.timestamp_format);
 
         printf("\"host\": \"%s\", ", h->host);
         printf("\"seq\": %d, ", this_count);
@@ -145,8 +145,8 @@ void print_recv(HOST_ENTRY *h, int64_t recv_time, int result, int this_count, in
     }
 
     /* Normal Output */
-    if (opt_timestamp_on)
-        print_timestamp_format(recv_time, opt_timestamp_format);
+    if (opt.timestamp_on)
+        print_timestamp_format(recv_time, opt.timestamp_format);
 
     printf("%-*s : [%d], %d bytes, %s ms",
         max_hostname_len, h->host, this_count, result, sprint_tm(this_reply));
@@ -176,10 +176,10 @@ void print_recv(HOST_ENTRY *h, int64_t recv_time, int result, int this_count, in
 ************************************************************/
 
 void print_timeout(HOST_ENTRY *h, int ping_index) {
-    if (opt_print_json_on) {
+    if (opt.print_json_on) {
         printf("{\"timeout\": {");
-        if (opt_timestamp_on)
-            print_timestamp_format(current_time_ns, opt_timestamp_format);
+        if (opt.timestamp_on)
+            print_timestamp_format(current_time_ns, opt.timestamp_format);
 
         printf("\"host\": \"%s\", ", h->host);
         printf("\"seq\": %d", ping_index);
@@ -188,8 +188,8 @@ void print_timeout(HOST_ENTRY *h, int ping_index) {
     }
 
     /* Normal Output */
-    if (opt_timestamp_on)
-        print_timestamp_format(current_time_ns, opt_timestamp_format);
+    if (opt.timestamp_on)
+        print_timestamp_format(current_time_ns, opt.timestamp_format);
 
     printf("%-*s : [%d], timed out",
         max_hostname_len, h->host, ping_index);
@@ -226,9 +226,9 @@ void print_timeout(HOST_ENTRY *h, int ping_index) {
 ************************************************************/
 
 void print_recv_ext(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t this_reply) { 
-    if (opt_icmp_request_typ == 13) {
+    if (opt.icmp_request_typ == 13) {
         printf("%s timestamps: Originate=%u Receive=%u Transmit=%u Localreceive=%u",
-            opt_alive_on ? "" : ",",
+            opt.alive_on ? "" : ",",
             ip_header_res->otime_ms, ip_header_res->rtime_ms, ip_header_res->ttime_ms,
             ms_since_midnight_utc(recv_time));
     }
@@ -238,7 +238,7 @@ void print_recv_ext(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t 
     }
 
 #if defined(HAVE_IP_RECVTOS)
-    if(opt_print_tos_on) {
+    if(opt.print_tos_on) {
         if(ip_header_res->tos != -1) {
             printf(" (TOS %d)", ip_header_res->tos);
         }
@@ -248,7 +248,7 @@ void print_recv_ext(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t 
     }
 #endif
 
-    if (opt_print_ttl_on) {
+    if (opt.print_ttl_on) {
         if(ip_header_res->ttl != -1) {
             printf(" (TTL %d)", ip_header_res->ttl);
         }
@@ -257,7 +257,7 @@ void print_recv_ext(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t 
         }
     }
 
-    if (opt_elapsed_on && !opt_per_recv_on)
+    if (opt.elapsed_on && !opt.per_recv_on)
         printf(" (%s ms)", sprint_tm(this_reply));
     
     printf("\n");
@@ -277,7 +277,7 @@ void print_recv_ext(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t 
 ************************************************************/
 
 void print_recv_ext_json(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t this_reply) {
-    if (opt_icmp_request_typ == 13) {
+    if (opt.icmp_request_typ == 13) {
         printf(", \"timestamps\": {");
         printf("\"originate\": %u, ", ip_header_res->otime_ms);
         printf("\"receive\": %u, ", ip_header_res->rtime_ms);
@@ -290,7 +290,7 @@ void print_recv_ext_json(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int
     }
 
 #if defined(HAVE_IP_RECVTOS)
-    if(opt_print_tos_on) {
+    if(opt.print_tos_on) {
         if(ip_header_res->tos != -1) {
             printf(", \"tos\": %d", ip_header_res->tos);
         }
@@ -300,7 +300,7 @@ void print_recv_ext_json(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int
     }
 #endif
 
-    if (opt_print_ttl_on) {
+    if (opt.print_ttl_on) {
         if(ip_header_res->ttl != -1) {
             printf(", \"ttl\": %d", ip_header_res->ttl);
         }
@@ -309,7 +309,7 @@ void print_recv_ext_json(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int
         }
     }
 
-    if (opt_elapsed_on && !opt_per_recv_on)
+    if (opt.elapsed_on && !opt.per_recv_on)
         printf(" (%s ms)", sprint_tm(this_reply));
 
     printf("}}");
@@ -401,7 +401,7 @@ void print_per_system_splits(void)
     HOST_ENTRY *h;
     struct tm *curr_tm;
 
-    if (opt_verbose_on || opt_per_recv_on)
+    if (opt.verbose_on || opt.per_recv_on)
         fprintf(stderr, "\n");
 
     update_current_time();
@@ -417,9 +417,9 @@ void print_per_system_splits(void)
             fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
                 h->num_sent_i, h->num_recv_i, h->num_sent_i > 0 ? ((h->num_sent_i - h->num_recv_i) * 100) / h->num_sent_i : 0);
 
-            if (opt_outage_on) {
+            if (opt.outage_on) {
                 /* Time outage  */
-                outage_ms_i = (h->num_sent_i - h->num_recv_i) * opt_perhost_interval / 1e6;
+                outage_ms_i = (h->num_sent_i - h->num_recv_i) * opt.perhost_interval / 1e6;
                 fprintf(stderr, ", outage(ms) = %d", outage_ms_i);
             }
         }
@@ -436,7 +436,7 @@ void print_per_system_splits(void)
         }
 
         fprintf(stderr, "\n");
-        if (!opt_cumulative_stats_on) {
+        if (!opt.cumulative_stats_on) {
             stats_reset_interval(h);
         }
     }
@@ -473,9 +473,9 @@ void print_per_system_splits_json(void)
             fprintf(stdout, "\"rcv\": %d, ", h->num_recv_i);
             fprintf(stdout, "\"loss\": %d", h->num_sent_i > 0 ? ((h->num_sent_i - h->num_recv_i) * 100) / h->num_sent_i : 0);
 
-            if (opt_outage_on) {
+            if (opt.outage_on) {
                 /* Time outage  */
-                outage_ms_i = (h->num_sent_i - h->num_recv_i) * opt_perhost_interval / 1e6;
+                outage_ms_i = (h->num_sent_i - h->num_recv_i) * opt.perhost_interval / 1e6;
                 fprintf(stdout, ", \"outage(ms)\": %d", outage_ms_i);
             }
         }
@@ -493,7 +493,7 @@ void print_per_system_splits_json(void)
         }
 
         fprintf(stdout, "}}\n");
-        if (!opt_cumulative_stats_on) {
+        if (!opt.cumulative_stats_on) {
             stats_reset_interval(h);
         }
     }

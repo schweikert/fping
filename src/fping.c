@@ -340,12 +340,6 @@ int64_t end_time;
 int64_t last_send_time; /* time last ping was sent */
 int64_t next_report_time; /* time next -Q report is expected */
 
-
-#if defined(DEBUG) || defined(_DEBUG)
-int opt_debug_randomly_lose_on, opt_debug_trace_on, opt_debug_print_per_system_on;
-int lose_factor;
-#endif /* DEBUG || _DEBUG */
-
 unsigned int fwmark = 0;
 
 char *filename = NULL; /* file containing hosts to ping */
@@ -434,11 +428,13 @@ double strtod_strict(const char *arg)
 
 int main(int argc, char **argv)
 {
-/* Debug: CPU Performance */
+/* Debug: debug_options_init() and CPU Performance */
 #if defined(DEBUG) || defined(_DEBUG)
     clock_t perf_cpu_start, perf_cpu_end;
     double perf_cpu_time_used;
     perf_cpu_start = clock();
+
+    dbg_opt = debug_options_init();
 #endif /* DEBUG || _DEBUG */
 
     int c;
@@ -449,6 +445,7 @@ int main(int argc, char **argv)
 #ifdef USE_SIGACTION
     struct sigaction act;
 #endif
+    opt = options_init();
 
     /* pre-parse -h/--help, so that we also can output help information
      * without trying to open the socket, which might fail */
@@ -487,8 +484,8 @@ int main(int argc, char **argv)
 
     optparse_init(&optparse_state, argv);
     ident4 = ident6 = htons(getpid() & 0xFFFF);
-    opt_verbose_on = 1;
-    opt_backoff_on = 1;
+    opt.verbose_on = 1;
+    opt.backoff_on = 1;
     opterr = 1;
 
     /* get command line options */
@@ -555,16 +552,16 @@ int main(int argc, char **argv)
         case 0:
             if(strstr(optparse_state.optlongname, "timestamp-format") != NULL) {
                 if(strcmp(optparse_state.optarg, "ctime") == 0) {
-                  opt_timestamp_format = 1;
+                    opt.timestamp_format = 1;
                 }else if(strcmp(optparse_state.optarg, "iso") == 0) {
-                  opt_timestamp_format = 2;
+                    opt.timestamp_format = 2;
                 }else if(strcmp(optparse_state.optarg, "rfc3339") == 0) {
-                  opt_timestamp_format = 3;
+                    opt.timestamp_format = 3;
                 }else{
-                  usage(1);
+                    usage(1);
                 }
             } else if (strstr(optparse_state.optlongname, "check-source") != NULL) {
-                opt_check_source_on = 1;
+                opt.check_source_on = 1;
             } else if (strstr(optparse_state.optlongname, "icmp-timestamp") != NULL) {
 #ifdef IPV6
                 if (hints_ai_family != AF_UNSPEC && hints_ai_family != AF_INET) {
@@ -573,10 +570,10 @@ int main(int argc, char **argv)
                 }
                 hints_ai_family = AF_INET;
 #endif
-                opt_icmp_request_typ = 13;
-                opt_ping_data_size = ICMP_TIMESTAMP_DATA_SIZE;
+                opt.icmp_request_typ = 13;
+                opt.ping_data_size = ICMP_TIMESTAMP_DATA_SIZE;
             } else if (strstr(optparse_state.optlongname, "print-tos") != NULL) {
-                opt_print_tos_on = 1;
+                opt.print_tos_on = 1;
 #if defined(HAVE_IP_RECVTOS)
                 if (socket4 >= 0 && (socktype4 == SOCK_DGRAM)) {
                     if (setsockopt(socket4, IPPROTO_IP, IP_RECVTOS, &sock_opt_on, sizeof(sock_opt_on))) {
@@ -592,7 +589,7 @@ int main(int argc, char **argv)
                 }
 #endif
             } else if (strstr(optparse_state.optlongname, "print-ttl") != NULL) {
-                opt_print_ttl_on = 1;
+                opt.print_ttl_on = 1;
                 if (socket4 >= 0 && (socktype4 == SOCK_DGRAM)) {
                     if (setsockopt(socket4, IPPROTO_IP, IP_RECVTTL, &sock_opt_on, sizeof(sock_opt_on))) {
                         perror("setsockopt IP_RECVTTL");
@@ -606,11 +603,11 @@ int main(int argc, char **argv)
                 }
 #endif
             } else if (strstr(optparse_state.optlongname, "print-reply-dst") != NULL) {
-                opt_print_reply_dst_on = 1;
+                opt.print_reply_dst_on = 1;
             } else if (strstr(optparse_state.optlongname, "seqmap-timeout") != NULL) {
-                opt_seqmap_timeout = strtod_strict(optparse_state.optarg) * 1000000;
+                opt.seqmap_timeout = strtod_strict(optparse_state.optarg) * 1000000;
             } else if (strstr(optparse_state.optlongname, "oiface") != NULL) {
-                opt_oiface_on = 1;
+                opt.oiface_on = 1;
 #ifdef IP_PKTINFO
                 if (socket4 >= 0) {
                     socket_set_outgoing_iface_ipv4(socket4, optparse_state.optarg);
@@ -672,42 +669,42 @@ int main(int argc, char **argv)
             break;
 
         case 't':
-            opt_timeout = strtod_strict(optparse_state.optarg) * 1000000;
-            opt_timeout_on = 1;
+            opt.timeout = strtod_strict(optparse_state.optarg) * 1000000;
+            opt.timeout_on = 1;
             break;
 
         case 'r':
-            opt_retry = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
+            opt.retry = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
             break;
 
         case 'i':
-            opt_interval = strtod_strict(optparse_state.optarg) * 1000000;
+            opt.interval = strtod_strict(optparse_state.optarg) * 1000000;
             break;
 
         case 'p':
-            opt_perhost_interval = strtod_strict(optparse_state.optarg) * 1000000;
+            opt.perhost_interval = strtod_strict(optparse_state.optarg) * 1000000;
             break;
 
         case 'c':
-            opt_count = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
-            if (!opt_count)
+            opt.count = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
+            if (!opt.count)
                 usage(1);
 
-            opt_count_on = 1;
+            opt.count_on = 1;
             break;
 
         case 'C':
-            opt_count = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
-            if (!opt_count)
+            opt.count = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
+            if (!opt.count)
                 usage(1);
 
-            opt_count_on = 1;
-            opt_report_all_rtts_on = 1;
+            opt.count_on = 1;
+            opt.report_all_rtts_on = 1;
             break;
 
         case 'b':
-            opt_ping_data_size = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
-            opt_size_on = 1;
+            opt.ping_data_size = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
+            opt.size_on = 1;
             break;
 
         case 'h':
@@ -715,13 +712,13 @@ int main(int argc, char **argv)
             break;
 
         case 'q':
-            opt_verbose_on = 0;
-            opt_quiet_on = 1;
+            opt.verbose_on = 0;
+            opt.quiet_on = 1;
             break;
 
         case 'Q':
-            opt_verbose_on = 0;
-            opt_quiet_on = 1;
+            opt.verbose_on = 0;
+            opt.quiet_on = 1;
             errno = 0;
             opt_val_double = strtod(optparse_state.optarg, &endptr);
             if (errno != 0 || optparse_state.optarg == endptr || (*endptr != '\0' && *endptr != ','))
@@ -735,76 +732,76 @@ int main(int argc, char **argv)
             {
                 char *comma = strchr(optparse_state.optarg, ',');
                 if ((comma != NULL) && (strcmp(++comma, "cumulative") == 0)) {
-                    opt_cumulative_stats_on = 1;
+                    opt.cumulative_stats_on = 1;
                 }
             }
 
             break;
 
         case 'e':
-            opt_elapsed_on = 1;
+            opt.elapsed_on = 1;
             break;
 
         case 'm':
-            opt_multif_on = 1;
+            opt.multif_on = 1;
             break;
 
         case 'N':
-            opt_print_netdata_on = 1;
+            opt.print_netdata_on = 1;
             break;
 
         case 'n':
-            opt_name_on = 1;
-            if (opt_rdns_on) {
+            opt.name_on = 1;
+            if (opt.rdns_on) {
                 fprintf(stderr, "%s: use either one of -d or -n\n", prog);
                 exit(1);
             }
             break;
 
         case 'd':
-            opt_rdns_on = 1;
-            if (opt_name_on) {
+            opt.rdns_on = 1;
+            if (opt.name_on) {
                 fprintf(stderr, "%s: use either one of -d or -n\n", prog);
                 exit(1);
             }
             break;
 
         case 'A':
-            opt_addr_on = 1;
+            opt.addr_on = 1;
             break;
 
         case 'B':
-            opt_backoff = strtod_strict(optparse_state.optarg);
+            opt.backoff = strtod_strict(optparse_state.optarg);
             break;
 
         case 's':
-            opt_stats_on = 1;
+            opt.stats_on = 1;
             break;
 
         case 'D':
-            opt_timestamp_on = 1;
+            opt.timestamp_on = 1;
             break;
 
         case 'R':
-            opt_random_data_on = 1;
+            opt.random_data_on = 1;
             break;
 
         case 'l':
-            opt_loop_on = 1;
-            opt_backoff_on = 0;
+            opt.loop_on = 1;
+            opt.backoff_on = 0;
             break;
 
         case 'u':
-            opt_unreachable_on = 1;
+            opt.unreachable_on = 1;
             break;
 
         case 'a':
-            opt_alive_on = 1;
+            opt.alive_on = 1;
             break;
 
         case 'H':
-            opt_ttl = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
-            if (!opt_ttl)
+            opt.ttl = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
+            if (!opt.ttl)
                 usage(1);
             break;
 
@@ -819,16 +816,16 @@ int main(int argc, char **argv)
             exit(0);
 
         case 'x':
-            opt_min_reachable = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
-            if (!opt_min_reachable)
+            opt.min_reachable = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
+            if (!opt.min_reachable)
                 usage(1);
             break;
 
         case 'X':
-            opt_min_reachable = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
-            if (!opt_min_reachable)
+            opt.min_reachable = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
+            if (!opt.min_reachable)
                 usage(1);
-            opt_fast_reachable_on = 1;
+            opt.fast_reachable_on = 1;
             break;
 
         case 'f':
@@ -856,7 +853,7 @@ int main(int argc, char **argv)
         case 'g':
             /* use IP list generation */
             /* mutually exclusive with using file input or command line targets */
-            opt_generate_on = 1;
+            opt.generate_on = 1;
             break;
 
         case 'S':
@@ -874,7 +871,7 @@ int main(int argc, char **argv)
             exit(1);
 
         case 'I':
-            opt_bindiface_on = 1;
+            opt.bindiface_on = 1;
 #ifdef SO_BINDTODEVICE
             if (socket4 >= 0) {
                 if (p_setsockopt(suid, socket4, SOL_SOCKET, SO_BINDTODEVICE, optparse_state.optarg, strlen(optparse_state.optarg))) {
@@ -898,7 +895,7 @@ int main(int argc, char **argv)
             break;
 
         case 'J':
-            opt_print_json_on = 1;
+            opt.print_json_on = 1;
             break;
 
         case 'T':
@@ -927,7 +924,7 @@ int main(int argc, char **argv)
             break;
 
         case 'o':
-            opt_outage_on = 1;
+            opt.outage_on = 1;
             break;
 
         case '?':
@@ -957,168 +954,168 @@ int main(int argc, char **argv)
     }
 #endif
 
-    if (opt_ttl > 255) {
-        fprintf(stderr, "%s: ttl %u out of range\n", prog, opt_ttl);
+    if (opt.ttl > 255) {
+        fprintf(stderr, "%s: ttl %u out of range\n", prog, opt.ttl);
         exit(1);
     }
 
-    if (opt_unreachable_on && opt_alive_on) {
+    if (opt.unreachable_on && opt.alive_on) {
         fprintf(stderr, "%s: specify only one of a, u\n", prog);
         exit(1);
     }
 
-    if (opt_oiface_on && opt_bindiface_on) {
+    if (opt.oiface_on && opt.bindiface_on) {
         fprintf(stderr, "%s: specify only --oiface or -I, --iface\n", prog);
         exit(1);
     }
 
-    if (opt_count_on && opt_loop_on) {
+    if (opt.count_on && opt.loop_on) {
         fprintf(stderr, "%s: specify only one of c, l\n", prog);
         exit(1);
     }
 
-    if (opt_print_json_on && !opt_count_on && !opt_loop_on) {
+    if (opt.print_json_on && !opt.count_on && !opt.loop_on) {
         fprintf(stderr, "%s: option -J, --json requires -c, -C, or -l\n", prog);
         exit(1);
     }
 
-    if (opt_interval < (float)MIN_INTERVAL_MS * 1000000 && getuid()) {
+    if (opt.interval < (float)MIN_INTERVAL_MS * 1000000 && getuid()) {
         fprintf(stderr, "%s: -i must be >= %g\n", prog, (float)MIN_INTERVAL_MS);
         exit(1);
     }
 
-    if (opt_perhost_interval < (float)MIN_PERHOST_INTERVAL_MS * 1000000 && getuid()) {
+    if (opt.perhost_interval < (float)MIN_PERHOST_INTERVAL_MS * 1000000 && getuid()) {
         fprintf(stderr, "%s: -p must be >= %g\n", prog, (float)MIN_PERHOST_INTERVAL_MS);
         exit(1);
     }
 
-    if (opt_ping_data_size > MAX_PING_DATA) {
+    if (opt.ping_data_size > MAX_PING_DATA) {
         fprintf(stderr, "%s: data size %u not valid, must not be larger than %u\n",
-            prog, opt_ping_data_size, (unsigned int)MAX_PING_DATA);
+            prog, opt.ping_data_size, (unsigned int)MAX_PING_DATA);
         exit(1);
     }
 
-    if ((opt_backoff > MAX_BACKOFF_FACTOR) || (opt_backoff < MIN_BACKOFF_FACTOR)) {
+    if ((opt.backoff > MAX_BACKOFF_FACTOR) || (opt.backoff < MIN_BACKOFF_FACTOR)) {
         fprintf(stderr, "%s: backoff factor %.1f not valid, must be between %.1f and %.1f\n",
-            prog, opt_backoff, MIN_BACKOFF_FACTOR, MAX_BACKOFF_FACTOR);
+            prog, opt.backoff, MIN_BACKOFF_FACTOR, MAX_BACKOFF_FACTOR);
         exit(1);
     }
 
-    if (opt_icmp_request_typ == 13 && opt_size_on != 0) {
+    if (opt.icmp_request_typ == 13 && opt.size_on != 0) {
         fprintf(stderr, "%s: cannot change ICMP Timestamp size\n", prog);
         exit(1);
     }
 
-    if (opt_count_on) {
-        if (opt_verbose_on)
-            opt_per_recv_on = 1;
+    if (opt.count_on) {
+        if (opt.verbose_on)
+            opt.per_recv_on = 1;
 
-        opt_alive_on = opt_unreachable_on = opt_verbose_on = 0;
+        opt.alive_on = opt.unreachable_on = opt.verbose_on = 0;
     }
 
-    if (opt_loop_on) {
+    if (opt.loop_on) {
         if (!report_interval)
-            opt_per_recv_on = 1;
+            opt.per_recv_on = 1;
 
-        opt_alive_on = opt_unreachable_on = opt_verbose_on = 0;
+        opt.alive_on = opt.unreachable_on = opt.verbose_on = 0;
     }
 
-    if (opt_alive_on || opt_unreachable_on || opt_min_reachable)
-        opt_verbose_on = 0;
+    if (opt.alive_on || opt.unreachable_on || opt.min_reachable)
+        opt.verbose_on = 0;
 
-    trials = (opt_count > opt_retry + 1) ? opt_count : opt_retry + 1;
+    trials = (opt.count > opt.retry + 1) ? opt.count : opt.retry + 1;
 
     /* auto-tune default timeout for count/loop modes
      * see also github #32 */
-    if (opt_loop_on || opt_count_on) {
-        if (!opt_timeout_on) {
-            opt_timeout = opt_perhost_interval;
-            if (opt_timeout > (int64_t)AUTOTUNE_TIMEOUT_MAX * 1000000) {
-                opt_timeout = (int64_t)AUTOTUNE_TIMEOUT_MAX * 1000000;
+    if (opt.loop_on || opt.count_on) {
+        if (!opt.timeout_on) {
+            opt.timeout = opt.perhost_interval;
+            if (opt.timeout > (int64_t)AUTOTUNE_TIMEOUT_MAX * 1000000) {
+                opt.timeout = (int64_t)AUTOTUNE_TIMEOUT_MAX * 1000000;
             }
         }
     }
 
 #if defined(DEBUG) || defined(_DEBUG)
     if (debugging & DBG_TRACE)
-        opt_debug_trace_on = 1;
+        dbg_opt.trace_on = 1;
 
     if (debugging & DBG_RANDOM_LOSE_FEW) {
-        opt_debug_randomly_lose_on = 1;
-        lose_factor = 1; /* ie, 1/4 */
+        dbg_opt.randomly_lose_on = 1;
+        dbg_opt.lose_factor = 1; /* ie, 1/4 */
     }
 
     if (debugging & DBG_RANDOM_LOSE_MANY) {
-        opt_debug_randomly_lose_on = 1;
-        lose_factor = 5; /* ie, 3/4 */
+        dbg_opt.randomly_lose_on = 1;
+        dbg_opt.lose_factor = 5; /* ie, 3/4 */
     }
 
     if (debugging & DBG_PRINT_PER_SYSTEM)
-        opt_debug_print_per_system_on = 1;
+        dbg_opt.print_per_system_on = 1;
 
-    if ((debugging & DBG_REPORT_ALL_RTTS) && !opt_loop_on)
-        opt_report_all_rtts_on = 1;
+    if ((debugging & DBG_REPORT_ALL_RTTS) && !opt.loop_on)
+        opt.report_all_rtts_on = 1;
 
-    if (opt_debug_trace_on) {
-        fprintf(stderr, "%s:\n  opt_count: %u, opt_retry: %u, opt_interval: %.0f ms\n",
-            prog, opt_count, opt_retry, opt_interval / 1e6);
-        fprintf(stderr, "  opt_perhost_interval: %.0f ms, opt_timeout: %.0f\n",
-            opt_perhost_interval / 1e6, opt_timeout / 1e6);
-        fprintf(stderr, "  opt_seqmap_timeout: %.0f\n", opt_seqmap_timeout / 1e6);
-        fprintf(stderr, "  opt_ping_data_size = %u, trials = %u\n",
-            opt_ping_data_size, trials);
+    if (dbg_opt.trace_on) {
+        fprintf(stderr, "%s:\n  opt.count: %u, opt.retry: %u, opt.interval: %.0f ms\n",
+            prog, opt.count, opt.retry, opt.interval / 1e6);
+        fprintf(stderr, "  opt.perhost_interval: %.0f ms, opt.timeout: %.0f\n",
+            opt.perhost_interval / 1e6, opt.timeout / 1e6);
+        fprintf(stderr, "  opt.seqmap_timeout: %.0f\n", opt.seqmap_timeout / 1e6);
+        fprintf(stderr, "  opt.ping_data_size = %u, trials = %u\n",
+            opt.ping_data_size, trials);
 
-        if (opt_verbose_on)
-            fprintf(stderr, "  opt_verbose_on set\n");
-        if (opt_multif_on)
-            fprintf(stderr, "  opt_multif_on set\n");
-        if (opt_name_on)
-            fprintf(stderr, "  opt_name_on set\n");
-        if (opt_addr_on)
-            fprintf(stderr, "  opt_addr_on set\n");
-        if (opt_stats_on)
-            fprintf(stderr, "  opt_stats_on set\n");
-        if (opt_unreachable_on)
-            fprintf(stderr, "  opt_unreachable_on set\n");
-        if (opt_alive_on)
-            fprintf(stderr, "  opt_alive_on set\n");
-        if (opt_elapsed_on)
-            fprintf(stderr, "  opt_elapsed_on set\n");
-        if (opt_version_on)
-            fprintf(stderr, "  opt_version_on set\n");
-        if (opt_count_on)
-            fprintf(stderr, "  opt_count_on set\n");
-        if (opt_loop_on)
-            fprintf(stderr, "  opt_loop_on set\n");
-        if (opt_backoff_on)
-            fprintf(stderr, "  opt_backoff_on set\n");
-        if (opt_per_recv_on)
-            fprintf(stderr, "  opt_per_recv_on set\n");
-        if (opt_report_all_rtts_on)
-            fprintf(stderr, "  opt_report_all_rtts_on set\n");
-        if (opt_debug_randomly_lose_on)
-            fprintf(stderr, "  opt_debug_randomly_lose_on set\n");
-        if (opt_debug_print_per_system_on)
-            fprintf(stderr, "  opt_debug_print_per_system_on set\n");
-        if (opt_outage_on)
-            fprintf(stderr, "  opt_outage_on set\n");
-        if (opt_print_netdata_on)
-            fprintf(stderr, "  opt_print_netdata_on set\n");
-        if (opt_print_json_on)
-            fprintf(stderr, "  opt_print_json_on set\n");
+        if (opt.verbose_on)
+            fprintf(stderr, "  opt.verbose_on set\n");
+        if (opt.multif_on)
+            fprintf(stderr, "  opt.multif_on set\n");
+        if (opt.name_on)
+            fprintf(stderr, "  opt.name_on set\n");
+        if (opt.addr_on)
+            fprintf(stderr, "  opt.addr_on set\n");
+        if (opt.stats_on)
+            fprintf(stderr, "  opt.stats_on set\n");
+        if (opt.unreachable_on)
+            fprintf(stderr, "  opt.unreachable_on set\n");
+        if (opt.alive_on)
+            fprintf(stderr, "  opt.alive_on set\n");
+        if (opt.elapsed_on)
+            fprintf(stderr, "  opt.elapsed_on set\n");
+        if (opt.version_on)
+            fprintf(stderr, "  opt.version_on set\n");
+        if (opt.count_on)
+            fprintf(stderr, "  opt.count_on set\n");
+        if (opt.loop_on)
+            fprintf(stderr, "  opt.loop_on set\n");
+        if (opt.backoff_on)
+            fprintf(stderr, "  opt.backoff_on set\n");
+        if (opt.per_recv_on)
+            fprintf(stderr, "  opt.per_recv_on set\n");
+        if (opt.report_all_rtts_on)
+            fprintf(stderr, "  opt.report_all_rtts_on set\n");
+        if (dbg_opt.randomly_lose_on)
+            fprintf(stderr, "  dbg_opt.randomly_lose_on set\n");
+        if (dbg_opt.print_per_system_on)
+            fprintf(stderr, "  dbg_opt.print_per_system_on set\n");
+        if (opt.outage_on)
+            fprintf(stderr, "  opt.outage_on set\n");
+        if (opt.print_netdata_on)
+            fprintf(stderr, "  opt.print_netdata_on set\n");
+        if (opt.print_json_on)
+            fprintf(stderr, "  opt.print_json_on set\n");
     }
 #endif /* DEBUG || _DEBUG */
 
     /* set the TTL, if the -H option was set (otherwise ttl will be = 0) */
-    if (opt_ttl > 0) {
+    if (opt.ttl > 0) {
         if (socket4 >= 0) {
-            if (setsockopt(socket4, IPPROTO_IP, IP_TTL, &opt_ttl, sizeof(opt_ttl))) {
+            if (setsockopt(socket4, IPPROTO_IP, IP_TTL, &opt.ttl, sizeof(opt.ttl))) {
                 perror("setting time to live");
             }
         }
 #ifdef IPV6
         if (socket6 >= 0) {
-            if (setsockopt(socket6, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &opt_ttl, sizeof(opt_ttl))) {
+            if (setsockopt(socket6, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &opt.ttl, sizeof(opt.ttl))) {
                 perror("setting time to live");
             }
         }
@@ -1151,21 +1148,21 @@ int main(int argc, char **argv)
     start_time = current_time_ns;
 
     /* handle host names supplied on command line or in a file */
-    /* if the opt_generate_on is on, then generate the IP list */
+    /* if the opt.generate_on is on, then generate the IP list */
 
     argv = &argv[optparse_state.optind];
     argc -= optparse_state.optind;
 
     /* calculate how many ping can be in-flight per host */
-    if (opt_count_on) {
-        event_storage_count = opt_count;
+    if (opt.count_on) {
+        event_storage_count = opt.count;
     }
-    else if (opt_loop_on) {
-        if (opt_perhost_interval > opt_timeout) {
+    else if (opt.loop_on) {
+        if (opt.perhost_interval > opt.timeout) {
             event_storage_count = 1;
         }
         else {
-            event_storage_count = 1 + opt_timeout / opt_perhost_interval;
+            event_storage_count = 1 + opt.timeout / opt.perhost_interval;
         }
     }
     else {
@@ -1175,14 +1172,14 @@ int main(int argc, char **argv)
     /* file and generate are mutually exclusive */
     /* file and command line are mutually exclusive */
     /* generate requires command line parameters beyond the switches */
-    if ((*argv && filename) || (filename && opt_generate_on) || (opt_generate_on && !*argv))
+    if ((*argv && filename) || (filename && opt.generate_on) || (opt.generate_on && !*argv))
         usage(1);
 
     /* if no conditions are specified, then assume input from stdin */
-    if (!*argv && !filename && !opt_generate_on)
+    if (!*argv && !filename && !opt.generate_on)
         filename = "-";
 
-    if (*argv && !opt_generate_on) {
+    if (*argv && !opt.generate_on) {
         while (*argv) {
             add_name(*argv);
             ++argv;
@@ -1273,7 +1270,7 @@ int main(int argc, char **argv)
 
         fclose(ping_file);
     }
-    else if (*argv && opt_generate_on) {
+    else if (*argv && opt.generate_on) {
         if (argc == 1) {
             /* one target: we expect a cidr range (n.n.n.n/m) */
             add_cidr(argv[0]);
@@ -1318,9 +1315,9 @@ int main(int argc, char **argv)
         }
     }
 
-    init_ping_buffer_ipv4(opt_ping_data_size);
+    init_ping_buffer_ipv4(opt.ping_data_size);
 #ifdef IPV6
-    init_ping_buffer_ipv6(opt_ping_data_size);
+    init_ping_buffer_ipv6(opt.ping_data_size);
 #endif
 
 #ifdef USE_SIGACTION
@@ -1349,7 +1346,7 @@ int main(int argc, char **argv)
 
     last_send_time = 0;
 
-    seqmap_init(opt_seqmap_timeout);
+    seqmap_init(opt.seqmap_timeout);
 
     /* main loop */
     main_loop();
@@ -1681,15 +1678,15 @@ void main_loop()
 
             stats_add(h, event->ping_index, 0, -1);
 
-            if (opt_per_recv_on) {
+            if (opt.per_recv_on) {
                 print_timeout(h, event->ping_index);
             }
 
             /* do we need to send a retry? */
-            if (!opt_loop_on && !opt_count_on) {
-                if (h->num_sent < opt_retry + 1) {
-                    if (opt_backoff_on) {
-                        h->timeout *= opt_backoff;
+            if (!opt.loop_on && !opt.count_on) {
+                if (h->num_sent < opt.retry + 1) {
+                    if (opt.backoff_on) {
+                        h->timeout *= opt.backoff;
                     }
                     send_ping(h, event->ping_index);
                 }
@@ -1706,7 +1703,7 @@ void main_loop()
         if (event_queue_ping.first && event_queue_ping.first->ev_time - current_time_ns <= 0) {
             /* Make sure that we don't ping more than once every "interval" */
             lt = current_time_ns - last_send_time;
-            if (lt < opt_interval)
+            if (lt < opt.interval)
                 goto wait_for_reply;
 
             /* Dequeue the event */
@@ -1719,8 +1716,8 @@ void main_loop()
             send_ping(h, event->ping_index);
 
             /* Loop and count mode: schedule next ping */
-            if (opt_loop_on || (opt_count_on && event->ping_index + 1 < opt_count)) {
-                host_add_ping_event(h, event->ping_index + 1, event->ev_time + opt_perhost_interval);
+            if (opt.loop_on || (opt.count_on && event->ping_index + 1 < opt.count)) {
+                host_add_ping_event(h, event->ping_index + 1, event->ev_time + opt.perhost_interval);
             }
         }
 
@@ -1734,10 +1731,10 @@ void main_loop()
                 wait_time_ns = 0;
             /* make sure that we wait enough, so that the inter-ping delay is
              * bigger than 'interval' */
-            if (wait_time_ns < opt_interval) {
+            if (wait_time_ns < opt.interval) {
                 lt = current_time_ns - last_send_time;
-                if (lt < opt_interval) {
-                    wait_time_ns = opt_interval - lt;
+                if (lt < opt.interval) {
+                    wait_time_ns = opt.interval - lt;
                 }
             }
 
@@ -1758,7 +1755,7 @@ void main_loop()
         }
 
         /* When is the next report due? */
-        if (report_interval && (opt_loop_on || opt_count_on)) {
+        if (report_interval && (opt.loop_on || opt.count_on)) {
             int64_t wait_time_next_report = next_report_time - current_time_ns;
             if (wait_time_next_report < wait_time_ns) {
                 wait_time_ns = wait_time_next_report;
@@ -1792,18 +1789,18 @@ void main_loop()
 
         if (status_snapshot) {
             status_snapshot = 0;
-            if (opt_print_json_on)
+            if (opt.print_json_on)
                 print_per_system_splits_json();
             else
                 print_per_system_splits();
         }
 
         /* Print report */
-        if (report_interval && (opt_loop_on || opt_count_on) && (current_time_ns >= next_report_time)) {
-            if (opt_print_netdata_on) {
+        if (report_interval && (opt.loop_on || opt.count_on) && (current_time_ns >= next_report_time)) {
+            if (opt.print_netdata_on) {
                 print_netdata();
             }
-            else if (opt_print_json_on) {
+            else if (opt.print_json_on) {
                 print_per_system_splits_json();
             }
             else {
@@ -1886,10 +1883,10 @@ void finish()
         if (!h->num_recv) {
             num_unreachable++;
 
-            if (opt_verbose_on || opt_unreachable_on) {
+            if (opt.verbose_on || opt.unreachable_on) {
                 printf("%s", h->host);
 
-                if (opt_verbose_on)
+                if (opt.verbose_on)
                     printf(" is unreachable");
 
                 printf("\n");
@@ -1897,35 +1894,35 @@ void finish()
         }
     }
 
-    if (opt_count_on || opt_loop_on) {
-        if (opt_print_json_on)
+    if (opt.count_on || opt.loop_on) {
+        if (opt.print_json_on)
             print_per_system_stats_json();
         else
             print_per_system_stats();
     }
 #if defined(DEBUG) || defined(_DEBUG)
-    else if (opt_debug_print_per_system_on) {
-        if (opt_print_json_on)
+    else if (dbg_opt.print_per_system_on) {
+        if (opt.print_json_on)
             print_per_system_stats_json();
         else
             print_per_system_stats();
     }
 #endif /* DEBUG || _DEBUG */
 
-    if (opt_stats_on) {
-        if (opt_print_json_on)
+    if (opt.stats_on) {
+        if (opt.print_json_on)
             print_global_stats_json();
         else
             print_global_stats();
     }
 
-    if (opt_min_reachable) {
-        if ((num_hosts - num_unreachable) >= opt_min_reachable) {
-            printf("Enough hosts reachable (required: %d, reachable: %d)\n", opt_min_reachable, num_hosts - num_unreachable);
+    if (opt.min_reachable) {
+        if ((num_hosts - num_unreachable) >= opt.min_reachable) {
+            printf("Enough hosts reachable (required: %d, reachable: %d)\n", opt.min_reachable, num_hosts - num_unreachable);
             exit(0);
         }
         else {
-            printf("Not enough hosts reachable (required: %d, reachable: %d)\n", opt_min_reachable, num_hosts - num_unreachable);
+            printf("Not enough hosts reachable (required: %d, reachable: %d)\n", opt.min_reachable, num_hosts - num_unreachable);
             exit(1);
         }
     }
@@ -1970,7 +1967,7 @@ int send_ping(HOST_ENTRY *h, int index)
     dbg_printf("%s [%d]: send ping\n", h->host, index);
 
     if (h->saddr.ss_family == AF_INET && socket4 >= 0) {
-        if(opt_icmp_request_typ == 13)
+        if(opt.icmp_request_typ == 13)
             proto = ICMP_TSTAMP;
         n = socket_sendto_ping_ipv4(socket4, (struct sockaddr *)&h->saddr, h->saddr_len, myseq, ident4, proto);
     }
@@ -1990,7 +1987,7 @@ int send_ping(HOST_ENTRY *h, int index)
         && errno != EHOSTDOWN
 #endif
     ) {
-        if (opt_verbose_on) {
+        if (opt.verbose_on) {
             print_warning("%s: error while sending ping: %s\n", h->host, strerror(errno));
         }
         else {
@@ -1999,7 +1996,7 @@ int send_ping(HOST_ENTRY *h, int index)
 
         h->num_sent++;
         h->num_sent_i++;
-        if (!opt_loop_on)
+        if (!opt.loop_on)
             h->resp_times[index] = RESP_ERROR;
 
         ret = 0;
@@ -2009,7 +2006,7 @@ int send_ping(HOST_ENTRY *h, int index)
         host_add_timeout_event(h, index, current_time_ns + h->timeout);
 
         /* mark this trial as outstanding */
-        if (!opt_loop_on) {
+        if (!opt.loop_on) {
             h->resp_times[index] = RESP_WAITING;
         }
     }
@@ -2166,8 +2163,8 @@ packet_received:
     }
 
 #if defined(DEBUG) || defined(_DEBUG)
-    if (opt_debug_randomly_lose_on) {
-        if ((random() & 0x07) <= lose_factor)
+    if (dbg_opt.randomly_lose_on) {
+        if ((random() & 0x07) <= dbg_opt.lose_factor)
             return 0;
     }
 #endif
@@ -2190,7 +2187,7 @@ void stats_add(HOST_ENTRY *h, int index, int success, int64_t latency)
     h->num_sent_i++;
 
     if (!success) {
-        if (!opt_loop_on && index >= 0) {
+        if (!opt.loop_on && index >= 0) {
             h->resp_times[index] = RESP_TIMEOUT;
         }
         num_timeout++;
@@ -2222,7 +2219,7 @@ void stats_add(HOST_ENTRY *h, int index, int success, int64_t latency)
     h->total_time_i += latency;
 
     /* response time per-packet (count mode) */
-    if (!opt_loop_on && index >= 0) {
+    if (!opt.loop_on && index >= 0) {
         h->resp_times[index] = latency;
     }
 }
@@ -2270,7 +2267,7 @@ int decode_icmp_ipv4(
 
     if (reply_buf_len < hlen + ICMP_MINLEN) {
         /* too short */
-        if (opt_verbose_on) {
+        if (opt.verbose_on) {
             char buf[INET6_ADDRSTRLEN];
             getnameinfo(response_addr, response_addr_len, buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
             printf("received packet too short for ICMP (%d bytes from %s)\n", (int)reply_buf_len, buf);
@@ -2280,8 +2277,8 @@ int decode_icmp_ipv4(
 
     icp = (struct icmp *)(reply_buf + hlen);
 
-    if ((opt_icmp_request_typ == 0 && icp->icmp_type != ICMP_ECHOREPLY) ||
-        (opt_icmp_request_typ == 13 && icp->icmp_type != ICMP_TSTAMPREPLY)) {
+    if ((opt.icmp_request_typ == 0 && icp->icmp_type != ICMP_ECHOREPLY) ||
+        (opt.icmp_request_typ == 13 && icp->icmp_type != ICMP_TSTAMPREPLY)) {
         /* Handle other ICMP packets */
         struct icmp *sent_icmp;
         SEQMAP_VALUE *seqmap_value;
@@ -2296,8 +2293,8 @@ int decode_icmp_ipv4(
 
         sent_icmp = (struct icmp *)(reply_buf + hlen + ICMP_MINLEN + sizeof(struct ip));
 
-        if ((opt_icmp_request_typ == 0 && sent_icmp->icmp_type != ICMP_ECHO) ||
-            (opt_icmp_request_typ == 13 && sent_icmp->icmp_type != ICMP_TSTAMP) ||
+        if ((opt.icmp_request_typ == 0 && sent_icmp->icmp_type != ICMP_ECHO) ||
+            (opt.icmp_request_typ == 13 && sent_icmp->icmp_type != ICMP_TSTAMP) ||
             sent_icmp->icmp_id != ident4) {
             /* not caused by us */
             return -1;
@@ -2353,7 +2350,7 @@ int decode_icmp_ipv4(
 
         /* Check that reply_buf_len is sufficiently big to contain the timestamps */
         if (reply_buf_len < hlen + ICMP_MINLEN + ICMP_TIMESTAMP_DATA_SIZE) {
-            if (opt_verbose_on) {
+            if (opt.verbose_on) {
                 char buf[INET6_ADDRSTRLEN];
                 getnameinfo(response_addr, response_addr_len, buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
                 printf("received packet too short for ICMP Timestamp Reply (%d bytes from %s)\n", (int)reply_buf_len, buf);
@@ -2366,7 +2363,7 @@ int decode_icmp_ipv4(
         ip_header_res->ttime_ms = ntohl(icp->icmp_dun.id_ts.its_ttime);
     }
 
-    if (opt_print_reply_dst_on) {
+    if (opt.print_reply_dst_on) {
         if (ip == NULL || inet_ntop(AF_INET, &ip->ip_dst, ip_header_res->reply_dst_addr, sizeof(ip_header_res->reply_dst_addr)) == NULL) {
             strncpy(ip_header_res->reply_dst_addr, "unknown", sizeof(ip_header_res->reply_dst_addr) - 1);
             ip_header_res->reply_dst_addr[sizeof(ip_header_res->reply_dst_addr) - 1] = '\0';
@@ -2389,7 +2386,7 @@ int decode_icmp_ipv6(
     struct icmp6_hdr *icp;
 
     if (reply_buf_len < sizeof(struct icmp6_hdr)) {
-        if (opt_verbose_on) {
+        if (opt.verbose_on) {
             char buf[INET6_ADDRSTRLEN];
             getnameinfo(response_addr, response_addr_len, buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
             printf("received packet too short for ICMPv6 (%d bytes from %s)\n", (int)reply_buf_len, buf);
@@ -2493,7 +2490,7 @@ int decode_icmp_ipv6(
     *id = icp->icmp6_id;
     *seq = ntohs(icp->icmp6_seq);
 
-    if (opt_print_reply_dst_on) {
+    if (opt.print_reply_dst_on) {
         strncpy(ip_header_res->reply_dst_addr, "not supported", sizeof(ip_header_res->reply_dst_addr) - 1);
         ip_header_res->reply_dst_addr[sizeof(ip_header_res->reply_dst_addr) - 1] = '\0';
     }
@@ -2597,14 +2594,14 @@ int wait_for_reply(int64_t wait_time)
     dbg_printf("received [%d] from %s\n", this_count, h->host);
 
     /* optionally require reply source equal to target address */
-    if (opt_check_source_on && addr_cmp((struct sockaddr *)&response_addr, (struct sockaddr *)&h->saddr)) {
+    if (opt.check_source_on && addr_cmp((struct sockaddr *)&response_addr, (struct sockaddr *)&h->saddr)) {
         dbg_printf("%s\n", "discarding reply from wrong source address");
         return 1;
     }
 
     /* discard duplicates */
-    if (!opt_loop_on && !(opt_count_on && opt_quiet_on) && h->resp_times[this_count] >= 0) {
-        if (!opt_per_recv_on) {
+    if (!opt.loop_on && !(opt.count_on && opt.quiet_on) && h->resp_times[this_count] >= 0) {
+        if (!opt.per_recv_on) {
             fprintf(stderr, "%s : duplicate for [%d], %d bytes, %s ms",
                 h->host, this_count, result, sprint_tm(this_reply));
 
@@ -2635,7 +2632,7 @@ int wait_for_reply(int64_t wait_time)
     total_replies++;
 
     /* initialize timeout to initial timeout (without backoff) */
-    h->timeout = opt_timeout;
+    h->timeout = opt.timeout;
 
     /* remove timeout event */
     struct event *timeout_event = host_get_timeout_event(h, this_count);
@@ -2646,19 +2643,19 @@ int wait_for_reply(int64_t wait_time)
     /* print "is alive" */
     if (h->num_recv == 1) {
         num_alive++;
-        if (opt_fast_reachable_on && num_alive >= opt_min_reachable)
+        if (opt.fast_reachable_on && num_alive >= opt.min_reachable)
             finish_requested = 1;
 
-        if (opt_verbose_on || opt_alive_on) {
+        if (opt.verbose_on || opt.alive_on) {
             printf("%s", h->host);
 
-            if (opt_verbose_on)
+            if (opt.verbose_on)
                 printf(" is alive");
         }
     }
 
     /* print received ping (unless --quiet) */
-    if (opt_per_recv_on) {
+    if (opt.per_recv_on) {
         avg = h->total_time / h->num_recv;
         print_recv(h,
             recv_time,
@@ -2668,13 +2665,13 @@ int wait_for_reply(int64_t wait_time)
             avg);
     }
 
-    if (opt_verbose_on || opt_alive_on || opt_per_recv_on) {
+    if (opt.verbose_on || opt.alive_on || opt.per_recv_on) {
         if (addr_cmp((struct sockaddr *)&response_addr, (struct sockaddr *)&h->saddr)) {
             char buf[INET6_ADDRSTRLEN];
             getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
             fprintf(stderr, " [<- %s]", buf);
         }
-        if (opt_print_json_on) {
+        if (opt.print_json_on) {
             print_recv_ext_json(&ip_header_res,
                 recv_time,
                 this_reply);
@@ -2731,12 +2728,12 @@ void add_name(char *name)
     }
     ret_ga = getaddrinfo(name, NULL, &hints, &res0);
     if (ret_ga) {
-        if (!opt_quiet_on)
+        if (!opt.quiet_on)
             print_warning("%s: %s\n", name, gai_strerror(ret_ga));
         num_noaddress++;
 
         // Handle JSON output for invalid hosts
-        if (opt_print_json_on) {
+        if (opt.print_json_on) {
             fprintf(stdout, "{\"warning\": {\"host\": \"%s\", \"message\": \"%s\"}}\n", name, gai_strerror(ret_ga));
             return;
         }
@@ -2750,10 +2747,10 @@ void add_name(char *name)
      * (need to implement a separate option for this)
      */
     for (res = res0; res; res = res->ai_next) {
-        /* opt_name_on: addr -> name lookup requested) */
-        if (opt_name_on || opt_rdns_on) {
-            int do_rdns = opt_rdns_on ? 1 : 0;
-            if (opt_name_on) {
+        /* opt.name_on: addr -> name lookup requested) */
+        if (opt.name_on || opt.rdns_on) {
+            int do_rdns = opt.rdns_on ? 1 : 0;
+            if (opt.name_on) {
                 /* Was it a numerical address? Only then do a rdns-query */
                 struct addrinfo *nres;
                 hints.ai_flags = AI_NUMERICHOST;
@@ -2774,19 +2771,19 @@ void add_name(char *name)
             printname = name;
         }
 
-        /* opt_addr_on: name -> addr lookup requested */
-        if (opt_addr_on) {
+        /* opt.addr_on: name -> addr lookup requested */
+        if (opt.addr_on) {
             int ret;
             ret = getnameinfo(res->ai_addr, res->ai_addrlen, addrbuf,
                 sizeof(addrbuf) / sizeof(char), NULL, 0, NI_NUMERICHOST);
             if (ret) {
-                if (!opt_quiet_on) {
+                if (!opt.quiet_on) {
                     print_warning("%s: can't forward-lookup address (%s)\n", name, gai_strerror(ret));
                 }
                 continue;
             }
 
-            if (opt_name_on || opt_rdns_on) {
+            if (opt.name_on || opt.rdns_on) {
                 char nameaddrbuf[512 + 3];
                 snprintf(nameaddrbuf, sizeof(nameaddrbuf) / sizeof(char), "%s (%s)", printname, addrbuf);
                 add_addr(name, nameaddrbuf, res->ai_addr, res->ai_addrlen);
@@ -2799,7 +2796,7 @@ void add_name(char *name)
             add_addr(name, printname, res->ai_addr, res->ai_addrlen);
         }
 
-        if (!opt_multif_on) {
+        if (!opt.multif_on) {
             break;
         }
     }
@@ -2833,10 +2830,10 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
     p->host = strdup(host);
     memcpy(&p->saddr, ipaddr, ipaddr_len);
     p->saddr_len = ipaddr_len;
-    p->timeout = opt_timeout;
+    p->timeout = opt.timeout;
     p->min_reply = 0;
 
-    if (opt_print_netdata_on) {
+    if (opt.print_netdata_on) {
         char *s = p->name;
         while (*s) {
             if (!isalnum(*s))
@@ -2849,7 +2846,7 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
         max_hostname_len = strlen(p->host);
 
     /* array for response time results */
-    if (!opt_loop_on) {
+    if (!opt.loop_on) {
 #if SIZE_MAX <= UINT_MAX
         if (trials > (SIZE_MAX / sizeof(int64_t)))
             crash_and_burn("resp_times array too large for memory");
@@ -2927,7 +2924,7 @@ void errno_crash_and_burn(char *message)
 void print_warning(char *format, ...)
 {
     va_list args;
-    if (!opt_quiet_on) {
+    if (!opt.quiet_on) {
         va_start(args, format);
         vfprintf(stderr, format, args);
         va_end(args);
@@ -3118,7 +3115,7 @@ void usage(int is_error)
     fprintf(out, "                      (give start and end IP in the target list, or a CIDR address)\n");
     fprintf(out, "                      (ex. %s -g 192.168.1.0 192.168.1.255 or %s -g 192.168.1.0/24)\n", prog, prog);
     fprintf(out, "   -H, --ttl=N        set the IP TTL value (Time To Live hops)\n");
-    fprintf(out, "   -i, --interval=MSEC  interval between sending ping packets (default: %.0f ms)\n", opt_interval / 1e6);
+    fprintf(out, "   -i, --interval=MSEC  interval between sending ping packets (default: %.0f ms)\n", opt.interval / 1e6);
 #ifdef SO_BINDTODEVICE
     fprintf(out, "   -I, --iface=IFACE  bind to a particular interface\n");
 #endif
@@ -3133,12 +3130,12 @@ void usage(int is_error)
     fprintf(out, "   -M, --dontfrag     set the Don't Fragment flag\n");
     fprintf(out, "   -O, --tos=N        set the type of service (tos) flag on the ICMP packets\n");
     fprintf(out, "   -p, --period=MSEC  interval between ping packets to one target (in ms)\n");
-    fprintf(out, "                      (in loop and count modes, default: %.0f ms)\n", opt_perhost_interval / 1e6);
+    fprintf(out, "                      (in loop and count modes, default: %.0f ms)\n", opt.perhost_interval / 1e6);
     fprintf(out, "   -r, --retry=N      number of retries (default: %d)\n", DEFAULT_RETRY);
     fprintf(out, "   -R, --random       random packet data (to foil link data compression)\n");
     fprintf(out, "   -S, --src=IP       set source address\n");
-    fprintf(out, "       --seqmap-timeout=MSEC sequence number mapping timeout (default: %.0f ms)\n", opt_seqmap_timeout / 1e6);
-    fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (default: %.0f ms,\n", opt_timeout / 1e6);
+    fprintf(out, "       --seqmap-timeout=MSEC sequence number mapping timeout (default: %.0f ms)\n", opt.seqmap_timeout / 1e6);
+    fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (default: %.0f ms,\n", opt.timeout / 1e6);
     fprintf(out, "                      except with -l/-c/-C, where it's the -p period up to 2000 ms)\n");
     fprintf(out, "       --check-source discard replies not from target address\n");
     fprintf(out, "       --icmp-timestamp use ICMP Timestamp instead of ICMP Echo\n");

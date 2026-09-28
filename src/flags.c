@@ -51,3 +51,7 @@ int opt_bindiface_on = 0;
 int opt_timestamp_on = 0;
 int opt_timestamp_format = 0;
 int opt_icmp_request_typ = 0;
+int opt_dontfrag_on = 0;
+int opt_frag_on = 0;
+int opt_pmtu = 0;
+int opt_pmtu_ipv6 = 0;

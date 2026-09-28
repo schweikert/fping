@@ -55,5 +55,9 @@ extern int opt_bindiface_on;
 extern int opt_timestamp_on;
 extern int opt_timestamp_format;
 extern int opt_icmp_request_typ;
+extern int opt_dontfrag_on;
+extern int opt_frag_on;
+extern int opt_pmtu;
+extern int opt_pmtu_ipv6;
 
 #endif

@@ -3,6 +3,7 @@
 
 #define __APPLE_USE_RFC_3542 1
 
+#include "flags.h"
 #include <stdint.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -71,7 +72,6 @@ extern int64_t current_time_ns;
 extern struct timespec current_time;
 extern int64_t start_time;
 extern int64_t end_time;
-extern int64_t opt_perhost_interval;
 extern int64_t report_interval;
 
 // Stats globals
@@ -82,8 +82,7 @@ extern int64_t max_reply, min_reply, total_replies, sum_replies;
 
 /* this requires variadic macros, part of C99 */
 #if (defined(DEBUG) || defined(_DEBUG))
-extern int opt_debug_trace_on;
-#define dbg_printf(fmt, ...) do { if (opt_debug_trace_on) { fprintf(stderr, "[%10.5f] ", (double)(current_time_ns / 1000)/1000000); fprintf(stderr, fmt, __VA_ARGS__); } } while (0)
+#define dbg_printf(fmt, ...) do { if (dbg_opt.trace_on) { fprintf(stderr, "[%10.5f] ", (double)(current_time_ns / 1000)/1000000); fprintf(stderr, fmt, __VA_ARGS__); } } while (0)
             
 #else
 #define dbg_printf(fmt, ...)

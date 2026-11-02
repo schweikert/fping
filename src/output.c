@@ -124,13 +124,13 @@ void print_timestamp_format(int64_t current_time_ns, int timestamp_format)
 *************************************************************
 
   Inputs: HOST_ENTRY *h, int64_t recv_time, int result,
-          int this_count, int64_t this_reply, int avg
+          int this_count, int64_t this_reply, int64_t avg
 
   Description:
 
 ************************************************************/
 
-void print_recv(HOST_ENTRY *h, int64_t recv_time, int result, int this_count, int64_t this_reply, int avg) {
+void print_recv(HOST_ENTRY *h, int64_t recv_time, int result, int this_count, int64_t this_reply, int64_t avg) {
     if (opt_print_json_on) {
         printf("{\"resp\": {");
 
@@ -397,7 +397,8 @@ void print_netdata(void)
 
 void print_per_system_splits(void)
 {
-    int i, avg, outage_ms_i;
+    int i, outage_ms_i;
+    int64_t avg;
     HOST_ENTRY *h;
     struct tm *curr_tm;
 
@@ -457,7 +458,8 @@ void print_per_system_splits(void)
 
 void print_per_system_splits_json(void)
 {
-    int i, avg, outage_ms_i;
+    int i, outage_ms_i;
+    int64_t avg;
     HOST_ENTRY *h;
 
     update_current_time();

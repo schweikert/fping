@@ -2528,7 +2528,8 @@ int wait_for_reply(int64_t wait_time)
     int result;
     static char buffer[RECV_BUFSIZE];
     struct sockaddr_storage response_addr;
-    int n, avg;
+    int n;
+    int64_t avg;
     HOST_ENTRY *h;
     int64_t this_reply;
     int this_count;

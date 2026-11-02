@@ -21,7 +21,8 @@
 
 void print_per_system_stats(void)
 {
-    int i, j, avg, outage_ms;
+    int i, j, outage_ms;
+    int64_t avg;
     HOST_ENTRY *h;
     int64_t resp;
 
@@ -86,7 +87,8 @@ void print_per_system_stats(void)
 
 void print_per_system_stats_json(void)
 {
-    int i, j, avg, outage_ms;
+    int i, j, outage_ms;
+    int64_t avg;
     HOST_ENTRY *h;
     int64_t resp;
 

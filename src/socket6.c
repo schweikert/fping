@@ -153,7 +153,7 @@ int socket_sendto_ping_ipv6(int s, struct sockaddr* saddr, socklen_t saddr_len, 
     icp->icmp6_seq = htons(icmp_seq_nr);
     icp->icmp6_id = icmp_id_nr;
 
-    if (opt_random_data_on) {
+    if (opt.random_data_on) {
         for (n = sizeof(struct icmp6_hdr); n < ping_pkt_size_ipv6; ++n) {
             ping_buffer_ipv6[n] = random() & 0xFF;
         }

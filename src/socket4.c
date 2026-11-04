@@ -176,7 +176,7 @@ int socket_sendto_ping_ipv4(int s, struct sockaddr* saddr, socklen_t saddr_len, 
     icp->icmp_seq = htons(icmp_seq_nr);
     icp->icmp_id = icmp_id_nr;
 
-    if (opt_random_data_on) {
+    if (opt.random_data_on) {
         for (n = ((char*)&icp->icmp_data - (char*)icp); n < ping_pkt_size_ipv4; ++n) {
             ping_buffer_ipv4[n] = random() & 0xFF;
         }

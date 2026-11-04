@@ -6,54 +6,70 @@
 /* sized so as to be like traditional ping */
 #define DEFAULT_PING_DATA_SIZE 56
 
-/* options with values */
-/* all time-related values are int64_t nanoseconds */
-extern unsigned int opt_retry;
-extern int64_t opt_timeout;
-extern int64_t opt_seqmap_timeout;
-extern int64_t opt_interval;
-extern int64_t opt_perhost_interval;
-extern float opt_backoff;
-extern unsigned int opt_ping_data_size;
-extern unsigned int opt_count;
-extern unsigned int opt_min_reachable;
-extern unsigned int opt_ttl;
+typedef struct {
+    /* options with values */
+    /* all time-related values are int64_t nanoseconds */
+    unsigned int retry;
+    int64_t timeout;
+    int64_t seqmap_timeout;
+    int64_t interval;
+    int64_t perhost_interval;
+    float backoff;
+    unsigned int ping_data_size;
+    unsigned int count;
+    unsigned int min_reachable;
+    unsigned int ttl;
 
-/* switches 0 = off 1 = on */
-extern int opt_print_json_on;
-extern int opt_version_on;
-extern int opt_verbose_on;
-extern int opt_unreachable_on;
-extern int opt_alive_on;
-extern int opt_quiet_on;
-extern int opt_elapsed_on;
-extern int opt_stats_on;
-extern int opt_cumulative_stats_on;
-extern int opt_generate_on;
-extern int opt_count_on;
-extern int opt_loop_on;
-extern int opt_print_netdata_on;
-extern int opt_print_json_on;
-extern int opt_print_tos_on;
-extern int opt_print_ttl_on;
-extern int opt_print_reply_dst_on;
-extern int opt_per_recv_on;
-extern int opt_report_all_rtts_on;
-extern int opt_name_on;
-extern int opt_addr_on;
-extern int opt_rdns_on;
-extern int opt_backoff_on;
-extern int opt_multif_on;
-extern int opt_timeout_on;
-extern int opt_fast_reachable_on;
-extern int opt_outage_on;
-extern int opt_random_data_on;
-extern int opt_check_source_on;
-extern int opt_size_on;
-extern int opt_oiface_on;
-extern int opt_bindiface_on;
-extern int opt_timestamp_on;
-extern int opt_timestamp_format;
-extern int opt_icmp_request_typ;
+    /* switches: 0 = off, 1 = on */
+    int version_on;
+    int verbose_on;
+    int unreachable_on;
+    int alive_on;
+    int quiet_on;
+    int elapsed_on;
+    int stats_on;
+    int cumulative_stats_on;
+    int generate_on;
+    int count_on;
+    int loop_on;
+    int print_netdata_on;
+    int print_json_on;
+    int print_tos_on;
+    int print_ttl_on;
+    int print_reply_dst_on;
+    int per_recv_on;
+    int report_all_rtts_on;
+    int name_on;
+    int addr_on;
+    int rdns_on;
+    int backoff_on;
+    int multif_on;
+    int timeout_on;
+    int fast_reachable_on;
+    int outage_on;
+    int random_data_on;
+    int check_source_on;
+    int size_on;
+    int oiface_on;
+    int bindiface_on;
+    int timestamp_on;
+    int timestamp_format;
+    int icmp_request_typ;
+} Options;
+
+typedef struct {
+    /* debug switches */
+    int trace_on;
+    int randomly_lose_on;
+    int print_per_system_on;
+    int lose_factor;
+} DebugOptions;
+
+
+Options options_init(void);
+DebugOptions debug_options_init(void);
+
+extern Options opt;
+extern DebugOptions dbg_opt;
 
 #endif

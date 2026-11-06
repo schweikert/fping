@@ -55,6 +55,10 @@ typedef struct {
     int timestamp_on;
     int timestamp_format;
     int icmp_request_typ;
+    int dontfrag_on;
+    int frag_on;
+    int pmtu;
+    int pmtu_ipv6;
 } Options;
 
 typedef struct {

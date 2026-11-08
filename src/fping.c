@@ -1158,18 +1158,18 @@ int main(int argc, char **argv)
 
 #if HAVE_SO_TIMESTAMPNS
     {
-        int opt = 1;
+        int sock_opt = 1;
         if (socket4 >= 0) {
-            if (setsockopt(socket4, SOL_SOCKET, SO_TIMESTAMPNS, &opt, sizeof(opt))) {
-                if (setsockopt(socket4, SOL_SOCKET, SO_TIMESTAMP, &opt, sizeof(opt))) {
+            if (setsockopt(socket4, SOL_SOCKET, SO_TIMESTAMPNS, &sock_opt, sizeof(sock_opt))) {
+                if (setsockopt(socket4, SOL_SOCKET, SO_TIMESTAMP, &sock_opt, sizeof(sock_opt))) {
                     perror("setting SO_TIMESTAMPNS and SO_TIMESTAMP option");
                 }
             }
         }
 #ifdef IPV6
         if (socket6 >= 0) {
-            if (setsockopt(socket6, SOL_SOCKET, SO_TIMESTAMPNS, &opt, sizeof(opt))) {
-                if (setsockopt(socket6, SOL_SOCKET, SO_TIMESTAMP, &opt, sizeof(opt))) {
+            if (setsockopt(socket6, SOL_SOCKET, SO_TIMESTAMPNS, &sock_opt, sizeof(sock_opt))) {
+                if (setsockopt(socket6, SOL_SOCKET, SO_TIMESTAMP, &sock_opt, sizeof(sock_opt))) {
                     perror("setting SO_TIMESTAMPNS and SO_TIMESTAMP option (IPv6)");
                 }
             }

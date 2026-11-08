@@ -31,6 +31,7 @@ Next
 - Schedule second ping relative to when the first ping is sent, rather than
   before DNS resolution
 - Ensure saved set-user-ID is cleared when dropping privileges
+- Ensure proper alignment of ancillary data (cmsg) buffers
 
 fping 5.5 (2025-12-31)
 ======================

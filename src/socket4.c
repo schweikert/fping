@@ -191,16 +191,19 @@ int socket_sendto_ping_ipv4(int s, struct sockaddr* saddr, socklen_t saddr_len, 
             .iov_len  = ping_pkt_size_ipv4
         };
 
-        char cmsg_buf[CMSG_SPACE(sizeof(struct in_pktinfo))];
-        memset(cmsg_buf, 0, sizeof(cmsg_buf));
+        union {
+            char buf[CMSG_SPACE(sizeof(struct in_pktinfo))];
+            struct cmsghdr align;
+        } cmsg_un;
+        memset(&cmsg_un, 0, sizeof(cmsg_un));
 
         struct msghdr msg = {
             .msg_name       = saddr,
             .msg_namelen    = saddr_len,
             .msg_iov        = &iov,
             .msg_iovlen     = 1,
-            .msg_control    = cmsg_buf,
-            .msg_controllen = sizeof(cmsg_buf),
+            .msg_control    = cmsg_un.buf,
+            .msg_controllen = sizeof(cmsg_un.buf),
             .msg_flags      = 0
         };
 

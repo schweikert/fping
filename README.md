@@ -64,7 +64,7 @@ podman pull ghcr.io/schweikert/fping:latest
 **Run fping**
 
 ```
-podman run --rm fping:latest 127.0.0.1
+podman run --rm ghcr.io/schweikert/fping:latest 127.0.0.1
 ```
 
 ## Credits

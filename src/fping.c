@@ -2108,11 +2108,9 @@ int receive_packet(int64_t wait_time,
     char *reply_buf,
     size_t reply_buf_len,
     int *ip_header_tos,
-    int *ip_header_ttl,
+    int *ip_header_ttl
 #ifdef IPV6
-    struct in6_addr *recv_dst_addr_ipv6
-#else
-    void *recv_dst_addr_ipv6
+    , struct in6_addr *recv_dst_addr_ipv6
 #endif
   )
 {
@@ -2576,11 +2574,9 @@ int wait_for_reply(int64_t wait_time)
         buffer, /* reply_buf */
         sizeof(buffer), /* reply_buf_len */
         &ip_header_res.tos, /* TOS resp. TC byte */
-        &ip_header_res.ttl, /* TTL resp. hop limit */
+        &ip_header_res.ttl /* TTL resp. hop limit */
 #ifdef IPV6
-        &recv_dst_addr_ipv6
-#else
-        NULL
+        , &recv_dst_addr_ipv6
 #endif
     );
 

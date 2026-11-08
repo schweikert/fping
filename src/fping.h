@@ -128,7 +128,7 @@ int in_cksum( unsigned short *p, int n );
 
 /* socket.c */
 int  open_ping_socket_ipv4(int *socktype);
-void socket_set_outgoing_iface_ipv4(int s, const char *iface_name);
+void socket_set_outgoing_iface_ipv4(const char *iface_name);
 void init_ping_buffer_ipv4(size_t ping_data_size);
 void socket_set_src_addr_ipv4(int s, struct in_addr *src_addr, int *ident);
 int  socket_sendto_ping_ipv4(int s, struct sockaddr *saddr, socklen_t saddr_len, uint16_t icmp_seq, uint16_t icmp_id, uint8_t icmp_proto);

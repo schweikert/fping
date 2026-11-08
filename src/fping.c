@@ -617,7 +617,7 @@ int main(int argc, char **argv)
                 opt.oiface_on = 1;
 #ifdef IP_PKTINFO
                 if (socket4 >= 0) {
-                    socket_set_outgoing_iface_ipv4(socket4, optparse_state.optarg);
+                    socket_set_outgoing_iface_ipv4(optparse_state.optarg);
                 }
 #ifdef IPV6
                 if (socket6 >= 0) {

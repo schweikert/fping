@@ -17,27 +17,65 @@ jobs:
     if: >
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push' &&
-      github.event.workflow_run.head_branch == 'develop'
-    name: Push Docker image to Github Container Redistry
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      (github.event.workflow_run.head_branch == 'develop' ||
+       startsWith(github.event.workflow_run.head_branch, 'v'))
+    name: Push Docker image to GitHub Container Registry
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
 
-      - name: Login Github Container Redistry
+      - name: Login GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Determine release version and tag metadata
+        id: version_info
+        env:
+          TAG: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          if echo "$TAG" | grep -qE '^v[0-9]+\.[0-9]+(\.[0-9]+)?(-[0-9A-Za-z.-]+)?$'; then
+            VERSION="${TAG#v}"
+            MAJOR="${VERSION%%.*}"
+            echo "is_tag=true" >> "$GITHUB_OUTPUT"
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+            echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+            echo "major=$MAJOR" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_tag=false" >> "$GITHUB_OUTPUT"
+            echo "tag=unused" >> "$GITHUB_OUTPUT"
+            echo "version=unused" >> "$GITHUB_OUTPUT"
+            echo "major=unused" >> "$GITHUB_OUTPUT"
+          fi
+          HIGHEST=$(git tag -l 'v*' | grep -E '^v[0-9]+\.[0-9]+(\.[0-9]+)?$' | sort -V | tail -n 1 || true)
+          if [ -n "$HIGHEST" ] && [ "$TAG" = "$HIGHEST" ]; then
+            echo "is_latest=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_latest=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Extract metadata (tags, labels)
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}
+          flavor: |
+            latest=false
           tags: |
-            type=raw,value=latest
+            type=raw,value=develop,enable=${{ github.event.workflow_run.head_branch == 'develop' }}
+            type=raw,value=${{ steps.version_info.outputs.tag }},enable=${{ steps.version_info.outputs.is_tag == 'true' }}
+            type=raw,value=${{ steps.version_info.outputs.version }},enable=${{ steps.version_info.outputs.is_tag == 'true' }}
+            type=raw,value=${{ steps.version_info.outputs.major }},enable=${{ steps.version_info.outputs.is_latest == 'true' }}
+            type=raw,value=latest,enable=${{ steps.version_info.outputs.is_latest == 'true' }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.event.workflow_run.head_sha }}
 
       - name: Build and push Docker image
         id: build

@@ -2731,16 +2731,9 @@ int wait_for_reply(int64_t wait_time)
             getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
             fprintf(stderr, " [<- %s]", buf);
         }
-        if (opt.print_json_on) {
-            print_recv_ext_json(&ip_header_res,
-                recv_time,
-                this_reply);
-        }
-        else {
-            print_recv_ext(&ip_header_res,
-                recv_time,
-                this_reply);
-        }
+        print_recv_ext(&ip_header_res,
+            recv_time,
+            this_reply);
     }
     return 1;
 }

@@ -212,6 +212,8 @@ void print_timeout(HOST_ENTRY *h, int ping_index) {
     printf("\n");
 }
 
+static void print_recv_ext_json(IP_HEADER_RESULT *ip_header_res, int64_t recv_time);
+
 /************************************************************
 
   Function: print_recv_ext
@@ -226,6 +228,10 @@ void print_timeout(HOST_ENTRY *h, int ping_index) {
 ************************************************************/
 
 void print_recv_ext(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t this_reply) { 
+    if (opt.print_json_on) {
+        print_recv_ext_json(ip_header_res, recv_time);
+        return;
+    }
     if (opt.icmp_request_typ == 13) {
         printf("%s timestamps: Originate=%u Receive=%u Transmit=%u Localreceive=%u",
             opt.alive_on ? "" : ",",
@@ -270,13 +276,13 @@ void print_recv_ext(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t 
 *************************************************************
 
   Inputs:  IP_HEADER_RESULT *ip_header_res,
-           int64_t recv_time, int64_t this_reply
+           int64_t recv_time
 
   Description:
 
 ************************************************************/
 
-void print_recv_ext_json(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t this_reply) {
+static void print_recv_ext_json(IP_HEADER_RESULT *ip_header_res, int64_t recv_time) {
     if (opt.icmp_request_typ == 13) {
         printf(", \"timestamps\": {");
         printf("\"originate\": %u, ", ip_header_res->otime_ms);
@@ -308,9 +314,6 @@ void print_recv_ext_json(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int
             printf(", \"ttl\": -1");
         }
     }
-
-    if (opt.elapsed_on && !opt.per_recv_on)
-        printf(" (%s ms)", sprint_tm(this_reply));
 
     printf("}}");
     printf("\n");

@@ -2,11 +2,12 @@ set -ex
 
 NS_TESTER="tester_ns"
 NS_TARGET="target_ns"
-LOG_FILE="/tmp/asym_trace.log"
+LOG_FILE=$(mktemp /tmp/asym_trace.XXXXXX.log)
 
 cleanup() {
     echo "--- FINALER TRACE-LOG ---"
-    [ -f "$LOG_FILE" ] && cat $LOG_FILE
+    [ -f "$LOG_FILE" ] && cat "$LOG_FILE"
+    rm -f "$LOG_FILE"
     sudo ip netns del $NS_TESTER 2>/dev/null || true
     sudo ip netns del $NS_TARGET 2>/dev/null || true
 }

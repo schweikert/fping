@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 42;
+use Test::Command tests => 45;
 use Test::More;
 
 # fping -i 0
@@ -73,3 +73,9 @@ for my $arg (qw(i p Q t -seqmap-timeout)) {
     $cmd->stdout_is_eq("");
     $cmd->stderr_like(qr{Usage:});
 }
+
+# fping -0 (should cleanly exit with error and not crash)
+my $cmd_zero = Test::Command->new(cmd => "fping -0 127.0.0.1");
+$cmd_zero->exit_is_num(1);
+$cmd_zero->stdout_is_eq("");
+$cmd_zero->stderr_like(qr{invalid option -- '0'});

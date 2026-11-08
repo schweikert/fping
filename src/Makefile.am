@@ -7,5 +7,4 @@ fping_DEPENDENCIES = ../config.h
 
 if IPV6
 fping_SOURCES += socket6.c
-fping_CFLAGS = $(AM_CFLAGS) -DIPV6
 endif

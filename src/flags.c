@@ -1,3 +1,4 @@
+#include "config.h"
 #include "flags.h"
 #include "options.h"
 

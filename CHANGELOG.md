@@ -3,43 +3,82 @@ Next
 
 ## New features
 
-- New option --print-reply-dst to show the destination address of the received reply packet (#461, thanks @gsnw-sebast)
+- New option --print-reply-dst to show the destination address of the received
+  reply packet (#461, #462, #521, thanks @gsnw-sebast)
 - New option --oiface for outgoing interface (#463, thanks @gsnw-sebast)
-- Add IPv6 support to --print-reply-dst (#462, thanks @gsnw-sebast)
-- Add --frag option to disable path MTU discovery (#476, thanks @gsnw-sebast)
+- Add --frag option to disable path MTU discovery (#474, #476, thanks @a72mar
+  and @gsnw-sebast)
 
-## Bugfixes and other changes
+## Bugfixes
 
-- IPV6_PKTINFO fallback for older RFC-2292 systems when adding the --print-reply-dst parameter (#521, thanks @gsnw-sebast)
-- Fixed an issue with setting the DF bit and added support for macOS (#484, thanks @gsnw-sebast)
-- Fix getprotobyname missing on Android preventing use (#470, thanks @Paliak. Merged #475)
-- Fix negative average round-trip time (e.g. `min/avg/max = 2500/-1.8e+03/2500`)
-  when the average exceeds about 2147 ms: the average was stored in a
-  32-bit int holding nanoseconds (#479, thanks @JenilPatel1824)
-- ci: Removed travis-ci (#446, thanks @gsnw-sebast)
-- Performance optimization: reduce number of select calls and use
-  recvmsg with MSG_DONTWAIT instead (#449)
-- Improved compatibility with NetBSD (#452, thanks @auerswal)
-- Consistent variable names for command-line options (#453, thanks @gsnw-sebast)
-- Move printing functions, stats functions (global stats) and
-  function declarations to a separate file (#454, thanks @gsnw-sebast)
-- Avoid crash with option `-0` (#457, thanks @auerswal)
-- Move option parsing to a separate file fping.c and fping.h (#458, thanks @gsnw-sebast)
-- Add IBM i PASE detection (#466, thanks @acerbis and @gsnw-sebast)
-- ci: Update autoconf to version 2.73 (#467, thanks @gsnw-sebast)
-- ci: Add Test asymmetric ipv6 routing [--oiface] (#468, thanks @gsnw-sebast)
-- Options variables converted to a structure (#469, thanks @gsnw-sebast)
-- Schedule second ping relative to when the first ping is sent, rather than
-  before DNS resolution
-- Ensure saved set-user-ID is cleared when dropping privileges
-- Ensure proper alignment of ancillary data (cmsg) buffers
-- Always use CLOCK_REALTIME for wall-clock output timestamps and use CLOCK_MONOTONIC when SO_TIMESTAMPNS is unavailable
-- Fix F_GETFL error handling in open_ping_socket_ipv4() and open_ping_socket_ipv6() (#524, thanks @Wybuck)
-- Fix `setsockopt IP_RECVTOS: Invalid argument` error with `--print-tos` on macOS without root privileges (#527)
-- Fix sockaddr bounds, FD_SETSIZE, strdup() OOM, and unsigned char ctype defensive guards
-- Validate IPv4 socket creation under `-4` and narrow `hints_ai_family` on single-stack hosts
-- Fix cmsg payload size handling for 1-byte IP_TOS and IP_TTL
+- Avoid crash with option -0 (#457, thanks @auerswal)
+- Fix crash or overflow in loop mode (-l) with extreme -p or -t values (#564)
+- Fix negative average round-trip time when the average exceeds about 2147 ms
+  (#479, thanks @JenilPatel1824)
+- Fix integer overflows in loss percentage and outage duration over 24 days (#562)
 - Fix duplicate reply handling and timeout event reuse (#477, thanks @HelFixCZ)
+- Fix false duplicate reports when replies arrive for multiple retries
+  (#502, thanks @3isam7amdi)
+- Fix --print-tos and --print-ttl values on BSD and big-endian systems (#553)
+- Fix --print-tos failing on macOS without root privileges (#530)
+- Fix IP address formatting in ICMP errors and replies on BSD and macOS, and
+  for scoped IPv6 addresses (#568)
+- Prevent random payload (-R) from overwriting --icmp-timestamp fields (#556)
+- Escape special characters in JSON (-J) output (#546)
+- Reject incompatible combinations of -J with -N, -x, or -X instead of
+  producing mixed output (#569)
+- Respond immediately to Ctrl-C and SIGQUIT during long waits, and preserve -Q
+  interval stats on SIGQUIT (#575)
+- Use a monotonic clock for timing without kernel timestamps while keeping
+  wall-clock output timestamps (#506)
+- Do not delay the first ping by -i, and schedule the second ping after the
+  first is sent (#486, #544)
+- Clamp negative RTTs on backward clock jumps and preserve 0 ms min RTT (#576)
+- Avoid matching spurious replies against unallocated sequence-map slots
+  shortly after system boot (#574)
+- Fix edge-case address range checks and wraparound in -g (#549)
+
+## Platform support and portability
+
+- Add -M/--dontfrag and --frag support on macOS, FreeBSD, and Solaris/illumos
+  (#484, thanks @gsnw-sebast)
+- Fix getprotobyname failing on Android preventing use (#470, #475, thanks
+  @Paliak and @gsnw-sebast)
+- Improved compatibility with NetBSD (#450, #452, thanks @gsnw-sebast,
+  @auerswal, and adam (NetBSD pkgsrc))
+- Add IBM i PASE detection (#465, #466, thanks @acerbis and @gsnw-sebast)
+- Fix socket checks under -4 and DNS lookups on single-stack hosts (#542)
+
+## Security, hardening, and performance
+
+- Fully drop root privileges (including saved set-user-ID) after opening
+  sockets when running setuid-root (#497)
+- Validate received ICMP packet lengths before decoding and fix an odd-length
+  checksum over-read (#555, #556)
+- Reject invalid numeric options (NaN, Inf, overflow) and enforce the
+  documented -p >= 0.001 ms minimum (#567)
+- Add defensive checks for FD_SETSIZE limits, buffer alignment, and
+  out-of-memory conditions (#495, #538)
+- Fix F_GETFL error handling when opening sockets (#524, thanks @Wybuck)
+- Reduce system calls when reading replies for better multi-host performance (#449)
+
+## Codebase, packaging, and testing
+
+- Refactor codebase into modular source files and group option flags into a
+  single structure (#453, #454, #458, #469, thanks @gsnw-sebast)
+- Include JSON schema in release tarball (#447, thanks @jpalus)
+- Publish official Docker images for releases (#485)
+- Document Docker and Podman usage in README (#464, thanks @gsnw-sebast)
+- Update autoconf to version 2.73 (#467, thanks @gsnw-sebast)
+- Enable stricter compiler warnings and add --enable-werror (#594)
+- Add C unit tests and significantly improve test coverage (#540)
+- Add Linux asymmetric-routing and ICMP-error tests (#468, #525, thanks
+  @gsnw-sebast)
+- Add Coverity static analysis in GitHub Actions (#448, #455, thanks
+  @gsnw-sebast)
+- Add local Podman test runner (#537)
+- Expand CI testing to Alpine, ARM64, s390x, FreeBSD, OpenBSD, NetBSD, and
+  OmniOS (#498, #499, #500, #504, #507, #510, #602)
 
 fping 5.5 (2025-12-31)
 ======================

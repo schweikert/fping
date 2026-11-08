@@ -49,9 +49,10 @@ Have a look at the [fping(8)](doc/fping.pod) manual page for usage help.
 
 ## Docker usage
 
-You can use the current Docker image from the develop branch directly from GitHub.
+Docker images are published to the GitHub Container Registry:
 
-Github Docker: `ghcr.io/schweikert/fping:latest`
+* `ghcr.io/schweikert/fping:latest` (latest stable release; version tags such as `5.5` or `v5.5` are also available)
+* `ghcr.io/schweikert/fping:develop` (latest build from the `develop` branch)
 
 The following example uses podman, but you can replace `podman` with `docker` if you prefer.
 
@@ -64,7 +65,7 @@ podman pull ghcr.io/schweikert/fping:latest
 **Run fping**
 
 ```
-podman run --rm fping:latest 127.0.0.1
+podman run --rm ghcr.io/schweikert/fping:latest 127.0.0.1
 ```
 
 ## Credits

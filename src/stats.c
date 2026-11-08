@@ -1,3 +1,4 @@
+#include "config.h"
 #include "stats.h"
 #include "fping.h"
 #include "flags.h"

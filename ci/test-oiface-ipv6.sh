@@ -10,6 +10,7 @@ cleanup() {
     [ -f "$LOG_FILE" ] && cat "$LOG_FILE"
     sudo ip netns del "$NS_TESTER" 2>/dev/null || true
     sudo ip netns del "$NS_TARGET" 2>/dev/null || true
+    rm -f "$LOG_FILE"
 }
 trap cleanup EXIT
 

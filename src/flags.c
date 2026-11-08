@@ -15,6 +15,8 @@ Options options_init(void)
     o.backoff           = DEFAULT_BACKOFF_FACTOR;
     o.ping_data_size    = DEFAULT_PING_DATA_SIZE;
     o.count             = 1;
+    o.verbose_on        = 1;
+    o.backoff_on        = 1;
 
     return o;
 }

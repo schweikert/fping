@@ -484,8 +484,6 @@ int main(int argc, char **argv)
 
     optparse_init(&optparse_state, argv);
     ident4 = ident6 = htons(getpid() & 0xFFFF);
-    opt.verbose_on = 1;
-    opt.backoff_on = 1;
     opterr = 1;
 
     /* get command line options */

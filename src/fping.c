@@ -1751,7 +1751,11 @@ void main_loop()
 
             /* Loop and count mode: schedule next ping */
             if (opt.loop_on || (opt.count_on && event->ping_index + 1 < opt.count)) {
-                host_add_ping_event(h, event->ping_index + 1, event->ev_time + opt.perhost_interval);
+                /* Schedule the second ping relative to when the first ping was
+                 * actually sent (after DNS resolution); for subsequent pings,
+                 * use the scheduled time (event->ev_time) to avoid drift. */
+                int64_t base_time = event->ping_index == 0 ? h->last_send_time : event->ev_time;
+                host_add_ping_event(h, event->ping_index + 1, base_time + opt.perhost_interval);
             }
         }
 

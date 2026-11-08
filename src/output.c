@@ -237,7 +237,6 @@ void print_recv_ext(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t 
         printf(" (Reply-DST %s)", ip_header_res->reply_dst_addr);
     }
 
-#if defined(HAVE_IP_RECVTOS)
     if(opt.print_tos_on) {
         if(ip_header_res->tos != -1) {
             printf(" (TOS %d)", ip_header_res->tos);
@@ -246,7 +245,6 @@ void print_recv_ext(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t 
             printf(" (TOS unknown)");
         }
     }
-#endif
 
     if (opt.print_ttl_on) {
         if(ip_header_res->ttl != -1) {
@@ -289,7 +287,6 @@ void print_recv_ext_json(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int
         printf(", \"replyDst\": \"%s\"", ip_header_res->reply_dst_addr);
     }
 
-#if defined(HAVE_IP_RECVTOS)
     if(opt.print_tos_on) {
         if(ip_header_res->tos != -1) {
             printf(", \"tos\": %d", ip_header_res->tos);
@@ -298,7 +295,6 @@ void print_recv_ext_json(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int
             printf(", \"tos\": -1");
         }
     }
-#endif
 
     if (opt.print_ttl_on) {
         if(ip_header_res->ttl != -1) {

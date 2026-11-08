@@ -2135,7 +2135,10 @@ int receive_packet(int64_t wait_time,
     struct timeval to;
     int s = 0;
     int recv_len;
-    static unsigned char msg_control[128];
+    static union {
+        unsigned char buf[128];
+        struct cmsghdr align;
+    } msg_control;
     struct iovec msg_iov = {
         reply_buf,
         reply_buf_len
@@ -2145,8 +2148,8 @@ int receive_packet(int64_t wait_time,
     recv_msghdr.msg_namelen = reply_src_addr_len;
     recv_msghdr.msg_iov = &msg_iov;
     recv_msghdr.msg_iovlen = 1;
-    recv_msghdr.msg_control = &msg_control;
-    recv_msghdr.msg_controllen = sizeof(msg_control);
+    recv_msghdr.msg_control = msg_control.buf;
+    recv_msghdr.msg_controllen = sizeof(msg_control.buf);
     struct cmsghdr *cmsg;
 
     /* Wait for a socket to become ready */
@@ -2159,7 +2162,7 @@ int receive_packet(int64_t wait_time,
         if (recv_len <= 0 && socket6 >= 0) {
             /* Reset fields potentially modified by failed recvmsg */
             recv_msghdr.msg_namelen = reply_src_addr_len;
-            recv_msghdr.msg_controllen = sizeof(msg_control);
+            recv_msghdr.msg_controllen = sizeof(msg_control.buf);
             recv_len = recvmsg(socket6, &recv_msghdr, MSG_TRUNC | MSG_DONTWAIT);
         }
 #endif

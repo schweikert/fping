@@ -41,6 +41,7 @@ extern "C" {
 #include "optparse.h"
 
 #include <errno.h>
+#include <float.h>
 #include <inttypes.h>
 #include <limits.h>
 #include <signal.h>
@@ -381,6 +382,11 @@ static int p_setsockopt(uid_t p_uid, int sockfd, int level, int optname,
 }
 #endif
 
+/* Maximum option time value in seconds (-Q) so multiplying by 1e9 ns cannot overflow int64_t */
+#define MAX_OPT_TIME_VAL ((double)(INT64_MAX / 2000000000ULL))
+/* Maximum option time value in milliseconds so multiplying by 1e6 ns cannot overflow int64_t */
+#define MAX_OPT_TIME_VAL_MS ((double)(INT64_MAX / 2000000ULL))
+
 static unsigned long strtoul_strict(const char *arg, int base)
 {
     char *endptr;
@@ -395,20 +401,27 @@ static unsigned long strtoul_strict(const char *arg, int base)
 
     errno = 0;
     val = strtoul(arg, &endptr, base);
-    if (errno != 0 || arg == endptr || *endptr != '\0')
+    if (errno != 0 || arg == endptr || *endptr != '\0' || val > UINT_MAX)
         usage(1);
 
     return val;
 }
 
-static double strtod_strict(const char *arg)
+static double strtod_strict(const char *arg, double max_val)
 {
     char *endptr;
     double val;
 
+    while (isspace((unsigned char)*arg))
+        arg++;
+
+    if (arg[0] == '-')
+        usage(1);
+
     errno = 0;
     val = strtod(arg, &endptr);
-    if (errno != 0 || arg == endptr || *endptr != '\0' || val < 0)
+    /* Negated comparison also rejects NaN; max_val prevents int64_t overflow */
+    if (errno != 0 || arg == endptr || *endptr != '\0' || !(val >= 0.0 && val <= max_val))
         usage(1);
 
     return val;
@@ -640,7 +653,7 @@ int fping_main(int argc, char **argv)
                 }
 #endif
             } else if (longindex >= 0 && strcmp(longopts[longindex].longname, "seqmap-timeout") == 0) {
-                opt.seqmap_timeout = strtod_strict(optparse_state.optarg) * 1000000;
+                opt.seqmap_timeout = strtod_strict(optparse_state.optarg, MAX_OPT_TIME_VAL_MS) * 1000000;
             } else if (longindex >= 0 && strcmp(longopts[longindex].longname, "oiface") == 0) {
                 opt.oiface = optparse_state.optarg;
             } else if (longindex >= 0 && strcmp(longopts[longindex].longname, "frag") == 0) {
@@ -686,25 +699,28 @@ int fping_main(int argc, char **argv)
             break;
 
         case 't':
-            opt.timeout = strtod_strict(optparse_state.optarg) * 1000000;
+            opt.timeout = strtod_strict(optparse_state.optarg, MAX_OPT_TIME_VAL_MS) * 1000000;
             opt.timeout_on = 1;
             break;
 
         case 'r':
             opt.retry = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
+            /* Reject >= INT_MAX so opt.retry + 1 and signed int comparisons do not overflow */
+            if (opt.retry >= (unsigned int)INT_MAX)
+                usage(1);
             break;
 
         case 'i':
-            opt.interval = strtod_strict(optparse_state.optarg) * 1000000;
+            opt.interval = strtod_strict(optparse_state.optarg, MAX_OPT_TIME_VAL_MS) * 1000000;
             break;
 
         case 'p':
-            opt.perhost_interval = strtod_strict(optparse_state.optarg) * 1000000;
+            opt.perhost_interval = strtod_strict(optparse_state.optarg, MAX_OPT_TIME_VAL_MS) * 1000000;
             break;
 
         case 'c':
             opt.count = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
-            if (!opt.count)
+            if (!opt.count || opt.count > (unsigned int)INT_MAX)
                 usage(1);
 
             opt.count_on = 1;
@@ -712,7 +728,7 @@ int fping_main(int argc, char **argv)
 
         case 'C':
             opt.count = (unsigned int)strtoul_strict(optparse_state.optarg, 10);
-            if (!opt.count)
+            if (!opt.count || opt.count > (unsigned int)INT_MAX)
                 usage(1);
 
             opt.count_on = 1;
@@ -739,10 +755,9 @@ int fping_main(int argc, char **argv)
             opt_val_double = strtod(optparse_state.optarg, &endptr);
             if (errno != 0 || optparse_state.optarg == endptr || (*endptr != '\0' && *endptr != ','))
                 usage(1);
-            if (opt_val_double < 0) {
+            if (!(opt_val_double > 0.0 && opt_val_double <= MAX_OPT_TIME_VAL) || (report_interval = opt_val_double * 1e9) <= 0) {
                 usage(1);
             }
-            report_interval = opt_val_double * 1e9;
 
             /* recognize keyword(s) after number, ignore everything else */
             {
@@ -787,7 +802,7 @@ int fping_main(int argc, char **argv)
             break;
 
         case 'B':
-            opt.backoff = strtod_strict(optparse_state.optarg);
+            opt.backoff = (float)strtod_strict(optparse_state.optarg, FLT_MAX);
             break;
 
         case 's':
@@ -1038,6 +1053,11 @@ int fping_main(int argc, char **argv)
 
     if (opt.perhost_interval < (float)MIN_PERHOST_INTERVAL_MS * 1000000 && getuid()) {
         fprintf(stderr, "%s: -p must be >= %g\n", prog, (float)MIN_PERHOST_INTERVAL_MS);
+        exit(1);
+    }
+
+    if (opt.perhost_interval < 1000) {
+        fprintf(stderr, "%s: -p must be >= 0.001\n", prog);
         exit(1);
     }
 

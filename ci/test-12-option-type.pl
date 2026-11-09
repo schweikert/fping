@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 281;
+use Test::Command tests => 371;
 use Test::More;
 
 # some options require a numeric argument
@@ -103,4 +103,35 @@ for my $args (
     my $cmd = Test::Command->new(cmd => "fping --oiface=check-source 127.0.0.1");
     $cmd->exit_isnt_num(0);
     $cmd->stdout_is_eq("");
+}
+
+# floating-point options must reject NaN, Inf, and -0
+for my $arg (qw(B i p t Q -seqmap-timeout)) {
+    for my $test_input (qw(nan inf -0)) {
+        my $cmd = Test::Command->new(cmd => "fping -$arg $test_input");
+        $cmd->exit_is_num(1);
+        $cmd->stdout_is_eq("");
+        $cmd->stderr_like(qr{Usage:});
+    }
+}
+
+# numeric options must reject out-of-range / overflow values
+for my $args (
+    '-t 1e15',
+    '-i 1e15',
+    '-p 1e15',
+    '--seqmap-timeout=1e15',
+    '-Q 0',
+    '-Q 1e-10',
+    '-Q 5000000000',
+    '-B 1e40',
+    '-b 4294967296',
+    '-r 2147483647',
+    '-c 2147483648',
+    '-C 2147483648',
+) {
+    my $cmd = Test::Command->new(cmd => "fping $args");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_like(qr{Usage:});
 }

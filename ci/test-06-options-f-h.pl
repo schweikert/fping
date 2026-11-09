@@ -256,7 +256,7 @@ SKIP: {
     my $cmd = Test::Command->new(cmd => "fping -4 -g ::1 ::1");
     $cmd->exit_is_num(1);
     $cmd->stdout_is_eq("");
-    $cmd->stderr_like(qr{can't parse address ::1:.*(not supported|not known)});
+    $cmd->stderr_like(qr{can't parse address ::1:.*(not supported|not known|no usable address)});
 }
 
 # fping -6 -g (range, wrong address family)
@@ -267,7 +267,7 @@ SKIP: {
     my $cmd = Test::Command->new(cmd => "fping -6 -g 127.0.0.1 127.0.0.1");
     $cmd->exit_is_num(1);
     $cmd->stdout_is_eq("");
-    $cmd->stderr_like(qr{can't parse address 127\.0\.0\.1:.*(not supported|not known)});
+    $cmd->stderr_like(qr{can't parse address 127\.0\.0\.1:.*(not supported|not known|no usable address)});
 }
 
 # fping -g (range - IPv6)
@@ -441,7 +441,7 @@ SKIP: {
     my $cmd = Test::Command->new(cmd => "fping -4 -g ::1/128");
     $cmd->exit_is_num(1);
     $cmd->stdout_is_eq("");
-    $cmd->stderr_like(qr{can't parse address ::1:.*(not supported|not known)});
+    $cmd->stderr_like(qr{can't parse address ::1:.*(not supported|not known|no usable address)});
 }
 
 # fping -6 -g (cidr, wrong address family)
@@ -452,7 +452,7 @@ SKIP: {
     my $cmd = Test::Command->new(cmd => "fping -6 -g 127.0.0.1/32");
     $cmd->exit_is_num(1);
     $cmd->stdout_is_eq("");
-    $cmd->stderr_like(qr{can't parse address 127\.0\.0\.1:.*(not supported|not known)});
+    $cmd->stderr_like(qr{can't parse address 127\.0\.0\.1:.*(not supported|not known|no usable address)});
 }
 
 # fping -g (CIDR - IPv6)

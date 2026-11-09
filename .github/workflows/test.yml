@@ -92,6 +92,29 @@ jobs:
       - name: Test asymmetric ipv6 routing (--oiface)
         run: sudo ci/test-oiface-ipv6.sh
 
+  Test-Alpine:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Enable unprivileged ping on host
+        run: sudo sysctl net.ipv4.ping_group_range='0 2147483647'
+
+      - name: Build and test in Alpine container
+        run: |
+          docker run --rm --network host -v "$PWD:/work" -w /work alpine:latest sh -euxc '
+            apk add --no-cache build-base autoconf automake libcap perl perl-utils perl-test-command
+            autoreconf -i
+            ./configure --enable-ipv4 --enable-ipv6 --enable-safe-limits --prefix=/opt/fping
+            make
+            adduser -D testuser
+            chown -R testuser:testuser .
+            chown root:root src/fping
+            chmod u+s src/fping
+            su testuser -c "PATH=/work/src:\$PATH prove \$(ls ci/test-*.pl | grep -v internet-hosts)"
+          '
+
   Test-Mac:
     runs-on: macos-latest
     steps:

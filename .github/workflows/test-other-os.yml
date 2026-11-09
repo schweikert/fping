@@ -79,3 +79,40 @@ jobs:
             chown root:wheel src/fping
             chmod 4755 src/fping
             su testuser -c "PATH=$(pwd)/src:/usr/local/bin:\$PATH SKIP_IPV6=1 prove \$(ls ci/test-*.pl | grep -v internet-hosts)"
+
+  Test-OmniOS:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Enable unprivileged ping on host for QEMU SLiRP
+        run: sudo sysctl net.ipv4.ping_group_range='0 2147483647'
+
+      - name: Test on OmniOS
+        uses: vmactions/omnios-vm@v1
+        with:
+          usesh: true
+          run: |
+            set -ex
+            pkg install developer/build/autoconf developer/build/automake developer/build/gnu-make developer/gcc14 system/header web/curl
+            PERL_BIN=$(dirname $(perl -e 'use Cwd "abs_path"; print abs_path($^X)'))
+            export PATH=/opt/gcc-14/bin:/usr/gnu/bin:/usr/perl5/bin:$PERL_BIN:$PATH
+            curl -fsSL https://cpanmin.us -o /tmp/cpanm
+            perl /tmp/cpanm --notest Test::Command
+            rm -f /tmp/cpanm
+            # OmniOS lo0 only binds 127.0.0.1 by default; tests also ping .2-.5
+            for i in 2 3 4 5; do
+              ifconfig lo0 addif 127.0.0.$i/32 up
+            done
+            # OmniOS disables ICMP timestamp replies by default
+            ipadm set-prop -p _respond_to_timestamp=1 ip
+            autoreconf -i
+            ./configure --enable-ipv4 --enable-ipv6 --enable-safe-limits --prefix=/opt/fping
+            gmake
+            # OmniOS /home is automounted; use /tmp/testuser for home directory
+            useradd -d /tmp/testuser -m -s /bin/sh testuser
+            chown -R testuser .
+            chown root:root src/fping
+            chmod 4755 src/fping
+            su testuser -c "PATH=$(pwd)/src:$PATH SKIP_IPV6=1 prove \$(ls ci/test-*.pl | grep -v internet-hosts)"

@@ -24,6 +24,12 @@ AC_COMPILE_IFELSE(
   [AC_MSG_RESULT([no])]
 )
 
+dnl Solaris/illumos hides POSIX msghdr.msg_control and CMSG_* unless XPG4.2/SUSv3 is enabled.
+AC_CHECK_MEMBER([struct msghdr.msg_control], [], [
+  AC_DEFINE([_XOPEN_SOURCE], [600], [Define if needed to expose struct msghdr.msg_control])
+], [#include <sys/types.h>
+#include <sys/socket.h>])
+
 dnl Check for IP_RECVTOS (missing on PASE/IBM i and some BSDs).
 AC_CHECK_DECL([IP_RECVTOS],
   [AC_DEFINE([HAVE_IP_RECVTOS], [1], [IP_RECVTOS socket option is available])],

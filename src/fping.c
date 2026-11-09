@@ -476,10 +476,12 @@ int main(int argc, char **argv)
     memset(&src_addr6, 0, sizeof(src_addr6));
 #endif
 
-    if (!suid && suid != getuid()) {
+    if (suid == 0 && getuid() != 0) {
         /* *temporarily* drop privileges */
-        if (seteuid(getuid()) == -1)
+        if (seteuid(getuid()) == -1) {
             perror("cannot setuid");
+            exit(4);
+        }
     }
 
     optparse_init(&optparse_state, argv);
@@ -937,10 +939,13 @@ int main(int argc, char **argv)
     }
 
     /* permanently drop privileges */
-    if (suid != getuid() && setuid(getuid())) {
-        perror("fatal: failed to permanently drop privileges");
-        /* continuing would be a security hole */
-        exit(4);
+    if (suid == 0 && getuid() != 0) {
+        /* Restore root euid first so setuid() also clears the saved set-user-ID */
+        if (seteuid(suid) == -1 || setuid(getuid()) == -1) {
+            perror("fatal: failed to permanently drop privileges");
+            /* continuing would be a security hole */
+            exit(4);
+        }
     }
 
     /* validate various option settings */

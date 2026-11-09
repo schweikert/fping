@@ -171,7 +171,7 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 -q host.invalid");
 $cmd->exit_is_num(2);  # Exit code 2 indicates name resolution error
-$cmd->stdout_like(qr/^\{"warning":\s\{"host":\s"host\.invalid",\s"message":\s"(?:Name or service not known|Temporary failure in name resolution|nodename nor servname provided, or not known|Name does not resolve|Name has no usable address)"\}\}\n$/);
+$cmd->stdout_like(qr/^\{"warning":\s\{"host":\s"host\.invalid",\s"message":\s"(?:Name or service not known|Temporary failure in name resolution|nodename nor servname provided, or not known|Name does not resolve|Name has no usable address|no address associated with name)"\}\}\n$/);
 $cmd->stderr_is_eq("");
 }
 

@@ -41,3 +41,41 @@ jobs:
             chown root:wheel src/fping
             chmod 4755 src/fping
             su testuser -c "PATH=$(pwd)/src:/usr/local/bin:\$PATH SKIP_IPV6=1 prove \$(ls ci/test-*.pl | grep -v internet-hosts)"
+
+  Test-OpenBSD:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Enable unprivileged ping on host for QEMU SLiRP
+        run: sudo sysctl net.ipv4.ping_group_range='0 2147483647'
+
+      - name: Test on OpenBSD
+        uses: vmactions/openbsd-vm@v1
+        with:
+          usesh: true
+          run: |
+            set -ex
+            # OpenBSD requires selecting explicit autoconf/automake versions
+            AUTOCONF_PKG=$(pkg_info -Q autoconf | grep '^autoconf-2\.' | sed 's/ .*//' | sort -t. -k2,2n | tail -n 1)
+            AUTOMAKE_PKG=$(pkg_info -Q automake | grep '^automake-1\.' | sed 's/ .*//' | sort -t. -k2,2n | tail -n 1)
+            pkg_add "$AUTOCONF_PKG" "$AUTOMAKE_PKG" gmake p5-Test-Command
+            export AUTOCONF_VERSION=$(echo "$AUTOCONF_PKG" | sed -E 's/^autoconf-([0-9]+\.[0-9]+).*/\1/')
+            export AUTOMAKE_VERSION=$(echo "$AUTOMAKE_PKG" | sed -E 's/^automake-([0-9]+\.[0-9]+).*/\1/')
+            # BSD lo0 only binds 127.0.0.1 by default; tests also ping .2-.5
+            for i in 2 3 4 5; do
+              ifconfig lo0 127.0.0.$i/32 alias
+            done
+            # OpenBSD mounts /home with nosuid by default ($GITHUB_WORKSPACE is under /home/runner)
+            mount -u -o suid /home
+            # OpenBSD kernel blocks SIGQUIT from non-root to setuid fping
+            chmod u+s /usr/bin/pkill
+            autoreconf -i
+            ./configure --enable-ipv4 --enable-ipv6 --enable-safe-limits --prefix=/opt/fping
+            gmake
+            useradd -m -s /bin/sh testuser
+            chown -R testuser .
+            chown root:wheel src/fping
+            chmod 4755 src/fping
+            su testuser -c "PATH=$(pwd)/src:/usr/local/bin:\$PATH SKIP_IPV6=1 prove \$(ls ci/test-*.pl | grep -v internet-hosts)"

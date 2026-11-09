@@ -39,7 +39,7 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping -4 ::1");
 $cmd->exit_is_num(2);
 $cmd->stdout_is_eq("");
-$cmd->stderr_like(qr{^::1:.*(not supported|not known|no usable address|could not be resolved|not resolve|non-recoverable failure)});
+$cmd->stderr_like(qr{^::1:.*(not supported|not known|no usable address|could not be resolved|not resolve|non-recoverable failure|[Nn]o address associated with (host)?name)});
 }
 
 # fping -6
@@ -57,7 +57,7 @@ SKIP: {
 my $cmd = Test::Command->new(cmd => "fping -6 127.0.0.1");
 $cmd->exit_is_num(2);
 $cmd->stdout_is_eq("");
-$cmd->stderr_like(qr{127\.0\.0\.1:.*(not supported|not known|no usable address|could not be resolved|not resolve|no address associated with name)});
+$cmd->stderr_like(qr{127\.0\.0\.1:.*(not supported|not known|no usable address|could not be resolved|not resolve|[Nn]o address associated with (host)?name)});
 }
 
 # fping -a
@@ -125,7 +125,7 @@ SKIP: {
     my $cmd = Test::Command->new(cmd => "fping --icmp-timestamp ::1");
     $cmd->exit_is_num(2);
     $cmd->stdout_is_eq("");
-    $cmd->stderr_like(qr{^::1:.*(not supported|not known|no usable address|could not be resolved|not resolve|non-recoverable failure)});
+    $cmd->stderr_like(qr{^::1:.*(not supported|not known|no usable address|could not be resolved|not resolve|non-recoverable failure|[Nn]o address associated with (host)?name)});
 }
 
 # fping --print-ttl with IPv6

@@ -144,8 +144,8 @@ $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg,
 
 # fping -M
 SKIP: {
-if($^O eq 'openbsd') {
-    skip '-M option not supported on OpenBSD', 3;
+if($^O eq 'openbsd' || $^O eq 'netbsd') {
+    skip '-M option not supported on OpenBSD and NetBSD', 3;
 }
 my $cmd = Test::Command->new(cmd => "fping -M 127.0.0.1");
 $cmd->exit_is_num(0);
@@ -155,8 +155,8 @@ $cmd->stderr_is_eq("");
 
 # fping --frag
 SKIP: {
-if($^O eq 'openbsd') {
-    skip '--frag option not supported on OpenBSD', 3;
+if($^O eq 'openbsd' || $^O eq 'netbsd') {
+    skip '--frag option not supported on OpenBSD and NetBSD', 3;
 }
 my $cmd = Test::Command->new(cmd => "fping --frag 127.0.0.1");
 $cmd->exit_is_num(0);

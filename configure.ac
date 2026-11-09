@@ -21,6 +21,9 @@ case "${target}" in
   *openbsd*)
     only_clock_realtime=yes
     ;;
+  *netbsd*)
+    only_clock_realtime=yes
+    ;;
 esac
 
 dnl Detect IBM i PASE environment

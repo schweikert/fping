@@ -30,6 +30,7 @@ Next
 - Options variables converted to a structure (#469, thanks @gsnw-sebast)
 - Schedule second ping relative to when the first ping is sent, rather than
   before DNS resolution
+- Ensure saved set-user-ID is cleared when dropping privileges
 
 fping 5.5 (2025-12-31)
 ======================

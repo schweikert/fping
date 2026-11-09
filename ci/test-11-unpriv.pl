@@ -12,7 +12,7 @@ if( $^O eq 'darwin' ) {
 }
 
 sub get_ping_gid_range {
-    open FD, "/proc/sys/net/ipv4/ping_group_range" or return undef;
+    open FD, "/proc/sys/net/ipv4/ping_group_range" or return ();
     chomp(my $line = <FD>);
     my @range = split(/\s+/, $line);
     close FD;
@@ -31,7 +31,7 @@ chmod 0755, $fping_copy;
 
 # Determine what test to run, based on whether unprivileged
 # pings are allowed.
-if(scalar grep { $_ >= $allowed[0] && $_ <= $allowed[1] } @gids) {
+if(@allowed && scalar grep { $_ >= $allowed[0] && $_ <= $allowed[1] } @gids) {
     diag('test unprivileged mode');
     test_unprivileged_works();
 }

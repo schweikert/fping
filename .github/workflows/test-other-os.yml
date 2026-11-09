@@ -1,0 +1,43 @@
+name: Test Other OS
+on:
+  push:
+    branches:
+      - develop
+    tags:
+      - 'v*'
+  pull_request:
+  workflow_dispatch:
+jobs:
+  Test-FreeBSD:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Enable unprivileged ping on host for QEMU SLiRP
+        run: sudo sysctl net.ipv4.ping_group_range='0 2147483647'
+
+      - name: Test on FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        with:
+          usesh: true
+          run: |
+            set -ex
+            pkg install -y autoconf automake gmake perl5 p5-Test-Command
+            # BSD lo0 only binds 127.0.0.1 by default; tests also ping .2-.5
+            for i in 2 3 4 5; do
+              ifconfig lo0 127.0.0.$i/32 alias
+            done
+            # Allow unprivileged testuser to send SIGQUIT to setuid fping
+            sysctl security.bsd.conservative_signals=0
+            # FreeBSD /bin/sh tail-execs fping as parent of subshell; -a matches ancestors
+            printf '#!/bin/sh\nexec /bin/pkill "$1" -a "$2"\n' > /usr/local/bin/pkill
+            chmod +x /usr/local/bin/pkill
+            autoreconf -i
+            ./configure --enable-ipv4 --enable-ipv6 --enable-safe-limits --prefix=/opt/fping
+            gmake
+            pw useradd testuser -m -s /bin/sh
+            chown -R testuser .
+            chown root:wheel src/fping
+            chmod 4755 src/fping
+            su testuser -c "PATH=$(pwd)/src:/usr/local/bin:\$PATH SKIP_IPV6=1 prove \$(ls ci/test-*.pl | grep -v internet-hosts)"

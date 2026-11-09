@@ -5,8 +5,8 @@
 use Test::Command;
 use Test::More;
 
-if( $^O eq 'darwin' ) {
-    plan skip_all => 'Test disabled on MacOS';
+if( $^O ne 'linux' ) {
+    plan skip_all => 'Test only supported on Linux';
     exit 0;
 }
 

@@ -143,25 +143,19 @@ $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d\.\d+ ms \(\d\.\d+ avg, 0
 }
 
 # fping -M
-SKIP: {
-    if($^O eq 'darwin') {
-        skip '-M option not supported on macOS', 3;
-    }
-    my $cmd = Test::Command->new(cmd => "fping -M 127.0.0.1");
-    $cmd->exit_is_num(0);
-    $cmd->stdout_is_eq("127.0.0.1 is alive\n");
-    $cmd->stderr_is_eq("");
+{
+my $cmd = Test::Command->new(cmd => "fping -M 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("127.0.0.1 is alive\n");
+$cmd->stderr_is_eq("");
 }
 
 # fping --frag
-SKIP: {
-    if($^O eq 'darwin') {
-        skip '--frag option not supported on macOS', 3;
-    }
-    my $cmd = Test::Command->new(cmd => "fping --frag 127.0.0.1");
-    $cmd->exit_is_num(0);
-    $cmd->stdout_is_eq("127.0.0.1 is alive\n");
-    $cmd->stderr_is_eq("");
+{
+my $cmd = Test::Command->new(cmd => "fping --frag 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("127.0.0.1 is alive\n");
+$cmd->stderr_is_eq("");
 }
 
 # fping -m -> test-14-internet-hosts

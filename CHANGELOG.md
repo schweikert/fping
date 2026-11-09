@@ -10,10 +10,11 @@ Next
 
 ## Bugfixes and other changes
 
-- Fix getprotobyname missing on Android preventing use (#470, thanks Paliak. Merged #475)
+- Fixed an issue with setting the DF bit and added support for macOS (#484, thanks @gsnw-sebast)
+- Fix getprotobyname missing on Android preventing use (#470, thanks @Paliak. Merged #475)
 - Fix negative average round-trip time (e.g. `min/avg/max = 2500/-1.8e+03/2500`)
   when the average exceeds about 2147 ms: the average was stored in a
-  32-bit int holding nanoseconds
+  32-bit int holding nanoseconds (#479, thanks @JenilPatel1824)
 - ci: Removed travis-ci (#446, thanks @gsnw-sebast)
 - Performance optimization: reduce number of select calls and use
   recvmsg with MSG_DONTWAIT instead (#449)

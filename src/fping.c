@@ -2767,8 +2767,8 @@ int wait_for_reply(int64_t wait_time)
     }
 
     /* discard duplicates */
-    if (!opt.loop_on && !(opt.count_on && opt.quiet_on) && h->resp_times[this_count] >= 0) {
-        if (!opt.per_recv_on) {
+    if (seqmap_value->replied || (!opt.loop_on && h->resp_times[this_count] >= 0)) {
+        if (!opt.per_recv_on && !opt.quiet_on) {
             fprintf(stderr, "%s : duplicate for [%d], %d bytes, %s ms",
                 h->host, this_count, result, sprint_tm(this_reply));
 
@@ -2788,6 +2788,14 @@ int wait_for_reply(int64_t wait_time)
         return 1;
     }
 
+    /* remove timeout event (or ignore if timeout already fired) */
+    struct event *timeout_event = host_get_timeout_event(h, this_count);
+    if (timeout_event == NULL) {
+        return 1;
+    }
+    seqmap_value->replied = 1;
+    ev_remove(&event_queue_timeout, timeout_event);
+
     /* update stats */
     stats_add(h, this_count, 1, this_reply);
     // TODO: move to stats_add?
@@ -2800,12 +2808,6 @@ int wait_for_reply(int64_t wait_time)
 
     /* initialize timeout to initial timeout (without backoff) */
     h->timeout = opt.timeout;
-
-    /* remove timeout event */
-    struct event *timeout_event = host_get_timeout_event(h, this_count);
-    if (timeout_event) {
-        ev_remove(&event_queue_timeout, timeout_event);
-    }
 
     /* print "is alive" */
     if (h->num_recv == 1) {
@@ -3129,6 +3131,11 @@ int addr_cmp(struct sockaddr *a, struct sockaddr *b)
     return 0; /* LCOV_EXCL_LINE */
 }
 
+static int ev_is_enqueued(const struct event_queue *queue, const struct event *event)
+{
+    return event->ev_prev != NULL || event->ev_next != NULL || queue->first == event;
+}
+
 void host_add_ping_event(HOST_ENTRY *h, int index, int64_t ev_time)
 {
     struct event *event = &h->event_storage_ping[index % event_storage_count];
@@ -3144,6 +3151,13 @@ void host_add_ping_event(HOST_ENTRY *h, int index, int64_t ev_time)
 void host_add_timeout_event(HOST_ENTRY *h, int index, int64_t ev_time)
 {
     struct event *event = &h->event_storage_timeout[index % event_storage_count];
+    /* Expire any older ping still occupying this ring-buffer slot before reusing it */
+    if (ev_remove(&event_queue_timeout, event)) {
+        stats_add(h, event->ping_index, 0, -1);
+        if (opt.per_recv_on) {
+            print_timeout(h, event->ping_index);
+        }
+    }
     event->host = h;
     event->ping_index = index;
     event->ev_time = ev_time;
@@ -3155,7 +3169,11 @@ void host_add_timeout_event(HOST_ENTRY *h, int index, int64_t ev_time)
 
 struct event *host_get_timeout_event(HOST_ENTRY *h, int index)
 {
-    return &h->event_storage_timeout[index % event_storage_count];
+    struct event *event = &h->event_storage_timeout[index % event_storage_count];
+    if (!ev_is_enqueued(&event_queue_timeout, event) || event->ping_index != index) {
+        return NULL;
+    }
+    return event;
 }
 
 /************************************************************
@@ -3176,6 +3194,10 @@ void ev_enqueue(struct event_queue *queue, struct event *event)
 {
     struct event *i;
     struct event *i_prev;
+
+    if (ev_is_enqueued(queue, event)) {
+        crash_and_burn("ev_enqueue: event is already enqueued"); /* LCOV_EXCL_LINE */
+    }
 
     /* Empty list */
     if (queue->last == NULL) {
@@ -3238,8 +3260,11 @@ struct event *ev_dequeue(struct event_queue *queue)
   Function: ev_remove
 
 *************************************************************/
-void ev_remove(struct event_queue *queue, struct event *event)
+int ev_remove(struct event_queue *queue, struct event *event)
 {
+    if (!ev_is_enqueued(queue, event)) {
+        return 0;
+    }
     if (queue->first == event) {
         queue->first = event->ev_next;
     }
@@ -3254,6 +3279,7 @@ void ev_remove(struct event_queue *queue, struct event *event)
     }
     event->ev_prev = NULL;
     event->ev_next = NULL;
+    return 1;
 }
 
 

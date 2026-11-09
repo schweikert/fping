@@ -96,6 +96,7 @@ unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, int64_t t
     /* store the value */
     next_value->host_nr = host_nr;
     next_value->ping_count = ping_count;
+    next_value->replied = 0;
     next_value->ping_ts = timestamp;
 
     /* increase next id */

@@ -22,8 +22,8 @@
 
 void print_per_system_stats(void)
 {
-    int i, j, outage_ms;
-    int64_t avg;
+    int i, j;
+    int64_t avg, outage_ms;
     HOST_ENTRY *h;
     int64_t resp;
 
@@ -46,12 +46,12 @@ void print_per_system_stats(void)
         }
         else {
             fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
-                h->num_sent, h->num_recv, h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
+                h->num_sent, h->num_recv, h->num_sent > 0 ? (int)(((int64_t)(h->num_sent - h->num_recv) * 100) / h->num_sent) : 0);
 
             if (opt.outage_on) {
                 /* Time outage total */
                 outage_ms = (h->num_sent - h->num_recv) * opt.perhost_interval / 1e6;
-                fprintf(stderr, ", outage(ms) = %d", outage_ms);
+                fprintf(stderr, ", outage(ms) = %" PRId64, outage_ms);
             }
 
             if (h->num_recv) {
@@ -81,8 +81,8 @@ void print_per_system_stats(void)
 
 void print_per_system_stats_json(void)
 {
-    int i, j, outage_ms;
-    int64_t avg;
+    int i, j;
+    int64_t avg, outage_ms;
     HOST_ENTRY *h;
     int64_t resp;
 
@@ -94,7 +94,9 @@ void print_per_system_stats_json(void)
         else
             fprintf(stdout, "{\"summary\": {");
 
-        fprintf(stdout, "\"host\": \"%s\", ", h->host);
+        fprintf(stdout, "\"host\": ");
+        print_json_string(stdout, h->host);
+        fprintf(stdout, ", ");
 
         if (opt.report_all_rtts_on) {
             fprintf(stdout, "\"values\": [");
@@ -113,12 +115,12 @@ void print_per_system_stats_json(void)
         else {
             fprintf(stdout, "\"xmt\": %d, ", h->num_sent);
             fprintf(stdout, "\"rcv\": %d, ", h->num_recv);
-            fprintf(stdout, "\"loss\": %d", h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
+            fprintf(stdout, "\"loss\": %d", h->num_sent > 0 ? (int)(((int64_t)(h->num_sent - h->num_recv) * 100) / h->num_sent) : 0);
 
             if (opt.outage_on) {
                 /* Time outage total */
                 outage_ms = (h->num_sent - h->num_recv) * opt.perhost_interval / 1e6;
-                fprintf(stdout, ", \"outage(ms)\": %d", outage_ms);
+                fprintf(stdout, ", \"outage(ms)\": %" PRId64, outage_ms);
             }
 
             if (h->num_recv) {

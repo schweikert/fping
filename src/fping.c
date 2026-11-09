@@ -617,11 +617,13 @@ int main(int argc, char **argv)
                 opt.seqmap_timeout = strtod_strict(optparse_state.optarg) * 1000000;
             } else if (strstr(optparse_state.optlongname, "oiface") != NULL) {
                 opt.oiface_on = 1;
+#if defined(IP_PKTINFO) || (defined(IPV6) && defined(IPV6_PKTINFO))
 #ifdef IP_PKTINFO
                 if (socket4 >= 0) {
                     socket_set_outgoing_iface_ipv4(optparse_state.optarg);
                 }
-#ifdef IPV6
+#endif
+#if defined(IPV6) && defined(IPV6_PKTINFO)
                 if (socket6 >= 0) {
                     socket_set_outgoing_iface_ipv6(optparse_state.optarg);
                 }
@@ -953,8 +955,17 @@ int main(int argc, char **argv)
         crash_and_burn("can't create socket (must run as root?)");
     }
 #else
-    if ((socket4 < 0 && socket6 < 0) || (hints_ai_family == AF_INET6 && socket6 < 0)) {
+    if ((socket4 < 0 && socket6 < 0) ||
+        (hints_ai_family == AF_INET6 && socket6 < 0) ||
+        (hints_ai_family == AF_INET && socket4 < 0)) {
         crash_and_burn("can't create socket (must run as root?)");
+    }
+    if (hints_ai_family == AF_UNSPEC) {
+        if (socket4 < 0) {
+            hints_ai_family = AF_INET6;
+        } else if (socket6 < 0) {
+            hints_ai_family = AF_INET;
+        }
     }
 #endif
 
@@ -971,6 +982,21 @@ int main(int argc, char **argv)
     if (opt.oiface_on && opt.bindiface_on) {
         fprintf(stderr, "%s: specify only --oiface or -I, --iface\n", prog);
         exit(1);
+    }
+
+    if (opt.oiface_on) {
+#if !defined(IP_PKTINFO)
+        if (hints_ai_family == AF_INET) {
+            fprintf(stderr, "%s: --oiface is not supported for IPv4 on this platform (IP_PKTINFO unavailable)\n", prog);
+            exit(1);
+        }
+#endif
+#if !defined(IPV6) || !defined(IPV6_PKTINFO)
+        if (hints_ai_family == AF_INET6) {
+            fprintf(stderr, "%s: --oiface is not supported for IPv6 on this platform (IPV6_PKTINFO unavailable)\n", prog);
+            exit(1);
+        }
+#endif
     }
 
     if (opt.count_on && opt.loop_on) {
@@ -1274,7 +1300,7 @@ int main(int argc, char **argv)
                     if (sscanf(line, "%s%s", discard1, discard2) == 2) {
                         skip = 1; /* a second word starts in this part */
                     }
-                    if (isspace(line[sizeof(line) - 2])) {
+                    if (isspace((unsigned char)line[sizeof(line) - 2])) {
                         skip = 1; /* the first word ends in this part */
                     }
                 }
@@ -1284,7 +1310,7 @@ int main(int argc, char **argv)
                 if (skip) {
                     continue; /* skip rest of data in this input line */
                 }
-                if (isspace(line[0])) {
+                if (isspace((unsigned char)line[0])) {
                     skip = 1; /* first word ended in previous part */
                     continue;
                 }
@@ -1980,11 +2006,11 @@ FPING_NORETURN void finish(void)
 
     if (opt.min_reachable) {
         if ((num_hosts - num_unreachable) >= opt.min_reachable) {
-            printf("Enough hosts reachable (required: %d, reachable: %d)\n", opt.min_reachable, num_hosts - num_unreachable);
+            printf("Enough hosts reachable (required: %u, reachable: %d)\n", opt.min_reachable, num_hosts - num_unreachable);
             exit(0);
         }
         else {
-            printf("Not enough hosts reachable (required: %d, reachable: %d)\n", opt.min_reachable, num_hosts - num_unreachable);
+            printf("Not enough hosts reachable (required: %u, reachable: %d)\n", opt.min_reachable, num_hosts - num_unreachable);
             exit(1);
         }
     }
@@ -2090,6 +2116,11 @@ int socket_can_read(struct timeval *timeout)
 #else
     socketmax = socket4 > socket6 ? socket4 : socket6;
 #endif
+
+    /* FD_SET() has undefined behavior (buffer overflow) if fd >= FD_SETSIZE. */
+    if (socketmax >= FD_SETSIZE) {
+        crash_and_burn("socket descriptor exceeds FD_SETSIZE");
+    }
 
 select_again:
     FD_ZERO(&readset);
@@ -2813,7 +2844,11 @@ void add_name(char *name)
 
         // Handle JSON output for invalid hosts
         if (opt.print_json_on) {
-            fprintf(stdout, "{\"warning\": {\"host\": \"%s\", \"message\": \"%s\"}}\n", name, gai_strerror(ret_ga));
+            fprintf(stdout, "{\"warning\": {\"host\": ");
+            print_json_string(stdout, name);
+            fprintf(stdout, ", \"message\": ");
+            print_json_string(stdout, gai_strerror(ret_ga));
+            fprintf(stdout, "}}\n");
             return;
         }
 
@@ -2907,6 +2942,8 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
 
     p->name = strdup(name);
     p->host = strdup(host);
+    if (!p->name || !p->host)
+        crash_and_burn("can't allocate memory");
     memcpy(&p->saddr, ipaddr, ipaddr_len);
     p->saddr_len = ipaddr_len;
     p->timeout = opt.timeout;
@@ -2915,7 +2952,7 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
     if (opt.print_netdata_on) {
         char *s = p->name;
         while (*s) {
-            if (!isalnum(*s))
+            if (!isalnum((unsigned char)*s))
                 *s = '_';
             s++;
         }
@@ -3024,7 +3061,7 @@ int addr_cmp(struct sockaddr *a, struct sockaddr *b)
     }
     else {
         if (a->sa_family == AF_INET) {
-            return ((struct sockaddr_in *)a)->sin_addr.s_addr - ((struct sockaddr_in *)b)->sin_addr.s_addr;
+            return ((struct sockaddr_in *)a)->sin_addr.s_addr != ((struct sockaddr_in *)b)->sin_addr.s_addr;
         }
         else if (a->sa_family == AF_INET6) {
             return memcmp(&((struct sockaddr_in6 *)a)->sin6_addr,
@@ -3194,11 +3231,11 @@ FPING_NORETURN void usage(int is_error)
     fprintf(out, "                      (give start and end IP in the target list, or a CIDR address)\n");
     fprintf(out, "                      (ex. %s -g 192.168.1.0 192.168.1.255 or %s -g 192.168.1.0/24)\n", prog, prog);
     fprintf(out, "   -H, --ttl=N        set the IP TTL value (Time To Live hops)\n");
-    fprintf(out, "   -i, --interval=MSEC  interval between sending ping packets (default: %.0f ms)\n", opt.interval / 1e6);
+    fprintf(out, "   -i, --interval=MSEC  interval between sending ping packets (default: %.0f ms)\n", (double)DEFAULT_INTERVAL);
 #ifdef SO_BINDTODEVICE
     fprintf(out, "   -I, --iface=IFACE  bind to a particular interface\n");
 #endif
-#ifdef IP_PKTINFO
+#if defined(IP_PKTINFO) || (defined(IPV6) && defined(IPV6_PKTINFO))
     fprintf(out, "       --oiface=IFACE  send pings via a specific outgoing interface (receive from any)\n");
 #endif
 #ifdef SO_MARK
@@ -3210,12 +3247,12 @@ FPING_NORETURN void usage(int is_error)
     fprintf(out, "       --frag         set the Fragment flag\n");
     fprintf(out, "   -O, --tos=N        set the type of service (tos) flag on the ICMP packets\n");
     fprintf(out, "   -p, --period=MSEC  interval between ping packets to one target (in ms)\n");
-    fprintf(out, "                      (in loop and count modes, default: %.0f ms)\n", opt.perhost_interval / 1e6);
+    fprintf(out, "                      (in loop and count modes, default: %.0f ms)\n", (double)DEFAULT_PERHOST_INTERVAL);
     fprintf(out, "   -r, --retry=N      number of retries (default: %d)\n", DEFAULT_RETRY);
     fprintf(out, "   -R, --random       random packet data (to foil link data compression)\n");
     fprintf(out, "   -S, --src=IP       set source address\n");
-    fprintf(out, "       --seqmap-timeout=MSEC sequence number mapping timeout (default: %.0f ms)\n", opt.seqmap_timeout / 1e6);
-    fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (default: %.0f ms,\n", opt.timeout / 1e6);
+    fprintf(out, "       --seqmap-timeout=MSEC sequence number mapping timeout (default: %.0f ms)\n", (double)DEFAULT_SEQMAP_TIMEOUT);
+    fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (default: %.0f ms,\n", (double)DEFAULT_TIMEOUT);
     fprintf(out, "                      except with -l/-c/-C, where it's the -p period up to 2000 ms)\n");
     fprintf(out, "       --check-source discard replies not from target address\n");
     fprintf(out, "       --icmp-timestamp use ICMP Timestamp instead of ICMP Echo\n");

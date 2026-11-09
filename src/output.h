@@ -1,8 +1,10 @@
 #ifndef _OUTPUT_H
 #define _OUTPUT_H
 
+#include <stdio.h>
 #include "fping.h"
 
+void print_json_string(FILE *f, const char *s);
 void print_recv(HOST_ENTRY *h, int64_t recv_time, int result, int this_count, int64_t this_reply, int64_t avg);
 void print_timeout(HOST_ENTRY *h, int ping_index);
 void print_recv_ext(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t this_reply);

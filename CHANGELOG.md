@@ -34,6 +34,7 @@ Next
 - Ensure proper alignment of ancillary data (cmsg) buffers
 - Always use CLOCK_REALTIME for wall-clock output timestamps and use CLOCK_MONOTONIC when SO_TIMESTAMPNS is unavailable
 - Fix F_GETFL error handling in open_ping_socket_ipv4() and open_ping_socket_ipv6() (#524, thanks @Wybuck)
+- Fix stats overflows, JSON string escaping, and --oiface platform guards
 
 fping 5.5 (2025-12-31)
 ======================

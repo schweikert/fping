@@ -99,8 +99,6 @@ extern int64_t max_reply, min_reply, total_replies, sum_replies;
 /* fping.c */
 void add_name(char *name);
 void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_len);
-char *na_cat(char *name, struct in_addr ipaddr);
-char *get_host_by_address(struct in_addr in);
 int send_ping(HOST_ENTRY *h, int index);
 FPING_NORETURN void usage(int);
 int wait_for_reply(int64_t);
@@ -135,13 +133,17 @@ int in_cksum( unsigned short *p, int n );
 
 /* socket.c */
 int  open_ping_socket_ipv4(int *socktype);
+#ifdef IP_PKTINFO
 void socket_set_outgoing_iface_ipv4(const char *iface_name);
+#endif
 void init_ping_buffer_ipv4(size_t ping_data_size);
 void socket_set_src_addr_ipv4(int s, struct in_addr *src_addr, int *ident);
 int  socket_sendto_ping_ipv4(int s, struct sockaddr *saddr, socklen_t saddr_len, uint16_t icmp_seq, uint16_t icmp_id, uint8_t icmp_proto);
 #ifdef IPV6
 int  open_ping_socket_ipv6(int *socktype);
+#ifdef IPV6_PKTINFO
 void socket_set_outgoing_iface_ipv6(const char *iface_name);
+#endif
 void init_ping_buffer_ipv6(size_t ping_data_size);
 void socket_set_src_addr_ipv6(int s, struct in6_addr *src_addr, int *ident);
 int  socket_sendto_ping_ipv6(int s, struct sockaddr *saddr, socklen_t saddr_len, uint16_t icmp_seq, uint16_t icmp_id);

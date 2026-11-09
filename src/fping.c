@@ -2177,6 +2177,21 @@ select_again:
     return -1;
 }
 
+/* Kernels pass TOS/TTL/TCLASS/HOPLIMIT cmsgs in host byte order either widened
+ * to C `int` (RFC 3542, Linux IP_TTL) or as a single `uint8_t` byte (Linux
+ * IP_TOS, BSD IP_RECVTTL/IP_RECVTOS).
+ */
+static void cmsg_extract_int_or_byte(struct cmsghdr *cmsg, int *out)
+{
+    if (cmsg->cmsg_len == CMSG_LEN(sizeof(int))) {
+        int val;
+        memcpy(&val, CMSG_DATA(cmsg), sizeof(val));
+        *out = val;
+    } else if (cmsg->cmsg_len == CMSG_LEN(sizeof(uint8_t))) {
+        *out = *(uint8_t *)CMSG_DATA(cmsg);
+    }
+}
+
 int receive_packet(int64_t wait_time,
 #if HAVE_SO_TIMESTAMPNS
     int64_t *reply_timestamp,
@@ -2255,35 +2270,46 @@ packet_received:
              cmsg != NULL;
              cmsg = CMSG_NXTHDR(&recv_msghdr, cmsg)) {
 #if HAVE_SO_TIMESTAMPNS
-            if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_TIMESTAMPNS) {
+            if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_TIMESTAMPNS &&
+                cmsg->cmsg_len >= CMSG_LEN(sizeof(reply_timestamp_ts))) {
                 memcpy(&reply_timestamp_ts, CMSG_DATA(cmsg), sizeof(reply_timestamp_ts));
                 *reply_timestamp = timespec_ns(&reply_timestamp_ts);
             }
-            if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_TIMESTAMP) {
+            if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_TIMESTAMP &&
+                cmsg->cmsg_len >= CMSG_LEN(sizeof(reply_timestamp_tv))) {
                 memcpy(&reply_timestamp_tv, CMSG_DATA(cmsg), sizeof(reply_timestamp_tv));
                 *reply_timestamp = timeval_ns(&reply_timestamp_tv);
             }
 #endif
 #if defined(HAVE_IP_RECVTOS)
-            if (cmsg->cmsg_level == IPPROTO_IP && cmsg->cmsg_type == IP_TOS) {
-                memcpy(ip_header_tos, CMSG_DATA(cmsg), sizeof(*ip_header_tos));
+            if (cmsg->cmsg_level == IPPROTO_IP &&
+                (cmsg->cmsg_type == IP_TOS || cmsg->cmsg_type == IP_RECVTOS)) {
+                cmsg_extract_int_or_byte(cmsg, ip_header_tos);
             }
 #endif
-            if (cmsg->cmsg_level == IPPROTO_IP && cmsg->cmsg_type == IP_TTL) {
-                memcpy(ip_header_ttl, CMSG_DATA(cmsg), sizeof(*ip_header_ttl));
+            if (cmsg->cmsg_level == IPPROTO_IP &&
+                (cmsg->cmsg_type == IP_TTL
+#ifdef IP_RECVTTL
+                 || cmsg->cmsg_type == IP_RECVTTL
+#endif
+                )) {
+                cmsg_extract_int_or_byte(cmsg, ip_header_ttl);
             }
 #ifdef IPV6
             if (cmsg->cmsg_level == IPPROTO_IPV6 && cmsg->cmsg_type == IPV6_TCLASS) {
-                memcpy(ip_header_tos, CMSG_DATA(cmsg), sizeof(*ip_header_tos));
+                cmsg_extract_int_or_byte(cmsg, ip_header_tos);
             }
             if (cmsg->cmsg_level == IPPROTO_IPV6 && cmsg->cmsg_type == IPV6_HOPLIMIT) {
-                memcpy(ip_header_ttl, CMSG_DATA(cmsg), sizeof(*ip_header_ttl));
+                cmsg_extract_int_or_byte(cmsg, ip_header_ttl);
             }
-            if (cmsg->cmsg_level == IPPROTO_IPV6 && cmsg->cmsg_type == IPV6_PKTINFO) {
+#ifdef IPV6_PKTINFO
+            if (cmsg->cmsg_level == IPPROTO_IPV6 && cmsg->cmsg_type == IPV6_PKTINFO &&
+                cmsg->cmsg_len >= CMSG_LEN(sizeof(struct in6_pktinfo))) {
                 struct in6_pktinfo *pktinfo = (struct in6_pktinfo *)CMSG_DATA(cmsg);
                 if (recv_dst_addr_ipv6)
                     memcpy(recv_dst_addr_ipv6, &pktinfo->ipi6_addr, sizeof(*recv_dst_addr_ipv6));
             }
+#endif
 #endif
         }
     }

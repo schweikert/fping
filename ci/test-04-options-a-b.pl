@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 74;
+use Test::Command tests => 77;
 use Test::More;
 use Time::HiRes qw(gettimeofday tv_interval);
 
@@ -153,6 +153,14 @@ my $cmd = Test::Command->new(cmd => "fping -b 1000 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("127.0.0.1 is alive\n");
 $cmd->stderr_is_eq("");
+}
+
+# fping -b (odd payload size with random data)
+{
+my $cmd = Test::Command->new(cmd => "fping -b 1 -R -q -c 5 -p 20 -t 500 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 5/5/0%, min/avg/max = \d+(?:\.\d+)?/\d+(?:\.\d+)?/\d+(?:\.\d+)?\n});
 }
 
 # fping --icmp-timestamp -b

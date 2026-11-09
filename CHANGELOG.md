@@ -38,6 +38,7 @@ Next
 - Fix `setsockopt IP_RECVTOS: Invalid argument` error with `--print-tos` on macOS without root privileges (#527)
 - Fix sockaddr bounds, FD_SETSIZE, strdup() OOM, and unsigned char ctype defensive guards
 - Validate IPv4 socket creation under `-4` and narrow `hints_ai_family` on single-stack hosts
+- Fix cmsg payload size handling for 1-byte IP_TOS and IP_TTL
 
 fping 5.5 (2025-12-31)
 ======================

@@ -35,7 +35,7 @@ else {
 }
 
 sub test_unprivileged_works {
-    plan tests => 30;
+    plan tests => 36;
 
     {
         my $cmd = Test::Command->new(cmd => "$fping_copy 127.0.0.1");
@@ -73,6 +73,21 @@ sub test_unprivileged_works {
         my $cmd = Test::Command->new(cmd => "$fping_copy --print-tos ::1");
         $cmd->exit_is_num(0);
         $cmd->stdout_like(qr{::1 is alive \(TOS \d+\)\n});
+        $cmd->stderr_is_eq("");
+    }
+    {
+        my $cmd = Test::Command->new(cmd => "$fping_copy -O 0x20 --print-tos 127.0.0.1");
+        $cmd->exit_is_num(0);
+        $cmd->stdout_like(qr{127\.0\.0\.1 is alive \(TOS 32\)\n});
+        $cmd->stderr_is_eq("");
+    }
+    SKIP: {
+        if($ENV{SKIP_IPV6}) {
+            skip 'Skip IPv6 tests', 3;
+        }
+        my $cmd = Test::Command->new(cmd => "$fping_copy -O 0x20 --print-tos ::1");
+        $cmd->exit_is_num(0);
+        $cmd->stdout_like(qr{::1 is alive \(TOS 32\)\n});
         $cmd->stderr_is_eq("");
     }
     {

@@ -7,6 +7,7 @@
 typedef struct seqmap_value
 {
     unsigned int    host_nr;
+    int             replied;         /* 1 if reply already processed for this seq */
     unsigned int    ping_count;
     int64_t         ping_ts;
 

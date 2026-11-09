@@ -109,7 +109,7 @@ void signal_handler(int);
 FPING_NORETURN void finish(void);
 void ev_enqueue(struct event_queue *queue, struct event *event);
 struct event *ev_dequeue(struct event_queue *queue);
-void ev_remove(struct event_queue *queue, struct event *event);
+int ev_remove(struct event_queue *queue, struct event *event);
 void add_cidr(char *);
 void add_cidr_ipv4(unsigned long, unsigned long);
 void add_range(char *, char *);

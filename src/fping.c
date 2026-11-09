@@ -628,16 +628,13 @@ int main(int argc, char **argv)
                 exit(3);
 #endif
             } else if (strstr(optparse_state.optlongname, "frag") != NULL) {
+#if defined(IP_MTU_DISCOVER) || defined(IP_DONTFRAG)
                 opt.frag_on = 1;
-#ifdef IP_MTU_DISCOVER
-                opt.pmtu = IP_PMTUDISC_DONT;
-#ifdef IPV6
-                opt.pmtu_ipv6 = IPV6_PMTUDISC_DONT;
-#endif
 #else
                 fprintf(stderr, "%s: --frag option not supported on this platform\n", prog);
                 exit(1);
 #endif
+
             } else {
                 usage(1);
             }
@@ -664,12 +661,8 @@ int main(int argc, char **argv)
 #endif
             break;
         case 'M':
+#if defined(IP_MTU_DISCOVER) || defined(IP_DONTFRAG)
             opt.dontfrag_on = 1;
-#ifdef IP_MTU_DISCOVER
-            opt.pmtu = IP_PMTUDISC_DO;
-#ifdef IPV6
-            opt.pmtu_ipv6 = IPV6_PMTUDISC_DO;
-#endif
 #else
             fprintf(stderr, "%s, -M option not supported on this platform\n", prog);
             exit(1);
@@ -1135,24 +1128,42 @@ int main(int argc, char **argv)
 #endif
     }
 
-#ifdef IP_MTU_DISCOVER
-    if (opt.pmtu != 0) {
+    if (opt.dontfrag_on || opt.frag_on) {
         if (socket4 >= 0) {
-            if (setsockopt(socket4, IPPROTO_IP, IP_MTU_DISCOVER, &opt.pmtu, sizeof(opt.pmtu))) {
+#if defined(IP_MTU_DISCOVER)
+            int pmtu = opt.dontfrag_on ? IP_PMTUDISC_DO : IP_PMTUDISC_DONT;
+            if (setsockopt(socket4, IPPROTO_IP, IP_MTU_DISCOVER, &pmtu, sizeof(pmtu))) {
                 perror("setsockopt IP_MTU_DISCOVER (pmtu)");
             }
+#elif defined(IP_DONTFRAG)
+            int pmtu = opt.dontfrag_on ? 1 : 0;
+            if (setsockopt(socket4, IPPROTO_IP, IP_DONTFRAG, &pmtu, sizeof(pmtu))) {
+                perror("setsockopt IP_DONTFRAG");
+            }
+#else
+            fprintf(stderr, "%s: -M/--frag option not supported on this platform\n", prog);
+            exit(1);
+#endif
         }
-    }
 #ifdef IPV6
-    if (opt.pmtu_ipv6 != 0) {
         if (socket6 >= 0) {
-            if (setsockopt(socket6, IPPROTO_IPV6, IPV6_MTU_DISCOVER, &opt.pmtu_ipv6, sizeof(opt.pmtu_ipv6))) {
+#if defined(IPV6_MTU_DISCOVER)
+            int pmtu6 = opt.dontfrag_on ? IPV6_PMTUDISC_DO : IPV6_PMTUDISC_DONT;
+            if (setsockopt(socket6, IPPROTO_IPV6, IPV6_MTU_DISCOVER, &pmtu6, sizeof(pmtu6))) {
                 perror("setsockopt IPV6_MTU_DISCOVER (pmtu)");
             }
+#elif defined(IPV6_DONTFRAG)
+            int pmtu6 = opt.dontfrag_on ? 1 : 0;
+            if (setsockopt(socket6, IPPROTO_IPV6, IPV6_DONTFRAG, &pmtu6, sizeof(pmtu6))) {
+                perror("setsockopt IPV6_DONTFRAG");
+            }
+#else
+            fprintf(stderr, "%s: -M/--frag option not supported on this platform\n", prog);
+            exit(1);
+#endif
         }
+#endif
     }
-#endif
-#endif
 
 #if HAVE_SO_TIMESTAMPNS
     {

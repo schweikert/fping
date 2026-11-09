@@ -12,6 +12,9 @@
 #include <sys/time.h>
 #include <netdb.h>
 
+/* ICMP Timestamp has a fixed payload size of 12 bytes */
+#define ICMP_TIMESTAMP_DATA_SIZE 12
+
 /* Structure definitions */
 typedef struct ip_header_result {
     int tos;
@@ -132,6 +135,9 @@ FPING_NORETURN void crash_and_burn( char *message );
 FPING_NORETURN void errno_crash_and_burn( char *message );
 
 /* socket.c */
+extern char *ping_buffer_ipv4;
+extern size_t ping_pkt_size_ipv4;
+unsigned short calcsum(unsigned short *buffer, int length);
 int  open_ping_socket_ipv4(int *socktype);
 void socket_set_outgoing_iface_ipv4(const char *iface_name);
 void init_ping_buffer_ipv4(size_t ping_data_size);

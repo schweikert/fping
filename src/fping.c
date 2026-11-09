@@ -146,9 +146,6 @@ extern int h_errno;
 #define MAX_GENERATE 131072 /* maximum number of hosts that -g can generate */
 #define MAX_TARGET_NAME_LEN 255 /* maximum target name length read from file */
 
-/* ICMP Timestamp has a fixed payload size of 12 bytes */
-#define ICMP_TIMESTAMP_DATA_SIZE 12
-
 #ifdef FPING_SAFE_LIMITS
 #define MIN_INTERVAL_MS 1 /* in millisec */
 #define MIN_PERHOST_INTERVAL_MS 10 /* in millisec */

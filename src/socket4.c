@@ -145,8 +145,11 @@ unsigned short calcsum(unsigned short* buffer, int length)
         sum += *buffer++; /* add 1 word of buffer to sum and proceed to the next */
 
     /* we may have an extra byte */
-    if (length == 1)
-        sum += (char)*buffer;
+    if (length == 1) {
+        unsigned short last = 0;
+        *(unsigned char*)&last = *(unsigned char*)buffer;
+        sum += last;
+    }
 
     sum = (sum >> 16) + (sum & 0xFFFF); /* add high 16 to low 16 */
     sum += (sum >> 16); /* add carry */
@@ -159,6 +162,7 @@ int socket_sendto_ping_ipv4(int s, struct sockaddr* saddr, socklen_t saddr_len, 
     struct timespec tsorig;
     long tsorig_ms;
     int n;
+    int hdr_len = (icmp_proto == ICMP_TSTAMP ? ICMP_MINLEN + ICMP_TIMESTAMP_DATA_SIZE : ICMP_MINLEN);
 
     icp = (struct icmp*)ping_buffer_ipv4;
 
@@ -176,12 +180,12 @@ int socket_sendto_ping_ipv4(int s, struct sockaddr* saddr, socklen_t saddr_len, 
     icp->icmp_id = icmp_id_nr;
 
     if (opt.random_data_on) {
-        for (n = ((char*)&icp->icmp_data - (char*)icp); n < ping_pkt_size_ipv4; ++n) {
+        for (n = hdr_len; n < ping_pkt_size_ipv4; ++n) {
             ping_buffer_ipv4[n] = random() & 0xFF;
         }
     }
 
-    icp->icmp_cksum = calcsum((unsigned short*)icp, ping_pkt_size_ipv4);
+    icp->icmp_cksum = calcsum((unsigned short*)icp, opt.random_data_on ? ping_pkt_size_ipv4 : hdr_len);
 
 #ifdef IP_PKTINFO
     if (outgoing_iface_idx_ipv4 > 0) {

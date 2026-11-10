@@ -7,7 +7,8 @@ plan tests => 3;
 
 # fping
 {
-my $cmd = Test::Command->new(cmd => "fping -c 2 -Q 1 -N 127.0.0.1");
+# Use -p 1500 so the 1s periodic report (-Q 1) does not race with the 2nd ping
+my $cmd = Test::Command->new(cmd => "fping -c 2 -p 1500 -Q 1 -N 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr{CHART fping\.127_0_0_1_packets '' 'FPing Packets' packets '127.0.0.1' fping\.packets line 110020 1
 DIMENSION xmt sent absolute 1 1

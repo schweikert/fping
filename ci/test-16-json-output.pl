@@ -186,7 +186,8 @@ $cmd->stderr_is_eq("");
 
 # fping -J -c 2 -Q 1 127.0.0.1
 {
-my $cmd = Test::Command->new(cmd => "fping -J -c 2 -Q 1 127.0.0.1");
+# Use -p 1500 so the 1s periodic report (-Q 1) does not race with the 2nd ping
+my $cmd = Test::Command->new(cmd => "fping -J -c 2 -p 1500 -Q 1 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"intSum":\s\{"time":\s\d+,"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}?$/);

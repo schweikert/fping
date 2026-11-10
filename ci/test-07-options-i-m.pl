@@ -128,9 +128,9 @@ if($^O eq 'darwin') {
 my $cmd = Test::Command->new(cmd => '(sleep 1.5; pkill -INT fping)& fping -p 100 -l -Q 0.5 127.0.0.1');
 $cmd->stdout_is_eq("");
 $cmd->stderr_like(qr{\[\d\d:\d\d:\d\d\]
-127\.0\.0\.1 : xmt/rcv/%loss = \d/\d/\d%, min/avg/max = \d+\.\d+/\d+\.\d+/\d+\.\d+
+127\.0\.0\.1 : xmt/rcv/%loss = \d+/\d+/\d+%, min/avg/max = \d+\.\d+/\d+\.\d+/\d+\.\d+
 \[\d\d:\d\d:\d\d\]
-127\.0\.0\.1 : xmt/rcv/%loss = \d/\d/\d%, min/avg/max = \d+\.\d+/\d+\.\d+/\d+\.\d+
+127\.0\.0\.1 : xmt/rcv/%loss = \d+/\d+/\d+%, min/avg/max = \d+\.\d+/\d+\.\d+/\d+\.\d+
 });
 }
 

@@ -3,6 +3,7 @@
 .*.swp
 .cache
 .deps
+.jj
 .local
 Makefile
 Makefile.in

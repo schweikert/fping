@@ -61,12 +61,12 @@ $cmd->stdout_like(qr/^\{"timeout":\s\{"host":\s"192\.0\.2\.47",\s"seq":\s\d+\}\}
 $cmd->stderr_is_eq("");
 }
 
-# fping -J -c 2 -D 127.0.0.1
+# fping -J -c 2 -D 127.0.0.1 (timestamp >= 1000000000 checks Unix epoch vs CLOCK_MONOTONIC uptime)
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 2 -D 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"\d+.\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
-\{"resp":\s\{"timestamp":\s"\d+.\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s1,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
+$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"[1-9]\d{9,}\.\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
+\{"resp":\s\{"timestamp":\s"[1-9]\d{9,}\.\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s1,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
@@ -184,11 +184,11 @@ $cmd->stdout_like(qr/^\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"r
 $cmd->stderr_is_eq("");
 }
 
-# fping -J -c 2 -Q 1 127.0.0.1
+# fping -J -c 2 -Q 1 127.0.0.1 (time >= 1000000000 checks Unix epoch vs CLOCK_MONOTONIC uptime)
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 2 -Q 1 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"intSum":\s\{"time":\s\d+,"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}
+$cmd->stdout_like(qr/^\{"intSum":\s\{"time":\s[1-9]\d{9,},"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}?$/);
 $cmd->stderr_is_eq("");
 }

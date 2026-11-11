@@ -13,19 +13,19 @@
 
 *************************************************************
 
-  Input: int64_t: current UTC time in ns
+  Input: int64_t: timestamp in CLOCKID ns
 
-  Output: uint32_t: current time in ms since midnight UTC
+  Output: uint32_t: wall-clock time in ms since midnight UTC
 
   Description:
 
-  Return ICMP Timestamp value corresponding to the given time value.
-  The given time value must be in UTC.
+  Return ICMP Timestamp value corresponding to the given timestamp,
+  converted to UTC wall-clock time.
 
 *************************************************************/
 static uint32_t ms_since_midnight_utc(int64_t time_val)
 {
-    return (uint32_t)((time_val / 1000000) % (24 * 60 * 60 * 1000));
+    return (uint32_t)((get_wallclock_ns(time_val) / 1000000) % (24 * 60 * 60 * 1000));
 }
 
 /************************************************************
@@ -81,8 +81,9 @@ void print_timestamp_format(int64_t current_time_ns, int timestamp_format)
     char time_buffer[100];
     time_t current_time_s;
     struct tm *local_time;
+    int64_t wall_time_ns = get_wallclock_ns(current_time_ns);
 
-    current_time_s = current_time_ns / 1000000000;
+    current_time_s = wall_time_ns / 1000000000;
     local_time = localtime(&current_time_s);
     switch(timestamp_format) {
         case 1:
@@ -111,9 +112,9 @@ void print_timestamp_format(int64_t current_time_ns, int timestamp_format)
             break;
         default:
             if (opt.print_json_on)
-                printf("\"timestamp\": \"%.5f\", ", (double)current_time_ns / 1e9);
+                printf("\"timestamp\": \"%.5f\", ", (double)wall_time_ns / 1e9);
             else
-                printf("[%.5f] ", (double)current_time_ns / 1e9);
+                printf("[%.5f] ", (double)wall_time_ns / 1e9);
     }
 }
 
@@ -399,15 +400,19 @@ void print_per_system_splits(void)
     int i, outage_ms_i;
     int64_t avg;
     HOST_ENTRY *h;
+    time_t curr_time_s;
     struct tm *curr_tm;
 
     if (opt.verbose_on || opt.per_recv_on)
         fprintf(stderr, "\n");
 
     update_current_time();
-    curr_tm = localtime((time_t *)&current_time.tv_sec);
-    fprintf(stderr, "[%2.2d:%2.2d:%2.2d]\n", curr_tm->tm_hour,
-        curr_tm->tm_min, curr_tm->tm_sec);
+    curr_time_s = get_wallclock_ns(current_time_ns) / 1000000000;
+    curr_tm = localtime(&curr_time_s);
+    if (curr_tm) {
+        fprintf(stderr, "[%2.2d:%2.2d:%2.2d]\n", curr_tm->tm_hour,
+            curr_tm->tm_min, curr_tm->tm_sec);
+    }
 
     for (i = 0; i < num_hosts; i++) {
         h = table[i];
@@ -460,13 +465,15 @@ void print_per_system_splits_json(void)
     int i, outage_ms_i;
     int64_t avg;
     HOST_ENTRY *h;
+    int64_t curr_time_s;
 
     update_current_time();
+    curr_time_s = get_wallclock_ns(current_time_ns) / 1000000000;
 
     for (i = 0; i < num_hosts; i++) {
         h = table[i];
         fprintf(stdout, "{\"intSum\": {");
-        fprintf(stdout, "\"time\": %" PRId64 ",", current_time.tv_sec);
+        fprintf(stdout, "\"time\": %" PRId64 ",", curr_time_s);
         fprintf(stdout, "\"host\": \"%s\", ", h->host);
 
         if (h->num_recv_i <= h->num_sent_i) {

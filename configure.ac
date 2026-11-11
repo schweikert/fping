@@ -7,22 +7,6 @@ AC_INIT([fping],[5.5])
 
 m4_ifdef([AC_AUTOCONF_VERSION],[AC_USE_SYSTEM_EXTENSIONS], [AC_GNU_SOURCE])
 
-# Detect Operatingsystem
-AC_CANONICAL_TARGET
-only_clock_realtime=no
-
-case "${target}" in
-  *darwin*)
-    only_clock_realtime=yes
-    ;;
-  *freebsd*)
-    only_clock_realtime=yes
-    ;;
-  *openbsd*)
-    only_clock_realtime=yes
-    ;;
-esac
-
 dnl Detect IBM i PASE environment
 AC_MSG_CHECKING([for IBM i PASE environment])
 AC_COMPILE_IFELSE(
@@ -92,7 +76,6 @@ dnl Test if --enable-timestamp is explicitely enabled and make an error if this 
 AS_IF([test "x$enable_timestamp" = "xyes" -a "x$have_so_timestamp" = "xno"], [
   AC_MSG_ERROR([--enable-timestamp not supported on this platform])
 ])
-AS_IF([test "x$only_clock_realtime" = "xyes"], [AC_DEFINE(ONLY_CLOCK_REALTIME, [1], [ONLY_CLOCK_REALTIME is defined])])
 
 AC_ARG_ENABLE([safe-limits],
   AS_HELP_STRING([--enable-safe-limits], [Restrict timing parameters (-i, -p) within "safe" limits]))

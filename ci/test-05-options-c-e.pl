@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 87;
+use Test::Command tests => 88;
 use Test::More;
 
 #  -c n           count of pings to send to each target (default 1)
@@ -95,13 +95,26 @@ ff02::1 : xmt/rcv/%loss = 1/1/0%, min/avg/max = \d+\.\d+/\d+\.\d+/\d+\.\d+\n});
 # fping --icmp-timestamp -c 2 127.0.0.1
 SKIP: {
 if($^O eq 'darwin') {
-    skip 'On macOS, this test is unreliable', 3;
+    skip 'On macOS, this test is unreliable', 4;
 }
 my $cmd = Test::Command->new(cmd => "fping -4 -p 100 --icmp-timestamp -c 2 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 20 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\), timestamps: Originate=\d+ Receive=\d+ Transmit=\d+ Localreceive=\d+
 127\.0\.0\.1 : \[1\], 20 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\), timestamps: Originate=\d+ Receive=\d+ Transmit=\d+ Localreceive=\d+
 });
+# Originate is filled from CLOCK_REALTIME when sending (socket4.c), whereas
+# Localreceive is computed from recv_time when printing (output.c). Check that
+# Localreceive is close to Originate on loopback (i.e. recv_time was converted
+# from CLOCK_MONOTONIC uptime to CLOCK_REALTIME), unwrapping if 00:00:00 UTC
+# fell between the two timestamps.
+my $day_ms = 24 * 60 * 60 * 1000;
+my ($orig, $lrecv) = $cmd->stdout_value =~ /Originate=(\d+).*?Localreceive=(\d+)/;
+if ($orig > $day_ms - 5000 && $lrecv < 5000) {
+    $lrecv += $day_ms;
+} elsif ($lrecv > $day_ms - 5000 && $orig < 5000) {
+    $orig += $day_ms;
+}
+cmp_ok(abs($lrecv - $orig), '<=', 5000, "Localreceive is within 5s of Originate");
 
 $cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d+\.\d+/\d+\.\d+/\d+\.\d+
 });

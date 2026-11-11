@@ -121,20 +121,20 @@ extern int h_errno;
 
 /*** Constants ***/
 
-/* CLOCK_MONTONIC starts under macOS, OpenBSD and FreeBSD with undefined positive point and can not be use
- * see github PR #217
- * The configure script detect the predefined operating systems an set CLOCK_REALTIME using over ONLY_CLOCK_REALTIME variable
+/* When kernel packet timestamps (SO_TIMESTAMPNS) are enabled, CLOCK_REALTIME
+ * must be used so send timestamps match kernel receive timestamps. Otherwise,
+ * prefer CLOCK_MONOTONIC for scheduling and RTT measurement, and convert to
+ * CLOCK_REALTIME on demand via get_wallclock_ns() for wall-clock output.
  */
-#if HAVE_SO_TIMESTAMPNS || ONLY_CLOCK_REALTIME
+#ifdef HAVE_SO_TIMESTAMPNS
 #define CLOCKID CLOCK_REALTIME
-#endif
-
-#if !defined(CLOCKID)
-#if defined(CLOCK_MONOTONIC)
+#define CLOCKID_IS_REALTIME 1
+#elif defined(CLOCK_MONOTONIC)
 #define CLOCKID CLOCK_MONOTONIC
+#define CLOCKID_IS_REALTIME 0
 #else
 #define CLOCKID CLOCK_REALTIME
-#endif
+#define CLOCKID_IS_REALTIME 1
 #endif
 
 /*** Ping packet defines ***/
@@ -333,7 +333,6 @@ int num_timeout = 0, /* number of times select timed out */
     num_pingreceived = 0, /* total pings received */
     num_othericmprcvd = 0; /* total non-echo-reply ICMP received */
 
-struct timespec current_time; /* current time (pseudo) */
 int64_t current_time_ns;
 int64_t start_time;
 int64_t end_time;
@@ -1416,6 +1415,19 @@ static inline int64_t timespec_ns(struct timespec *a)
     return ((int64_t)a->tv_sec * 1000000000) + a->tv_nsec;
 }
 
+/* Convert a CLOCKID timestamp (ns) to CLOCK_REALTIME wall-clock time (ns). */
+int64_t get_wallclock_ns(int64_t timestamp_ns)
+{
+#if CLOCKID_IS_REALTIME
+    return timestamp_ns;
+#else
+    struct timespec ts_real = { 0 }, ts_mono = { 0 };
+    clock_gettime(CLOCK_REALTIME, &ts_real);
+    clock_gettime(CLOCKID, &ts_mono);
+    return timespec_ns(&ts_real) + (timestamp_ns - timespec_ns(&ts_mono));
+#endif
+}
+
 #if HAVE_SO_TIMESTAMPNS
 /* convert a struct timeval to nanoseconds */
 static inline int64_t timeval_ns(struct timeval *a)
@@ -1902,8 +1914,9 @@ void signal_handler(int signum)
 
 void update_current_time()
 {
-    clock_gettime(CLOCKID, &current_time);
-    current_time_ns = timespec_ns(&current_time);
+    struct timespec ts = { 0 };
+    clock_gettime(CLOCKID, &ts);
+    current_time_ns = timespec_ns(&ts);
 }
 
 /************************************************************

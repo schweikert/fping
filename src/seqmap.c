@@ -118,8 +118,10 @@ SEQMAP_VALUE* seqmap_fetch(unsigned int id, int64_t now)
 
     value = &seqmap_map[id];
 
-    /* verify that value is not expired */
-    if (now - value->ping_ts >= seqmap_timeout_in_ns) {
+    /* verify that value is allocated (ping_ts != 0; otherwise an unused
+     * zero-initialized slot would look unexpired when now < seqmap_timeout_in_ns)
+     * and not expired */
+    if (value->ping_ts == 0 || now - value->ping_ts >= seqmap_timeout_in_ns) {
         dbg_printf("seqmap_fetch(%u) -> host: %u, index: %u -> DISCARDED %" PRId64 "\n", id, value->host_nr, value->ping_count,
                 now - value->ping_ts);
         return NULL;

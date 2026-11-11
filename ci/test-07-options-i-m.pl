@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 44;
+use Test::Command tests => 47;
 use Test::More;
 
 #  -i n       interval between sending ping packets (in millisec) (default 25)
@@ -15,6 +15,16 @@ use Test::More;
 my $cmd = Test::Command->new(cmd => "fping -i 100 127.0.0.1 127.0.0.2");
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("127.0.0.1 is alive\n127.0.0.2 is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping -i n with interval > current_time_ns (4e18 ns > Unix epoch until 2096
+# and > CLOCK_MONOTONIC uptime): verify the first ping is sent immediately
+# rather than waiting for opt.interval - 0 as if a ping had been sent at t=0.
+{
+my $cmd = Test::Command->new(cmd => "fping -i 4000000000000 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("127.0.0.1 is alive\n");
 $cmd->stderr_is_eq("");
 }
 

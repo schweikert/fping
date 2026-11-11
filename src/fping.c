@@ -1798,10 +1798,13 @@ void main_loop()
 
         /* ping event ? */
         if (event_queue_ping.first && event_queue_ping.first->ev_time - current_time_ns <= 0) {
-            /* Make sure that we don't ping more than once every "interval" */
-            lt = current_time_ns - last_send_time;
-            if (lt < opt.interval)
-                goto wait_for_reply;
+            /* Make sure that we don't ping more than once every "interval"
+             * (skip before the first ping is sent, when last_send_time is 0) */
+            if (num_pingsent > 0) {
+                lt = current_time_ns - last_send_time;
+                if (lt < opt.interval)
+                    goto wait_for_reply;
+            }
 
             /* Dequeue the event */
             event = ev_dequeue(&event_queue_ping);
@@ -1831,8 +1834,8 @@ void main_loop()
             if (wait_time_ns < 0)
                 wait_time_ns = 0;
             /* make sure that we wait enough, so that the inter-ping delay is
-             * bigger than 'interval' */
-            if (wait_time_ns < opt.interval) {
+             * bigger than 'interval' (once at least one ping was sent) */
+            if (num_pingsent > 0 && wait_time_ns < opt.interval) {
                 lt = current_time_ns - last_send_time;
                 if (lt < opt.interval) {
                     wait_time_ns = opt.interval - lt;

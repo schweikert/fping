@@ -15,7 +15,7 @@ jobs:
         os: [ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-arm]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.1.0
 
       - name: Install dependencies
         run: |
@@ -39,7 +39,7 @@ jobs:
           ci/run-lcov.sh
 
       - name: Coveralls
-        uses: coverallsapp/github-action@v2
+        uses: coverallsapp/github-action@v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           file: lcov.info
@@ -47,7 +47,7 @@ jobs:
           parallel: true
 
       - name: Upload fping binary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v6.0.0
         with:
           name: fping-binary-${{ matrix.os }}-${{ github.sha }}
           path: src/fping
@@ -60,11 +60,11 @@ jobs:
         os: [ubuntu-24.04]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.1.0
 
       - name: Download fping binary from Test-Linux
         id: download
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v6.0.0
         with:
           name: fping-binary-${{ matrix.os }}-${{ github.sha }}
           path: src/
@@ -96,7 +96,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.1.0
 
       - name: Enable unprivileged ping on host
         run: sudo sysctl net.ipv4.ping_group_range='0 2147483647'
@@ -119,7 +119,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.1.0
 
       - name: Install dependencies
         run: |
@@ -140,7 +140,7 @@ jobs:
           ci/run-lcov.sh
 
       - name: Coveralls
-        uses: coverallsapp/github-action@v2
+        uses: coverallsapp/github-action@v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           file: lcov.info
@@ -152,7 +152,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Coveralls
-        uses: coverallsapp/github-action@v2
+        uses: coverallsapp/github-action@v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           parallel-finished: true
@@ -163,7 +163,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.1.0
 
       - name: Install dependencies
         run: |
@@ -176,7 +176,7 @@ jobs:
           ci/build-4-compile.sh
           ci/test-tarball.sh
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v6.0.0
         with:
           name: dist-${{ github.sha }}
           path: fping-*.tar.gz

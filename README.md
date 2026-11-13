@@ -1,5 +1,7 @@
 ## Github Status
 [![Github Build Status](https://github.com/schweikert/fping/actions/workflows/test.yml/badge.svg)](https://github.com/schweikert/fping/actions/workflows/test.yml)
+[![Github Test Other OS Status](https://github.com/schweikert/fping/actions/workflows/test-other-os.yml/badge.svg)](https://github.com/schweikert/fping/actions/workflows/test-other-os.yml)
+[![Github Test s390x Status](https://github.com/schweikert/fping/actions/workflows/test-s390x.yml/badge.svg)](https://github.com/schweikert/fping/actions/workflows/test-s390x.yml)
 [![Github Build and Push Docker Image Status](https://github.com/schweikert/fping/actions/workflows/docker-deployment.yml/badge.svg)](https://github.com/schweikert/fping/actions/workflows/docker-deployment.yml)
 [![Github CodeQL Status](https://github.com/schweikert/fping/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/schweikert/fping/actions/workflows/codeql-analysis.yml)
 

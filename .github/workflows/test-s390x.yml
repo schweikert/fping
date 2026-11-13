@@ -1,0 +1,40 @@
+name: Test s390x
+on:
+  push:
+    branches:
+      - develop
+    tags:
+      - 'v*'
+  workflow_dispatch:
+jobs:
+  Test-s390x:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Enable unprivileged ping on host for QEMU SLiRP
+        run: sudo sysctl net.ipv4.ping_group_range='0 2147483647'
+
+      - name: Test on Ubuntu s390x (big-endian)
+        uses: vmactions/ubuntu-vm@v1
+        with:
+          arch: s390x
+          copyback: false
+          usesh: true
+          run: |
+            set -ex
+            export LC_ALL=C.UTF-8
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update -qq
+            apt-get install -y -qq autoconf automake build-essential libcap2-bin libtest-command-perl
+            sysctl net.ipv4.ping_group_range='0 2147483647'
+            autoreconf -i
+            ./configure --enable-ipv4 --enable-ipv6 --enable-safe-limits --prefix=/opt/fping
+            make -j$(nproc)
+            useradd -m -s /bin/sh testuser
+            chown -R testuser:testuser .
+            chown root:root src/fping
+            chmod u+s src/fping
+            su testuser -c "LC_ALL=C.UTF-8 PATH=$(pwd)/src:\$PATH prove \$(ls ci/test-*.pl | grep -v internet-hosts)"

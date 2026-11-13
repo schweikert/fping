@@ -22,7 +22,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update -qq 
-          sudo apt-get install -y libcap2-bin libtest-command-perl lcov iproute2
+          sudo apt-get install -y libcap2-bin libtest-command-perl lcov iproute2 tcpdump
           sudo sysctl net.ipv4.ping_group_range='0 2147483647'
 
       - name: Build
@@ -39,6 +39,8 @@ jobs:
           # work with GitHub Actions being hosted in Azure.
           prove $(ls ci/test-*.pl|grep -v internet-hosts)
           sudo env FPING_RUN_UNSAFE_TESTS=1 PATH="$(pwd)/src:$PATH" prove ci/unsafe-test-*.pl
+          sudo env FPING_RUN_UNSAFE_TESTS=1 bash ci/unsafe-test-oiface.sh
+          sudo env FPING_RUN_UNSAFE_TESTS=1 bash ci/unsafe-test-oiface-ipv6.sh
           ci/run-lcov.sh
 
       - name: Upload coverage report
@@ -48,52 +50,6 @@ jobs:
           path: lcov.info
           retention-days: 7
           overwrite: true
-
-      - name: Upload fping binary
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          name: fping-binary-${{ matrix.os }}-${{ github.sha }}
-          path: src/fping
-
-  Test-Asymmetric-Routing:
-    needs: [Test-Linux]
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-24.04]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7.0.1
-
-      - name: Download fping binary from Test-Linux
-        id: download
-        uses: actions/download-artifact@v8.0.2
-        with:
-          name: fping-binary-${{ matrix.os }}-${{ github.sha }}
-          path: src/
-        continue-on-error: true
-
-      - name: Fallback - Build fping if download failed
-        if: steps.download.outcome == 'failure'
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y libcap2-bin libtest-command-perl
-          ci/build-1-autotools.sh
-          ci/build-4-compile.sh
-
-      - name: Make fping executable
-        run: chmod +x src/fping
-
-      - name: Install tcpdump and net-tools
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y tcpdump net-tools
-
-      - name: Test asymmetric routing (--oiface)
-        run: sudo env FPING_RUN_UNSAFE_TESTS=1 ci/unsafe-test-oiface.sh
-
-      - name: Test asymmetric ipv6 routing (--oiface)
-        run: sudo env FPING_RUN_UNSAFE_TESTS=1 ci/unsafe-test-oiface-ipv6.sh
 
   Test-Alpine:
     runs-on: ubuntu-latest

@@ -10,6 +10,7 @@ Next
 
 ## Bugfixes and other changes
 
+- IPV6_PKTINFO fallback for older RFC-2292 systems when adding the --print-reply-dst parameter (#521, thanks @gsnw-sebast)
 - Fixed an issue with setting the DF bit and added support for macOS (#484, thanks @gsnw-sebast)
 - Fix getprotobyname missing on Android preventing use (#470, thanks @Paliak. Merged #475)
 - Fix negative average round-trip time (e.g. `min/avg/max = 2500/-1.8e+03/2500`)

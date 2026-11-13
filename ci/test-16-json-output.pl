@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 84;
+use Test::Command tests => 92;
 use Test::More;
 use JSON::PP qw(decode_json);
 
@@ -248,4 +248,34 @@ my $cmd = Test::Command->new(cmd => ['fping', '-J', '-N', '-c', '1', '127.0.0.1'
 $cmd->exit_is_num(1, '-J -N exits 1');
 $cmd->stdout_is_eq("", '-J -N stdout is empty');
 $cmd->stderr_is_eq("fping: specify only one of -J, -N\n", '-J -N reports mutual exclusion on stderr');
+}
+
+# fping -J --seqmap-timeout 0 -D -o -s -c 1 -t 50 127.0.0.1
+{
+my $cmd = Test::Command->new(cmd => "fping -J --seqmap-timeout 0 -D -o -s -c 1 -t 50 127.0.0.1");
+$cmd->exit_is_num(1);
+$cmd->stdout_like(qr/^\{"timeout":\s\{"timestamp":\s"[1-9]\d{9,}\.\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s1,\s"rcv":\s0,\s"loss":\s100,\s"outage\(ms\)":\s1000\}\}
+\{"stats":\s\{"targets":\s1,\s"alive":\s0,\s"unreachable":\s1,\s"unknownAddresses":\s0,\s"timeouts":\s1,\s"icmpEchosSent":\s1,\s"icmpEchoRepliesReceived":\s0,\s"otherIcmpReceived":\s0,\s"rttMin":\s0\.000,\s"rttAvg":\s0\.000,\s"rttMax":\s0\.000,\s"elapsed":\s\d+\.\d+\}\}\n?$/);
+$cmd->stderr_is_eq("");
+}
+
+# fping -J --seqmap-timeout 0 -c 2 -t 50 -Q 0.8 -p 1000 -o 127.0.0.1
+SKIP: {
+if($^O eq 'darwin') {
+    skip 'On macOS, -Q tests are unreliable', 3;
+}
+my $cmd = Test::Command->new(cmd => "fping -J --seqmap-timeout 0 -c 2 -t 50 -Q 0.8 -p 1000 -o 127.0.0.1");
+$cmd->exit_is_num(1);
+$cmd->stdout_like(qr/^(?:\{"intSum":\s\{[^\n]+\}\}\n)*\{"intSum":\s\{"time":\s[1-9]\d{9,},"host":\s"127\.0\.0\.1",\s"xmt":\s1,\s"rcv":\s0,\s"loss":\s100,\s"outage\(ms\)":\s1000\}\}
+(?:\{"intSum":\s\{[^\n]+\}\}\n)*\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s2,\s"rcv":\s0,\s"loss":\s100,\s"outage\(ms\)":\s2000\}\}\n?$/);
+$cmd->stderr_is_eq("");
+}
+
+# fping -J -p 100 -t 1000 -l 127.0.0.1 with SIGQUIT
+{
+my $cmd = Test::Command->new(cmd => '(sleep 1; pkill -QUIT fping; sleep 1; pkill -INT fping)& fping -J -p 100 -t 1000 -l 127.0.0.1');
+$cmd->stdout_like(qr/^(?:\{"(?:resp|timeout)":\s\{[^\n]+\}\}\n)*\{"intSum":\s\{"time":\s[1-9]\d{9,},"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+(?:,\s"rttMin":\s\d+(?:\.\d+)?,\s"rttAvg":\s\d+(?:\.\d+)?,\s"rttMax":\s\d+(?:\.\d+)?)?\}\}
+(?:\{"(?:resp|timeout)":\s\{[^\n]+\}\}\n)*\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+(?:,\s"rttMin":\s\d+(?:\.\d+)?,\s"rttAvg":\s\d+(?:\.\d+)?,\s"rttMax":\s\d+(?:\.\d+)?)?\}\}\n?$/);
+$cmd->stderr_is_eq("");
 }

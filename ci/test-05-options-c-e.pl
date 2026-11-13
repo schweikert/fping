@@ -83,8 +83,8 @@ $cmd->stderr_like(qr{localhost : xmt/rcv/%loss = 2/2/0%, min/avg/max = \d+\.\d+/
 
 # fping -c n ff02::1
 SKIP: {
-    if($ENV{SKIP_IPV6}) {
-        skip 'Skip IPv6 tests', 3;
+    if($ENV{SKIP_IPV6} || $ENV{SKIP_IPV6_MULTICAST}) {
+        skip 'Skip IPv6 multicast tests', 3;
     }
     my $cmd = Test::Command->new(cmd => "fping -c 1 ff02::1");
     $cmd->exit_is_num(0);
@@ -217,8 +217,8 @@ $cmd->stderr_like(qr{127\.0\.0\.1 :( \d+\.\d+){20}
 
 # fping -C n ff02::1
 SKIP: {
-    if($ENV{SKIP_IPV6}) {
-        skip 'Skip IPv6 tests', 3;
+    if($ENV{SKIP_IPV6} || $ENV{SKIP_IPV6_MULTICAST}) {
+        skip 'Skip IPv6 multicast tests', 3;
     }
     my $cmd = Test::Command->new(cmd => "fping -C 1 ff02::1");
     $cmd->exit_is_num(0);
@@ -236,8 +236,8 @@ $cmd->stderr_is_eq("");
 
 # fping --check-source (to IPv6 multicast address -> accept no reply)
 SKIP: {
-    if($ENV{SKIP_IPV6}) {
-        skip 'Skip IPv6 tests', 3;
+    if($ENV{SKIP_IPV6} || $ENV{SKIP_IPV6_MULTICAST}) {
+        skip 'Skip IPv6 multicast tests', 3;
     }
     my $cmd = Test::Command->new(cmd => "fping -r1 -t100 --check-source ff02::1");
     $cmd->exit_is_num(1);
@@ -247,8 +247,8 @@ SKIP: {
 
 # fping -c N --check-source
 SKIP: {
-    if($ENV{SKIP_IPV6}) {
-        skip 'Skip IPv6 tests', 3;
+    if($ENV{SKIP_IPV6} || $ENV{SKIP_IPV6_MULTICAST}) {
+        skip 'Skip IPv6 multicast tests', 3;
     }
     my $cmd = Test::Command->new(cmd => "fping -c1 -t100 --check-source 127.0.0.1 ff02::1");
     $cmd->exit_is_num(1);
@@ -263,8 +263,8 @@ ff02::1   : xmt/rcv/%loss = 1/0/100%
 
 # fping -C N --check-source
 SKIP: {
-    if($ENV{SKIP_IPV6}) {
-        skip 'Skip IPv6 tests', 3;
+    if($ENV{SKIP_IPV6} || $ENV{SKIP_IPV6_MULTICAST}) {
+        skip 'Skip IPv6 multicast tests', 3;
     }
     my $cmd = Test::Command->new(cmd => "fping -C1 -t100 --check-source 127.0.0.1 ff02::1");
     $cmd->exit_is_num(1);

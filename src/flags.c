@@ -21,12 +21,15 @@ Options options_init(void)
     return o;
 }
 
+Options opt;
+
+#if defined(DEBUG) || defined(_DEBUG)
 DebugOptions debug_options_init(void)
 {
     DebugOptions o = { 0 };
-  
+
     return o;
 }
 
-Options opt;
 DebugOptions dbg_opt;
+#endif

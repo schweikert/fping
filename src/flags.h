@@ -1,6 +1,7 @@
 #ifndef FLAGS_H
 #define FLAGS_H
 
+#include "config.h"
 #include <stdint.h>
 
 /* sized so as to be like traditional ping */
@@ -59,6 +60,7 @@ typedef struct {
     int frag_on;
 } Options;
 
+#if defined(DEBUG) || defined(_DEBUG)
 typedef struct {
     /* debug switches */
     int trace_on;
@@ -66,12 +68,15 @@ typedef struct {
     int print_per_system_on;
     int lose_factor;
 } DebugOptions;
+#endif
 
 
 Options options_init(void);
-DebugOptions debug_options_init(void);
-
 extern Options opt;
+
+#if defined(DEBUG) || defined(_DEBUG)
+DebugOptions debug_options_init(void);
 extern DebugOptions dbg_opt;
+#endif
 
 #endif

@@ -87,18 +87,28 @@ extern int64_t max_reply, min_reply, total_replies, sum_replies;
 #define dbg_printf(fmt, ...)
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+#define FPING_NORETURN __attribute__((__noreturn__))
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L
+#define FPING_NORETURN [[noreturn]]
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#define FPING_NORETURN _Noreturn
+#else
+#define FPING_NORETURN
+#endif
+
 /* fping.c */
 void add_name(char *name);
 void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_len);
 char *na_cat(char *name, struct in_addr ipaddr);
 char *get_host_by_address(struct in_addr in);
 int send_ping(HOST_ENTRY *h, int index);
-void usage(int);
+FPING_NORETURN void usage(int);
 int wait_for_reply(int64_t);
 void stats_reset_interval(HOST_ENTRY *h);
 void main_loop();
 void signal_handler(int);
-void finish();
+FPING_NORETURN void finish(void);
 void ev_enqueue(struct event_queue *queue, struct event *event);
 struct event *ev_dequeue(struct event_queue *queue);
 void ev_remove(struct event_queue *queue, struct event *event);
@@ -120,8 +130,8 @@ struct event *host_get_timeout_event(HOST_ENTRY *h, int index);
 void stats_add(HOST_ENTRY *h, int index, int success, int64_t latency);
 void update_current_time();
 int64_t get_wallclock_ns(int64_t timestamp_ns);
-void crash_and_burn( char *message );
-void errno_crash_and_burn( char *message );
+FPING_NORETURN void crash_and_burn( char *message );
+FPING_NORETURN void errno_crash_and_burn( char *message );
 int in_cksum( unsigned short *p, int n );
 
 /* socket.c */

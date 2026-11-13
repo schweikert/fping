@@ -307,7 +307,9 @@ int hints_ai_family = AF_UNSPEC;
 volatile sig_atomic_t status_snapshot = 0;
 volatile sig_atomic_t finish_requested = 0;
 
+#if defined(DEBUG) || defined(_DEBUG)
 unsigned int debugging = 0;
+#endif
 
 unsigned int trials;
 int64_t report_interval = 0;
@@ -711,7 +713,6 @@ int main(int argc, char **argv)
 
         case 'h':
             usage(0);
-            break;
 
         case 'q':
             opt.verbose_on = 0;
@@ -892,7 +893,6 @@ int main(int argc, char **argv)
 #else
             printf("%s: cant bind to a particular net interface since SO_BINDTODEVICE is not supported on your os.\n", prog);
             exit(3);
-            ;
 #endif
             break;
 
@@ -933,7 +933,6 @@ int main(int argc, char **argv)
             fprintf(stderr, "%s: %s\n", argv[0], optparse_state.errmsg);
             fprintf(stderr, "see 'fping -h' for usage information\n");
             exit(1);
-            break;
         }
     }
 
@@ -1406,8 +1405,6 @@ int main(int argc, char **argv)
 #endif /* DEBUG || _DEBUG */
 
     finish();
-
-    return 0;
 }
 
 static inline int64_t timespec_ns(struct timespec *a)
@@ -1933,7 +1930,7 @@ void update_current_time()
 
 ************************************************************/
 
-void finish()
+FPING_NORETURN void finish(void)
 {
     int i;
     HOST_ENTRY *h;
@@ -2972,7 +2969,7 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
 
 ************************************************************/
 
-void crash_and_burn(char *message)
+FPING_NORETURN void crash_and_burn(char *message)
 {
     fprintf(stderr, "%s: %s\n", prog, message);
     exit(4);
@@ -2990,7 +2987,7 @@ void crash_and_burn(char *message)
 
 ************************************************************/
 
-void errno_crash_and_burn(char *message)
+FPING_NORETURN void errno_crash_and_burn(char *message)
 {
     fprintf(stderr, "%s: %s : %s\n", prog, message, strerror(errno));
     exit(4);
@@ -3181,7 +3178,7 @@ void ev_remove(struct event_queue *queue, struct event *event)
 
 ************************************************************/
 
-void usage(int is_error)
+FPING_NORETURN void usage(int is_error)
 {
     FILE *out = is_error ? stderr : stdout;
     fprintf(out, "Usage: %s [options] [targets...]\n", prog);

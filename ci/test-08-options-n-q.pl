@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 51;
+use Test::Command tests => 60;
 use Test::More;
 
 #  -n         show targets by name (-d is equivalent)
@@ -211,4 +211,28 @@ my $cmd = Test::Command->new(cmd => "fping -O 0x20 --print-tos 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr{127\.0\.0\.1 is alive \(TOS 32\)}); 
 $cmd->stderr_is_eq("");
+}
+
+# fping -n -A (numeric host)
+{
+my $cmd = Test::Command->new(cmd => "fping -n -A 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{^\S+ \(127\.0\.0\.1\) is alive\n$});
+$cmd->stderr_is_eq("");
+}
+
+# fping -n (non-numeric host)
+{
+my $cmd = Test::Command->new(cmd => "fping -4 -n localhost");
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("localhost is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping -O (out of range > 255)
+{
+my $cmd = Test::Command->new(cmd => "fping -O 256 127.0.0.1");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("");
+$cmd->stderr_like(qr{^Usage:});
 }

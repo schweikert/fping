@@ -1,7 +1,8 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 88;
+use Test::Command tests => 96;
 use Test::More;
+use Time::HiRes qw(gettimeofday tv_interval);
 
 #  -c n           count of pings to send to each target (default 1)
 #  -C n           same as -c, report results in verbose format
@@ -375,4 +376,31 @@ $cmd->exit_is_num(0);
 $cmd->stdout_like(qr{127\.0\.0\.1 \(\d+\.\d+ ms\)
 });
 $cmd->stderr_is_eq("");
+}
+
+# fping -D -c (timeout with timestamp)
+{
+my $cmd = Test::Command->new(cmd => "fping --seqmap-timeout 0 -D -c 1 -t 50 127.0.0.1");
+$cmd->exit_is_num(1);
+$cmd->stdout_like(qr{^\[[1-9]\d{9,}\.\d+\] 127\.0\.0\.1 : \[0\], timed out \(NaN avg, 100% loss\)\n$});
+$cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 1/0/100%\n});
+}
+
+# fping -c -p > 2000 (AUTOTUNE_TIMEOUT_MAX cap)
+{
+my $t0 = [gettimeofday];
+my $cmd = Test::Command->new(cmd => "fping --seqmap-timeout 0 -c 1 -p 3500 127.0.0.1");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("127.0.0.1 : [0], timed out (NaN avg, 100% loss)\n");
+$cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 1/0/100%\n});
+SKIP: {
+    if($^O eq 'darwin') {
+        skip 'timing test not reliable on macOS', 2;
+    }
+    # Without -t, -c 1 auto-tunes timeout to -p capped at AUTOTUNE_TIMEOUT_MAX
+    # (2000 ms), so the timed-out run should finish around 2s rather than 3.5s.
+    my $elapsed = tv_interval($t0);
+    cmp_ok($elapsed, '>=', 1.9);
+    cmp_ok($elapsed, '<', 2.8);
+}
 }

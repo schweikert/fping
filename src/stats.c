@@ -45,20 +45,13 @@ void print_per_system_stats(void)
             fprintf(stderr, "\n");
         }
         else {
-            if (h->num_recv <= h->num_sent) {
-                fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
-                    h->num_sent, h->num_recv, h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
+            fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
+                h->num_sent, h->num_recv, h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
 
-                if (opt.outage_on) {
-                    /* Time outage total */
-                    outage_ms = (h->num_sent - h->num_recv) * opt.perhost_interval / 1e6;
-                    fprintf(stderr, ", outage(ms) = %d", outage_ms);
-                }
-            }
-            else {
-                fprintf(stderr, " xmt/rcv/%%return = %d/%d/%d%%",
-                    h->num_sent, h->num_recv,
-                    h->num_sent > 0 ? ((h->num_recv * 100) / h->num_sent) : 0);
+            if (opt.outage_on) {
+                /* Time outage total */
+                outage_ms = (h->num_sent - h->num_recv) * opt.perhost_interval / 1e6;
+                fprintf(stderr, ", outage(ms) = %d", outage_ms);
             }
 
             if (h->num_recv) {
@@ -118,21 +111,14 @@ void print_per_system_stats_json(void)
             fprintf(stdout, "]}");
         }
         else {
-            if (h->num_recv <= h->num_sent) {
-                fprintf(stdout, "\"xmt\": %d, ", h->num_sent);
-                fprintf(stdout, "\"rcv\": %d, ", h->num_recv);
-                fprintf(stdout, "\"loss\": %d", h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
+            fprintf(stdout, "\"xmt\": %d, ", h->num_sent);
+            fprintf(stdout, "\"rcv\": %d, ", h->num_recv);
+            fprintf(stdout, "\"loss\": %d", h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
 
-                if (opt.outage_on) {
-                    /* Time outage total */
-                    outage_ms = (h->num_sent - h->num_recv) * opt.perhost_interval / 1e6;
-                    fprintf(stdout, ", \"outage(ms)\": %d", outage_ms);
-                }
-            }
-            else {
-                fprintf(stdout, "\"xmt\": %d, ", h->num_sent);
-                fprintf(stdout, "\"rcv\": %d, ", h->num_recv);
-                fprintf(stdout, "\"return\": %d", h->num_sent > 0 ? ((h->num_recv * 100) / h->num_sent) : 0);
+            if (opt.outage_on) {
+                /* Time outage total */
+                outage_ms = (h->num_sent - h->num_recv) * opt.perhost_interval / 1e6;
+                fprintf(stdout, ", \"outage(ms)\": %d", outage_ms);
             }
 
             if (h->num_recv) {

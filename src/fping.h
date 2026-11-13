@@ -32,7 +32,6 @@ typedef struct host_entry {
     int64_t last_send_time; /* time of last packet sent */
     int num_sent; /* number of ping packets sent (for statistics) */
     int num_recv; /* number of pings received (duplicates ignored) */
-    int num_recv_total; /* number of pings received, including duplicates */
     int64_t max_reply; /* longest response time */
     int64_t min_reply; /* shortest response time */
     int64_t total_time; /* sum of response times */

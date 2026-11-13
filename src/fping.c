@@ -2675,7 +2675,6 @@ int wait_for_reply(int64_t wait_time)
     this_reply = recv_time - seqmap_value->ping_ts;
 
     /* update stats that include invalid replies */
-    h->num_recv_total++;
     num_pingreceived++;
 
     dbg_printf("received [%d] from %s\n", this_count, h->host);

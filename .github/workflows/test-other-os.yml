@@ -42,7 +42,8 @@ jobs:
             chown -R testuser .
             chown root:wheel src/fping
             chmod 4755 src/fping
-            su testuser -c "PATH=$(pwd)/src:/usr/local/bin:\$PATH SKIP_IPV6=1 prove \$(ls ci/test-*.pl | grep -v internet-hosts)"
+            # Skip unscoped ff02::1 multicast tests; unicast IPv6 (::1) tests run
+            su testuser -c "PATH=$(pwd)/src:/usr/local/bin:\$PATH SKIP_IPV6_MULTICAST=1 prove \$(ls ci/test-*.pl | grep -v internet-hosts)"
 
   Test-OpenBSD:
     runs-on: ubuntu-latest
@@ -80,7 +81,8 @@ jobs:
             chown -R testuser .
             chown root:wheel src/fping
             chmod 4755 src/fping
-            su testuser -c "PATH=$(pwd)/src:/usr/local/bin:\$PATH SKIP_IPV6=1 prove \$(ls ci/test-*.pl | grep -v internet-hosts)"
+            # Skip unscoped ff02::1 multicast tests; unicast IPv6 (::1) tests run
+            su testuser -c "PATH=$(pwd)/src:/usr/local/bin:\$PATH SKIP_IPV6_MULTICAST=1 prove \$(ls ci/test-*.pl | grep -v internet-hosts)"
 
   Test-OmniOS:
     runs-on: ubuntu-latest
@@ -117,4 +119,5 @@ jobs:
             chown -R testuser .
             chown root:root src/fping
             chmod 4755 src/fping
-            su testuser -c "PATH=$(pwd)/src:$PATH SKIP_IPV6=1 prove \$(ls ci/test-*.pl | grep -v internet-hosts)"
+            # Skip unscoped ff02::1 multicast tests; unicast IPv6 (::1) tests run
+            su testuser -c "PATH=$(pwd)/src:$PATH SKIP_IPV6_MULTICAST=1 prove \$(ls ci/test-*.pl | grep -v internet-hosts)"

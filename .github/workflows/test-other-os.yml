@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Enable unprivileged ping on host for QEMU SLiRP
         run: sudo sysctl net.ipv4.ping_group_range='0 2147483647'
@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Enable unprivileged ping on host for QEMU SLiRP
         run: sudo sysctl net.ipv4.ping_group_range='0 2147483647'
@@ -84,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Enable unprivileged ping on host for QEMU SLiRP
         run: sudo sysctl net.ipv4.ping_group_range='0 2147483647'

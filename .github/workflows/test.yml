@@ -26,7 +26,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update -qq 
-          sudo apt-get install libcap2-bin libtest-command-perl lcov
+          sudo apt-get install -y libcap2-bin libtest-command-perl lcov iproute2
           sudo sysctl net.ipv4.ping_group_range='0 2147483647'
 
       - name: Build
@@ -42,6 +42,7 @@ jobs:
           # avoid pinging internet hosts because it doesn't
           # work with GitHub Actions being hosted in Azure.
           prove $(ls ci/test-*.pl|grep -v internet-hosts)
+          sudo env FPING_RUN_UNSAFE_TESTS=1 PATH="$(pwd)/src:$PATH" prove ci/unsafe-test-*.pl
           ci/run-lcov.sh
 
       - name: Coveralls

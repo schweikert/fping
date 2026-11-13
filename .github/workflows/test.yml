@@ -7,9 +7,15 @@ on:
       - 'v*'
   pull_request:
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   Test-Linux:
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
     strategy:
       matrix:
         os: [ubuntu-22.04, ubuntu-24.04, ubuntu-26.04, ubuntu-26.04-arm]
@@ -117,6 +123,10 @@ jobs:
 
   Test-Mac:
     runs-on: macos-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -150,6 +160,10 @@ jobs:
   Coveralls-Finish:
     needs: [Test-Linux, Test-Mac]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
     steps:
       - name: Coveralls
         uses: coverallsapp/github-action@v2

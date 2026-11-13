@@ -6,6 +6,8 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   Test-s390x:
     runs-on: ubuntu-latest

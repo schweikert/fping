@@ -26,8 +26,8 @@ SKIP: {
 # ping ff02::1
 SKIP: {
     #system("/sbin/ifconfig >&2");
-    if($ENV{SKIP_IPV6}) {
-        skip 'Skip IPv6 tests', 3;
+    if($ENV{SKIP_IPV6} || $ENV{SKIP_IPV6_MULTICAST}) {
+        skip 'Skip IPv6 multicast tests', 3;
     }
     my $cmd = Test::Command->new(cmd => "fping ff02::1");
     $cmd->exit_is_num(0);

@@ -138,7 +138,8 @@ jobs:
         run: |
           set -ex
           PATH=`pwd`/src:$PATH
-          export SKIP_IPV6=1
+          # Skip unscoped ff02::1 multicast tests; unicast IPv6 (::1) tests run
+          export SKIP_IPV6_MULTICAST=1
           prove $(ls ci/test-*.pl|grep -v internet-hosts)
           ci/run-lcov.sh
 

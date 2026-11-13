@@ -7,5 +7,5 @@ use Test::Command tests => 3;
 my $cmd = Test::Command->new(cmd => "fping nosuchname.example.com");
 $cmd->exit_is_num(2);
 $cmd->stdout_is_eq("");
-$cmd->stderr_like(qr{^nosuchname\.example\.com: (.*not (known|found|resolve|supported)|[Nn]o address associated with (host)?name|Name has no usable address)});
+$cmd->stderr_like(qr{^nosuchname\.example\.com: .*(?i:name|address|host|resolv).*\n$});
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 68;
+use Test::Command tests => 71;
 use Test::More;
 use Time::HiRes qw(gettimeofday tv_interval);
 
@@ -215,4 +215,12 @@ SKIP: {
     # 0.1 + 0.2 + 0.4 + 0.8 = 1.5
     cmp_ok($elapsed, '>=', 1.5);
     cmp_ok($elapsed, '<', 1.9);
+}
+
+# fping -B (event queue head and middle insertion)
+{
+my $cmd = Test::Command->new(cmd => "fping --seqmap-timeout 0 -r 1 -B 4 -t 40 -i 25 127.0.0.1 127.0.0.1 127.0.0.1 127.0.0.1");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("127.0.0.1 is unreachable\n" x 4);
+$cmd->stderr_is_eq("");
 }

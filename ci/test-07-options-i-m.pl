@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 34;
+use Test::Command tests => 44;
 use Test::More;
 
 #  -i n       interval between sending ping packets (in millisec) (default 25)
@@ -164,4 +164,32 @@ $cmd->stdout_is_eq("127.0.0.1 is alive\n");
 $cmd->stderr_is_eq("");
 }
 
-# fping -m -> test-14-internet-hosts
+# fping --oiface error cases
+SKIP: {
+if($^O ne 'linux') {
+    skip '--oiface option functionality is only tested on Linux', 6;
+}
+my $cmd1 = Test::Command->new(cmd => 'fping --oiface=NotAnInterface 127.0.0.1');
+$cmd1->exit_is_num(1);
+$cmd1->stdout_is_eq("");
+$cmd1->stderr_is_eq("fping: unknown interface 'NotAnInterface'\n");
+
+my $cmd2 = Test::Command->new(cmd => 'fping -I lo --oiface=lo 127.0.0.1');
+$cmd2->exit_is_num(1);
+$cmd2->stdout_is_eq("");
+$cmd2->stderr_is_eq("fping: specify only --oiface or -I, --iface\n");
+}
+
+# fping -l with -p > -t
+{
+my $cmd = Test::Command->new(cmd => '(sleep 1; pkill -INT fping)& fping -p 500 -t 400 -l 127.0.0.1');
+$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d+(?:\.\d+)? ms \(\d+(?:\.\d+)? avg, 0% loss\)});
+}
+
+# fping -m
+{
+my $cmd = Test::Command->new(cmd => "fping -4 -m localhost");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{^(localhost is alive\n)+$});
+$cmd->stderr_is_eq("");
+}

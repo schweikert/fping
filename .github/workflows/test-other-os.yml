@@ -14,13 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Enable unprivileged ping on host for QEMU SLiRP
         run: sudo sysctl net.ipv4.ping_group_range='0 2147483647'
 
       - name: Test on FreeBSD
-        uses: vmactions/freebsd-vm@v1
+        uses: vmactions/freebsd-vm@v1.5.9
         with:
           usesh: true
           run: |
@@ -48,13 +48,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Enable unprivileged ping on host for QEMU SLiRP
         run: sudo sysctl net.ipv4.ping_group_range='0 2147483647'
 
       - name: Test on OpenBSD
-        uses: vmactions/openbsd-vm@v1
+        uses: vmactions/openbsd-vm@v1.4.9
         with:
           usesh: true
           run: |
@@ -86,13 +86,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Enable unprivileged ping on host for QEMU SLiRP
         run: sudo sysctl net.ipv4.ping_group_range='0 2147483647'
 
       - name: Test on OmniOS
-        uses: vmactions/omnios-vm@v1
+        uses: vmactions/omnios-vm@v1.3.8
         with:
           usesh: true
           run: |

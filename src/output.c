@@ -153,15 +153,8 @@ void print_recv(HOST_ENTRY *h, int64_t recv_time, int result, int this_count, in
         max_hostname_len, h->host, this_count, result, sprint_tm(this_reply));
 
     printf(" (%s avg, ", sprint_tm(avg));
-
-    if (h->num_recv <= h->num_sent) {
-        printf("%d%% loss)",
-            ((h->num_sent - h->num_recv) * 100) / h->num_sent);
-    }
-    else {
-        printf("%d%% return)",
-            (h->num_recv_total * 100) / h->num_sent);
-    }
+    printf("%d%% loss)",
+        ((h->num_sent - h->num_recv) * 100) / h->num_sent);
 }
 
 /************************************************************
@@ -202,15 +195,8 @@ void print_timeout(HOST_ENTRY *h, int ping_index) {
         printf(" (NaN avg, ");
     }
 
-    if (h->num_recv <= h->num_sent) {
-        printf("%d%% loss)",
-            ((h->num_sent - h->num_recv) * 100) / h->num_sent);
-    }
-    else {
-        printf("%d%% return)",
-            (h->num_recv_total * 100) / h->num_sent);
-    }
-    printf("\n");
+    printf("%d%% loss)\n",
+        ((h->num_sent - h->num_recv) * 100) / h->num_sent);
 }
 
 static void print_recv_ext_json(IP_HEADER_RESULT *ip_header_res, int64_t recv_time);
@@ -418,19 +404,13 @@ void print_per_system_splits(void)
         h = table[i];
         fprintf(stderr, "%-*s :", max_hostname_len, h->host);
 
-        if (h->num_recv_i <= h->num_sent_i) {
-            fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
-                h->num_sent_i, h->num_recv_i, h->num_sent_i > 0 ? ((h->num_sent_i - h->num_recv_i) * 100) / h->num_sent_i : 0);
+        fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
+            h->num_sent_i, h->num_recv_i, h->num_sent_i > 0 ? ((h->num_sent_i - h->num_recv_i) * 100) / h->num_sent_i : 0);
 
-            if (opt.outage_on) {
-                /* Time outage  */
-                outage_ms_i = (h->num_sent_i - h->num_recv_i) * opt.perhost_interval / 1e6;
-                fprintf(stderr, ", outage(ms) = %d", outage_ms_i);
-            }
-        }
-        else {
-            fprintf(stderr, " xmt/rcv/%%return = %d/%d/%d%%",
-                h->num_sent_i, h->num_recv_i, h->num_sent_i > 0 ? ((h->num_recv_i * 100) / h->num_sent_i) : 0);
+        if (opt.outage_on) {
+            /* Time outage  */
+            outage_ms_i = (h->num_sent_i - h->num_recv_i) * opt.perhost_interval / 1e6;
+            fprintf(stderr, ", outage(ms) = %d", outage_ms_i);
         }
 
         if (h->num_recv_i) {
@@ -475,22 +455,14 @@ void print_per_system_splits_json(void)
         fprintf(stdout, "{\"intSum\": {");
         fprintf(stdout, "\"time\": %" PRId64 ",", curr_time_s);
         fprintf(stdout, "\"host\": \"%s\", ", h->host);
+        fprintf(stdout, "\"xmt\": %d, ", h->num_sent_i);
+        fprintf(stdout, "\"rcv\": %d, ", h->num_recv_i);
+        fprintf(stdout, "\"loss\": %d", h->num_sent_i > 0 ? ((h->num_sent_i - h->num_recv_i) * 100) / h->num_sent_i : 0);
 
-        if (h->num_recv_i <= h->num_sent_i) {
-            fprintf(stdout, "\"xmt\": %d, ", h->num_sent_i);
-            fprintf(stdout, "\"rcv\": %d, ", h->num_recv_i);
-            fprintf(stdout, "\"loss\": %d", h->num_sent_i > 0 ? ((h->num_sent_i - h->num_recv_i) * 100) / h->num_sent_i : 0);
-
-            if (opt.outage_on) {
-                /* Time outage  */
-                outage_ms_i = (h->num_sent_i - h->num_recv_i) * opt.perhost_interval / 1e6;
-                fprintf(stdout, ", \"outage(ms)\": %d", outage_ms_i);
-            }
-        }
-        else {
-            fprintf(stdout, "\"xmt\": %d, ", h->num_sent_i);
-            fprintf(stdout, "\"rcv\": %d, ", h->num_recv_i);
-            fprintf(stdout, "\"loss\": %d", h->num_sent_i > 0 ? ((h->num_recv_i * 100) / h->num_sent_i) : 0);
+        if (opt.outage_on) {
+            /* Time outage  */
+            outage_ms_i = (h->num_sent_i - h->num_recv_i) * opt.perhost_interval / 1e6;
+            fprintf(stdout, ", \"outage(ms)\": %d", outage_ms_i);
         }
 
         if (h->num_recv_i) {

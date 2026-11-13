@@ -14,13 +14,13 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.1
 
       - name: Enable unprivileged ping on host for QEMU SLiRP
         run: sudo sysctl net.ipv4.ping_group_range='0 2147483647'
 
       - name: Test on Ubuntu s390x (big-endian)
-        uses: vmactions/ubuntu-vm@v1
+        uses: vmactions/ubuntu-vm@v1.0.2
         with:
           arch: s390x
           copyback: false

@@ -70,6 +70,22 @@ podman pull ghcr.io/schweikert/fping:latest
 podman run --rm ghcr.io/schweikert/fping:latest 127.0.0.1
 ```
 
+## Running tests
+
+You can run the test suite locally in an isolated container using `podman` (no
+root privileges needed on the host; set `CONTAINER_ENGINE=docker` to use Docker
+instead):
+
+```
+ci/run-tests-podman.sh
+```
+
+To run specific test files:
+
+```
+ci/run-tests-podman.sh ci/test-16-json-output.pl
+```
+
 ## Credits
 
 * Original author:  Roland Schemers (schemers@stanford.edu)

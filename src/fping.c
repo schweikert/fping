@@ -386,7 +386,8 @@ unsigned long strtoul_strict(const char *arg, int base)
     char *endptr;
     unsigned long val;
 
-    while (isspace(*arg))
+    /* Skip leading whitespace before checking for '-' because strtoul() wraps negatives */
+    while (isspace((unsigned char)*arg))
         arg++;
 
     if (arg[0] == '-')
@@ -968,6 +969,14 @@ int main(int argc, char **argv)
     }
 #endif
 
+    if ((socket4 >= 0 && socket4 >= (int)FD_SETSIZE)
+#ifdef IPV6
+        || (socket6 >= 0 && socket6 >= (int)FD_SETSIZE)
+#endif
+    ) {
+        crash_and_burn("socket descriptor exceeds FD_SETSIZE");
+    }
+
     if (opt.ttl > 255) {
         fprintf(stderr, "%s: ttl %u out of range\n", prog, opt.ttl);
         exit(1);
@@ -1284,7 +1293,7 @@ int main(int argc, char **argv)
                     if (sscanf(line, "%s%s", discard1, discard2) == 2) {
                         skip = 1; /* a second word starts in this part */
                     }
-                    if (isspace(line[sizeof(line) - 2])) {
+                    if (isspace((unsigned char)line[sizeof(line) - 2])) {
                         skip = 1; /* the first word ends in this part */
                     }
                 }
@@ -1294,7 +1303,7 @@ int main(int argc, char **argv)
                 if (skip) {
                     continue; /* skip rest of data in this input line */
                 }
-                if (isspace(line[0])) {
+                if (isspace((unsigned char)line[0])) {
                     skip = 1; /* first word ended in previous part */
                     continue;
                 }
@@ -2101,6 +2110,14 @@ int socket_can_read(struct timeval *timeout)
     socketmax = socket4 > socket6 ? socket4 : socket6;
 #endif
 
+    /* FD_SET() has undefined behavior (buffer overflow) if fd >= FD_SETSIZE. */
+    if (socketmax < 0) {
+        return -1;
+    }
+    if (socketmax >= (int)FD_SETSIZE) {
+        crash_and_burn("socket descriptor exceeds FD_SETSIZE");
+    }
+
 select_again:
     FD_ZERO(&readset);
     if (socket4 >= 0)
@@ -2590,7 +2607,7 @@ int wait_for_reply(int64_t wait_time)
 {
     int result;
     static char buffer[RECV_BUFSIZE];
-    struct sockaddr_storage response_addr;
+    struct sockaddr_storage response_addr = { 0 };
     int n;
     int64_t avg;
     HOST_ENTRY *h;
@@ -2917,6 +2934,10 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
 
     p->name = strdup(name);
     p->host = strdup(host);
+    if (!p->name || !p->host)
+        crash_and_burn("can't allocate memory");
+    if (ipaddr_len > (socklen_t)sizeof(p->saddr))
+        crash_and_burn("sockaddr too large");
     memcpy(&p->saddr, ipaddr, ipaddr_len);
     p->saddr_len = ipaddr_len;
     p->timeout = opt.timeout;
@@ -2925,7 +2946,7 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
     if (opt.print_netdata_on) {
         char *s = p->name;
         while (*s) {
-            if (!isalnum(*s))
+            if (!isalnum((unsigned char)*s))
                 *s = '_';
             s++;
         }
@@ -3034,7 +3055,9 @@ int addr_cmp(struct sockaddr *a, struct sockaddr *b)
     }
     else {
         if (a->sa_family == AF_INET) {
-            return ((struct sockaddr_in *)a)->sin_addr.s_addr - ((struct sockaddr_in *)b)->sin_addr.s_addr;
+            uint32_t addr_a = ntohl(((struct sockaddr_in *)a)->sin_addr.s_addr);
+            uint32_t addr_b = ntohl(((struct sockaddr_in *)b)->sin_addr.s_addr);
+            return (addr_a > addr_b) - (addr_a < addr_b);
         }
         else if (a->sa_family == AF_INET6) {
             return memcmp(&((struct sockaddr_in6 *)a)->sin6_addr,

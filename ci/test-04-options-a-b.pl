@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 71;
+use Test::Command tests => 74;
 use Test::More;
 use Time::HiRes qw(gettimeofday tv_interval);
 
@@ -217,10 +217,31 @@ SKIP: {
     cmp_ok($elapsed, '<', 1.9);
 }
 
-# fping -B (event queue head and middle insertion)
+# fping -B (timeout event queue middle insertion)
+# -t 160, -i 80, -r 1, -B 4 across 4 targets (H0..H3), with --seqmap-timeout 0
+# so loopback replies expire immediately and every ping times out.
+# Initial timeout is 160ms; on retry (-r 1 -B 4), backoff makes it 160*4 = 640ms:
+#   t=0ms:   send H0 -> timeout H0@160                        timeout queue: [H0@160]
+#   t=80ms:  send H1 -> timeout H1@240                        timeout queue: [H0@160, H1@240]
+#   t=160ms: H0 times out -> retry (640ms) H0_r@800           timeout queue: [H1@240, H0_r@800]
+#            send H2 -> H2@320 inserted in the middle         timeout queue: [H1@240, H2@320, H0_r@800]
+#   t=240ms: H1 times out -> retry (640ms) H1_r@880; send H3 -> H3@400 inserted between H2@320 and H0_r@800
 {
-my $cmd = Test::Command->new(cmd => "fping --seqmap-timeout 0 -r 1 -B 4 -t 40 -i 25 127.0.0.1 127.0.0.1 127.0.0.1 127.0.0.1");
+my $cmd = Test::Command->new(cmd => "fping --seqmap-timeout 0 -r 1 -B 4 -t 160 -i 80 127.0.0.1 127.0.0.1 127.0.0.1 127.0.0.1");
 $cmd->exit_is_num(1);
 $cmd->stdout_is_eq("127.0.0.1 is unreachable\n" x 4);
+$cmd->stderr_is_eq("");
+}
+
+# fping -B (timeout event queue head insertion)
+# -t 100, -i 160, -r 1, -B 4 across 2 targets (H0, H1).
+# Initial timeout is 100ms; on retry (-r 1 -B 4), backoff makes it 100*4 = 400ms:
+#   t=0ms:   send H0 -> timeout H0@100                        timeout queue: [H0@100]
+#   t=100ms: H0 times out before H1 -> retry (400ms) H0_r@500 timeout queue: [H0_r@500]
+#   t=160ms: send H1 -> H1@260 inserted at head (< 500)       timeout queue: [H1@260, H0_r@500]
+{
+my $cmd = Test::Command->new(cmd => "fping --seqmap-timeout 0 -r 1 -B 4 -t 100 -i 160 127.0.0.1 127.0.0.1");
+$cmd->exit_is_num(1);
+$cmd->stdout_is_eq("127.0.0.1 is unreachable\n" x 2);
 $cmd->stderr_is_eq("");
 }

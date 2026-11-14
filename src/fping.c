@@ -919,7 +919,7 @@ int fping_main(int argc, char **argv)
             }
 #endif
 #else
-            printf("%s: cant bind to a particular net interface since SO_BINDTODEVICE is not supported on your os.\n", prog);
+            fprintf(stderr, "%s: cant bind to a particular net interface since SO_BINDTODEVICE is not supported on your os.\n", prog);
             exit(3);
 #endif
             break;
@@ -1038,6 +1038,16 @@ int fping_main(int argc, char **argv)
 
     if (opt.count_on && opt.loop_on) {
         fprintf(stderr, "%s: specify only one of c, l\n", prog);
+        exit(1);
+    }
+
+    if (opt.print_json_on && opt.print_netdata_on) {
+        fprintf(stderr, "%s: specify only one of -J, -N\n", prog);
+        exit(1);
+    }
+
+    if (opt.print_json_on && opt.min_reachable) {
+        fprintf(stderr, "%s: option -J, --json cannot be used with -x or -X\n", prog);
         exit(1);
     }
 
@@ -1464,7 +1474,7 @@ int fping_main(int argc, char **argv)
 #if defined(DEBUG) || defined(_DEBUG)
     perf_cpu_end = clock();
     perf_cpu_time_used = ((double) (perf_cpu_end - perf_cpu_start)) / CLOCKS_PER_SEC;
-    printf("[DEBUG] CPU time used: %f sec\n", perf_cpu_time_used);
+    fprintf(stderr, "[DEBUG] CPU time used: %f sec\n", perf_cpu_time_used);
 #endif /* DEBUG || _DEBUG */
 
     finish();

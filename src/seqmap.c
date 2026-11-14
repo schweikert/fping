@@ -66,6 +66,7 @@ void seqmap_init(int64_t timeout)
     seqmap_map = calloc(SEQMAP_MAXSEQ, sizeof(SEQMAP_VALUE));
     if (seqmap_map == NULL) {
         perror("malloc error (can't allocate seqmap_map)");
+        exit(4);
     }
 }
 
@@ -83,7 +84,7 @@ unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, int64_t t
      * 0, so will be seen as expired */
     next_value = &seqmap_map[seqmap_next_id];
     if (next_value->ping_ts != 0 && timestamp - next_value->ping_ts < seqmap_timeout_in_ns) {
-        fprintf(stderr, "fping error: not enough sequence numbers available! (expire_timeout=%" PRId64 ", host_nr=%d, ping_count=%d, seqmap_next_id=%d)\n",
+        fprintf(stderr, "fping error: not enough sequence numbers available! (expire_timeout=%" PRId64 ", host_nr=%u, ping_count=%u, seqmap_next_id=%u)\n",
             seqmap_timeout_in_ns, host_nr, ping_count, seqmap_next_id);
         exit(4);
     }
@@ -97,7 +98,7 @@ unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, int64_t t
     current_id = seqmap_next_id;
     seqmap_next_id = (seqmap_next_id + 1) % SEQMAP_MAXSEQ;
 
-    dbg_printf("seqmap_add(host: %d, index: %d) -> %d\n", host_nr, ping_count, current_id);
+    dbg_printf("seqmap_add(host: %u, index: %u) -> %u\n", host_nr, ping_count, current_id);
 
     return current_id;
 }
@@ -114,12 +115,12 @@ SEQMAP_VALUE* seqmap_fetch(unsigned int id, int64_t now)
 
     /* verify that value is not expired */
     if (now - value->ping_ts >= seqmap_timeout_in_ns) {
-        dbg_printf("seqmap_fetch(%d) -> host: %d, index: %d -> DISCARDED %ld\n", id, value->host_nr, value->ping_count,
+        dbg_printf("seqmap_fetch(%u) -> host: %u, index: %u -> DISCARDED %" PRId64 "\n", id, value->host_nr, value->ping_count,
                 now - value->ping_ts);
         return NULL;
     }
 
-    dbg_printf("seqmap_fetch(%d) -> host: %d, index: %d\n", id, value->host_nr, value->ping_count);
+    dbg_printf("seqmap_fetch(%u) -> host: %u, index: %u\n", id, value->host_nr, value->ping_count);
 
     return value;
 }

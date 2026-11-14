@@ -295,7 +295,7 @@ int ident6 = 0;
 const int sock_opt_on = 1; /* to activate a socket option */
 int socket4 = -1;
 int socktype4 = -1;
-int using_sock_dgram4 = 0;
+int socket4_strips_ip_header = 0;
 #ifndef IPV6
 int hints_ai_family = AF_INET;
 #else
@@ -457,10 +457,12 @@ int main(int argc, char **argv)
 
     socket4 = open_ping_socket_ipv4(&socktype4);
 #ifdef __linux__
-    /* We only treat SOCK_DGRAM differently on Linux, where the IPv4 header
-     * structure is missing in the message.
+    /* On Linux, unprivileged SOCK_DGRAM ICMP sockets strip the IPv4 header
+     * from received packets (whereas SOCK_RAW and macOS SOCK_DGRAM include it).
      */
-    using_sock_dgram4 = (socktype4 == SOCK_DGRAM);
+    if (socktype4 == SOCK_DGRAM) {
+        socket4_strips_ip_header = 1;
+    }
 #endif
 
 #ifdef IPV6
@@ -577,7 +579,7 @@ int main(int argc, char **argv)
             } else if (strstr(optparse_state.optlongname, "print-tos") != NULL) {
                 opt.print_tos_on = 1;
 #if defined(HAVE_IP_RECVTOS)
-                if (socket4 >= 0 && (socktype4 == SOCK_DGRAM)) {
+                if (socket4 >= 0 && socket4_strips_ip_header) {
                     if (setsockopt(socket4, IPPROTO_IP, IP_RECVTOS, &sock_opt_on, sizeof(sock_opt_on))) {
                         perror("setsockopt IP_RECVTOS");
                     }
@@ -592,11 +594,13 @@ int main(int argc, char **argv)
 #endif
             } else if (strstr(optparse_state.optlongname, "print-ttl") != NULL) {
                 opt.print_ttl_on = 1;
-                if (socket4 >= 0 && (socktype4 == SOCK_DGRAM)) {
+#ifdef IP_RECVTTL
+                if (socket4 >= 0 && socket4_strips_ip_header) {
                     if (setsockopt(socket4, IPPROTO_IP, IP_RECVTTL, &sock_opt_on, sizeof(sock_opt_on))) {
                         perror("setsockopt IP_RECVTTL");
                     }
                 }
+#endif
 #if defined(IPV6) && defined(IPV6_RECVHOPLIMIT)
                 if (socket6 >= 0) {
                     if (setsockopt(socket6, IPPROTO_IPV6, IPV6_RECVHOPLIMIT, &sock_opt_on, sizeof(sock_opt_on))) {
@@ -2323,7 +2327,7 @@ int decode_icmp_ipv4(
     int hlen = 0;
     struct ip *ip = NULL;
 
-    if (!using_sock_dgram4) {
+    if (!socket4_strips_ip_header) {
         ip = (struct ip *)reply_buf;
         ip_header_res->tos = ip->ip_tos;
         ip_header_res->ttl = ip->ip_ttl;
@@ -2635,7 +2639,7 @@ int wait_for_reply(int64_t wait_time)
         if (id != ident4) {
             return 1; /* packet received, but not the one we are looking for! */
         }
-        if (!using_sock_dgram4) {
+        if (!socket4_strips_ip_header) {
             /* do not include IP header in returned size, to be consistent with ping(8) and also
              * with fping with IPv6 hosts */
             result -= ip_hlen;

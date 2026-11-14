@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 75;
+use Test::Command tests => 84;
 use Test::More;
 use JSON::PP qw(decode_json);
 
@@ -109,7 +109,10 @@ $cmd->stderr_is_eq("");
 }
 
 # fping -J -c 1 --print-reply-dst ::1
-{
+SKIP: {
+if ($ENV{SKIP_IPV6}) {
+    skip 'Skip IPv6 tests', 3;
+}
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 --print-reply-dst ::1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"::1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"replyDst":\s"::1"\}\}
@@ -223,4 +226,26 @@ my $decoded = eval { decode_json($out) };
 ok(defined $decoded, 'JSON escaping warning parses as valid JSON');
 is($decoded ? $decoded->{warning}{host} : undef, $bad_host, 'JSON escaping warning round-trips host string');
 ok($decoded && length($decoded->{warning}{message} // '') > 0, 'JSON escaping warning includes message');
+}
+
+# fping -J -x / -X are rejected as mutually exclusive
+{
+my $cmd = Test::Command->new(cmd => ['fping', '-J', '-c', '1', '-x', '1', '127.0.0.1']);
+$cmd->exit_is_num(1, '-J -x 1 exits 1');
+$cmd->stdout_is_eq("", '-J -x 1 stdout is empty');
+$cmd->stderr_is_eq("fping: option -J, --json cannot be used with -x or -X\n", '-J -x 1 reports mutual exclusion on stderr');
+}
+{
+my $cmd = Test::Command->new(cmd => ['fping', '-J', '-c', '1', '-X', '1', '127.0.0.1']);
+$cmd->exit_is_num(1, '-J -X 1 exits 1');
+$cmd->stdout_is_eq("", '-J -X 1 stdout is empty');
+$cmd->stderr_is_eq("fping: option -J, --json cannot be used with -x or -X\n", '-J -X 1 reports mutual exclusion on stderr');
+}
+
+# fping -J -N is rejected as mutually exclusive
+{
+my $cmd = Test::Command->new(cmd => ['fping', '-J', '-N', '-c', '1', '127.0.0.1']);
+$cmd->exit_is_num(1, '-J -N exits 1');
+$cmd->stdout_is_eq("", '-J -N stdout is empty');
+$cmd->stderr_is_eq("fping: specify only one of -J, -N\n", '-J -N reports mutual exclusion on stderr');
 }

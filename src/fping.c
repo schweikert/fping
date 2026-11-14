@@ -606,11 +606,17 @@ int main(int argc, char **argv)
 #endif
             } else if (strstr(optparse_state.optlongname, "print-reply-dst") != NULL) {
                 opt.print_reply_dst_on = 1;
-#if defined(IPV6) && defined(IPV6_RECVPKTINFO)
+#if defined(IPV6)
                 if (socket6 >= 0) {
+#if defined(IPV6_RECVPKTINFO)
                     if (setsockopt(socket6, IPPROTO_IPV6, IPV6_RECVPKTINFO, &sock_opt_on, sizeof(sock_opt_on))) {
                         perror("setsockopt IPV6_RECVPKTINFO");
                     }
+# elif defined(IPV6_PKTINFO)
+                    if (setsockopt(socket6, IPPROTO_IPV6, IPV6_PKTINFO, &sock_opt_on, sizeof(sock_opt_on))) {
+                      perror("setsockopt IPV6_PKTINFO");
+                    }
+#endif
                 }
 #endif
             } else if (strstr(optparse_state.optlongname, "seqmap-timeout") != NULL) {

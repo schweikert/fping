@@ -104,10 +104,10 @@ jobs:
           sudo apt-get install -y tcpdump net-tools
 
       - name: Test asymmetric routing (--oiface)
-        run: sudo ci/test-oiface.sh
+        run: sudo ci/unsafe-test-oiface.sh
 
       - name: Test asymmetric ipv6 routing (--oiface)
-        run: sudo ci/test-oiface-ipv6.sh
+        run: sudo ci/unsafe-test-oiface-ipv6.sh
 
   Test-Alpine:
     runs-on: ubuntu-latest

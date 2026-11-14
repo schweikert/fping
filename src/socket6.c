@@ -91,8 +91,7 @@ int open_ping_socket_ipv6(int *socktype)
 
         if ((flags = fcntl(s, F_GETFL, 0)) < 0)
             perror("fcntl");
-
-        if (fcntl(s, F_SETFL, flags | O_NONBLOCK) < 0)
+        else if (fcntl(s, F_SETFL, flags | O_NONBLOCK) < 0)
             perror("fcntl");
     }
 

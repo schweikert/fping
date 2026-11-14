@@ -970,8 +970,17 @@ int main(int argc, char **argv)
         crash_and_burn("can't create socket (must run as root?)");
     }
 #else
-    if ((socket4 < 0 && socket6 < 0) || (hints_ai_family == AF_INET6 && socket6 < 0)) {
+    if ((socket4 < 0 && socket6 < 0) ||
+        (hints_ai_family == AF_INET6 && socket6 < 0) ||
+        (hints_ai_family == AF_INET && socket4 < 0)) {
         crash_and_burn("can't create socket (must run as root?)");
+    }
+    if (hints_ai_family == AF_UNSPEC) {
+        if (socket4 < 0) {
+            hints_ai_family = AF_INET6;
+        } else if (socket6 < 0) {
+            hints_ai_family = AF_INET;
+        }
     }
 #endif
 

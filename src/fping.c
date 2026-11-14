@@ -1990,11 +1990,11 @@ FPING_NORETURN void finish(void)
 
     if (opt.min_reachable) {
         if ((num_hosts - num_unreachable) >= opt.min_reachable) {
-            printf("Enough hosts reachable (required: %d, reachable: %d)\n", opt.min_reachable, num_hosts - num_unreachable);
+            printf("Enough hosts reachable (required: %u, reachable: %d)\n", opt.min_reachable, num_hosts - num_unreachable);
             exit(0);
         }
         else {
-            printf("Not enough hosts reachable (required: %d, reachable: %d)\n", opt.min_reachable, num_hosts - num_unreachable);
+            printf("Not enough hosts reachable (required: %u, reachable: %d)\n", opt.min_reachable, num_hosts - num_unreachable);
             exit(1);
         }
     }
@@ -3204,7 +3204,7 @@ FPING_NORETURN void usage(int is_error)
     fprintf(out, "                      (give start and end IP in the target list, or a CIDR address)\n");
     fprintf(out, "                      (ex. %s -g 192.168.1.0 192.168.1.255 or %s -g 192.168.1.0/24)\n", prog, prog);
     fprintf(out, "   -H, --ttl=N        set the IP TTL value (Time To Live hops)\n");
-    fprintf(out, "   -i, --interval=MSEC  interval between sending ping packets (default: %.0f ms)\n", opt.interval / 1e6);
+    fprintf(out, "   -i, --interval=MSEC  interval between sending ping packets (default: %d ms)\n", DEFAULT_INTERVAL);
 #ifdef SO_BINDTODEVICE
     fprintf(out, "   -I, --iface=IFACE  bind to a particular interface\n");
 #endif
@@ -3220,12 +3220,12 @@ FPING_NORETURN void usage(int is_error)
     fprintf(out, "       --frag         set the Fragment flag\n");
     fprintf(out, "   -O, --tos=N        set the type of service (tos) flag on the ICMP packets\n");
     fprintf(out, "   -p, --period=MSEC  interval between ping packets to one target (in ms)\n");
-    fprintf(out, "                      (in loop and count modes, default: %.0f ms)\n", opt.perhost_interval / 1e6);
+    fprintf(out, "                      (in loop and count modes, default: %d ms)\n", DEFAULT_PERHOST_INTERVAL);
     fprintf(out, "   -r, --retry=N      number of retries (default: %d)\n", DEFAULT_RETRY);
     fprintf(out, "   -R, --random       random packet data (to foil link data compression)\n");
     fprintf(out, "   -S, --src=IP       set source address\n");
-    fprintf(out, "       --seqmap-timeout=MSEC sequence number mapping timeout (default: %.0f ms)\n", opt.seqmap_timeout / 1e6);
-    fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (default: %.0f ms,\n", opt.timeout / 1e6);
+    fprintf(out, "       --seqmap-timeout=MSEC sequence number mapping timeout (default: %d ms)\n", DEFAULT_SEQMAP_TIMEOUT);
+    fprintf(out, "   -t, --timeout=MSEC individual target initial timeout (default: %d ms,\n", DEFAULT_TIMEOUT);
     fprintf(out, "                      except with -l/-c/-C, where it's the -p period up to 2000 ms)\n");
     fprintf(out, "       --check-source discard replies not from target address\n");
     fprintf(out, "       --icmp-timestamp use ICMP Timestamp instead of ICMP Echo\n");

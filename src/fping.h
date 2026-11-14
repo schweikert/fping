@@ -99,8 +99,6 @@ extern int64_t max_reply, min_reply, total_replies, sum_replies;
 /* fping.c */
 void add_name(char *name);
 void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_len);
-char *na_cat(char *name, struct in_addr ipaddr);
-char *get_host_by_address(struct in_addr in);
 int send_ping(HOST_ENTRY *h, int index);
 FPING_NORETURN void usage(int);
 int wait_for_reply(int64_t);
@@ -131,7 +129,6 @@ void update_current_time();
 int64_t get_wallclock_ns(int64_t timestamp_ns);
 FPING_NORETURN void crash_and_burn( char *message );
 FPING_NORETURN void errno_crash_and_burn( char *message );
-int in_cksum( unsigned short *p, int n );
 
 /* socket.c */
 int  open_ping_socket_ipv4(int *socktype);

@@ -6,11 +6,6 @@ use File::Temp qw/ tempdir /;
 use Test::Command;
 use Test::More;
 
-if( $^O eq 'darwin' ) {
-    plan skip_all => 'Test irrelevant on MacOS';
-    exit 0;
-}
-
 sub get_ping_gid_range {
     open FD, "/proc/sys/net/ipv4/ping_group_range" or return ();
     chomp(my $line = <FD>);
@@ -30,8 +25,8 @@ copy($fping_bin, $fping_copy);
 chmod 0755, $fping_copy;
 
 # Determine what test to run, based on whether unprivileged
-# pings are allowed.
-if(@allowed && scalar grep { $_ >= $allowed[0] && $_ <= $allowed[1] } @gids) {
+# pings are allowed (always allowed via SOCK_DGRAM on macOS).
+if($^O eq 'darwin' || (@allowed && scalar grep { $_ >= $allowed[0] && $_ <= $allowed[1] } @gids)) {
     diag('test unprivileged mode');
     test_unprivileged_works();
 }
@@ -40,7 +35,7 @@ else {
 }
 
 sub test_unprivileged_works {
-    plan tests => 24;
+    plan tests => 30;
 
     {
         my $cmd = Test::Command->new(cmd => "$fping_copy 127.0.0.1");
@@ -50,11 +45,16 @@ sub test_unprivileged_works {
     }
     {
         my $cmd = Test::Command->new(cmd => "$fping_copy --print-reply-dst 127.0.0.1");
+        # macOS preserves the IP header on SOCK_DGRAM, whereas Linux strips it (socket4_strips_ip_header)
+        my $expected_reply_dst = $^O eq 'darwin' ? '127.0.0.1' : 'unknown';
         $cmd->exit_is_num(0);
-        $cmd->stdout_like(qr{127\.0\.0\.1 is alive \(Reply-DST unknown\)\n});
+        $cmd->stdout_like(qr{127\.0\.0\.1 is alive \(Reply-DST \Q$expected_reply_dst\E\)\n});
         $cmd->stderr_is_eq("");
     }
-    {
+    SKIP: {
+        if($ENV{SKIP_IPV6}) {
+            skip 'Skip IPv6 tests', 3;
+        }
         my $cmd = Test::Command->new(cmd => "$fping_copy --print-reply-dst ::1");
         $cmd->exit_is_num(0);
         $cmd->stdout_like(qr{::1 is alive \(Reply-DST ::1\)\n});
@@ -66,10 +66,28 @@ sub test_unprivileged_works {
         $cmd->stdout_like(qr{127\.0\.0\.1 is alive \(TOS \d+\)\n});
         $cmd->stderr_is_eq("");
     }
+    SKIP: {
+        if($ENV{SKIP_IPV6}) {
+            skip 'Skip IPv6 tests', 3;
+        }
+        my $cmd = Test::Command->new(cmd => "$fping_copy --print-tos ::1");
+        $cmd->exit_is_num(0);
+        $cmd->stdout_like(qr{::1 is alive \(TOS \d+\)\n});
+        $cmd->stderr_is_eq("");
+    }
     {
         my $cmd = Test::Command->new(cmd => "$fping_copy --print-ttl 127.0.0.1");
         $cmd->exit_is_num(0);
-        $cmd->stdout_like(qr{127\.0\.0\.1 is alive \(TTL \d+\)\n});
+        $cmd->stdout_like(qr{127\.0\.0\.1 is alive \(TTL [1-9]\d*\)\n});
+        $cmd->stderr_is_eq("");
+    }
+    SKIP: {
+        if($ENV{SKIP_IPV6}) {
+            skip 'Skip IPv6 tests', 3;
+        }
+        my $cmd = Test::Command->new(cmd => "$fping_copy --print-ttl ::1");
+        $cmd->exit_is_num(0);
+        $cmd->stdout_like(qr{::1 is alive \(TTL [1-9]\d*\)\n});
         $cmd->stderr_is_eq("");
     }
     SKIP: {

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 267;
+use Test::Command tests => 270;
 use Test::More;
 
 # some options require a numeric argument
@@ -68,6 +68,14 @@ SKIP: {
         $cmd->stdout_is_eq("");
         $cmd->stderr_like(qr{Usage:});
     }
+}
+
+# non-ASCII high-bit byte in numeric argument must not trigger signed-char UB in isspace()
+{
+    my $cmd = Test::Command->new(cmd => ['fping', '-c', "\x801"]);
+    $cmd->exit_is_num(1, 'fping -c high-bit byte exits 1');
+    $cmd->stdout_is_eq("", 'fping -c high-bit byte stdout empty');
+    $cmd->stderr_like(qr{Usage:}, 'fping -c high-bit byte prints usage');
 }
 
 # fping -g strict mask

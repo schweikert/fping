@@ -81,7 +81,7 @@ SKIP: {
 
 # fping -l
 {
-my $cmd = Test::Command->new(cmd => '(sleep 0.5; pkill -INT fping)& fping -p 100 -l 127.0.0.1');
+my $cmd = Test::Command->new(cmd => '(sleep 0.5; pkill -INT fping)& fping -p 100 -t 2000 -l 127.0.0.1');
 $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\)
 127\.0\.0\.1 : \[1\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\)
 });
@@ -89,7 +89,7 @@ $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg,
 
 # fping -l --print-tos --print-ttl
 {
-my $cmd = Test::Command->new(cmd => '(sleep 0.5; pkill -INT fping)& fping -p 100 --print-ttl --print-tos -l 127.0.0.1');
+my $cmd = Test::Command->new(cmd => '(sleep 0.5; pkill -INT fping)& fping -p 100 -t 2000 --print-ttl --print-tos -l 127.0.0.1');
 $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\) \(TOS \d+\) \(TTL \d+\)
 127\.0\.0\.1 : \[1\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\) \(TOS \d+\) \(TTL \d+\)
 });
@@ -108,7 +108,7 @@ $cmd->stderr_is_eq("");
 
 # fping -l with SIGQUIT
 {
-my $cmd = Test::Command->new(cmd => '(sleep 0.5; pkill -QUIT fping; sleep 0.5; pkill -INT fping)& fping -p 100 -l 127.0.0.1');
+my $cmd = Test::Command->new(cmd => '(sleep 0.5; pkill -QUIT fping; sleep 0.5; pkill -INT fping)& fping -p 100 -t 2000 -l 127.0.0.1');
 $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\)
 127\.0\.0\.1 : \[1\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\)
 127\.0\.0\.1 : \[2\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\)

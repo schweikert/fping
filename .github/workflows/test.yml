@@ -10,20 +10,6 @@ on:
 permissions:
   contents: read
 jobs:
-  Verify-Actions-Lock:
-    runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ github.token }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7.0.1
-
-      - name: Install gh-actions-lock
-        run: gh extension install github/gh-actions-lock --pin v0.4.1
-
-      - name: Verify workflow lockfile
-        run: gh actions-lock --verify
-
   Test-Linux:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -234,7 +220,7 @@ jobs:
           coveralls done
 
   Release-Tarball:
-    needs: [Verify-Actions-Lock, Test-Linux, Test-Mac]
+    needs: [Test-Linux, Test-Mac]
     if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     steps:

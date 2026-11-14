@@ -7,6 +7,33 @@
 #include <stdio.h>
 #include <inttypes.h>
 
+int calc_pct(int64_t part, int64_t total)
+{
+    if (total <= 0 || part <= 0)
+        return 0;
+    if (part >= total)
+        return 100;
+    return (int)((part * 100) / total);
+}
+
+int calc_loss_pct(int64_t sent, int64_t recv)
+{
+    if (sent <= 0 || recv >= sent)
+        return 0;
+    if (recv <= 0)
+        return 100;
+    return calc_pct(sent - recv, sent);
+}
+
+int64_t calc_outage_ms(int64_t sent, int64_t recv, int64_t perhost_interval_ns)
+{
+    if (sent <= recv || recv < 0 || perhost_interval_ns <= 0)
+        return 0;
+    int64_t lost = sent - recv;
+    return lost * (perhost_interval_ns / 1000000)
+        + (lost * (perhost_interval_ns % 1000000)) / 1000000;
+}
+
 /************************************************************
 
   Function: print_per_system_stats
@@ -22,8 +49,8 @@
 
 void print_per_system_stats(void)
 {
-    int i, j, outage_ms;
-    int64_t avg;
+    int i, j;
+    int64_t avg, outage_ms;
     HOST_ENTRY *h;
     int64_t resp;
 
@@ -46,12 +73,12 @@ void print_per_system_stats(void)
         }
         else {
             fprintf(stderr, " xmt/rcv/%%loss = %d/%d/%d%%",
-                h->num_sent, h->num_recv, h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
+                h->num_sent, h->num_recv, calc_loss_pct(h->num_sent, h->num_recv));
 
             if (opt.outage_on) {
                 /* Time outage total */
-                outage_ms = (h->num_sent - h->num_recv) * opt.perhost_interval / 1e6;
-                fprintf(stderr, ", outage(ms) = %d", outage_ms);
+                outage_ms = calc_outage_ms(h->num_sent, h->num_recv, opt.perhost_interval);
+                fprintf(stderr, ", outage(ms) = %" PRId64, outage_ms);
             }
 
             if (h->num_recv) {
@@ -81,8 +108,8 @@ void print_per_system_stats(void)
 
 void print_per_system_stats_json(void)
 {
-    int i, j, outage_ms;
-    int64_t avg;
+    int i, j;
+    int64_t avg, outage_ms;
     HOST_ENTRY *h;
     int64_t resp;
 
@@ -115,12 +142,12 @@ void print_per_system_stats_json(void)
         else {
             fprintf(stdout, "\"xmt\": %d, ", h->num_sent);
             fprintf(stdout, "\"rcv\": %d, ", h->num_recv);
-            fprintf(stdout, "\"loss\": %d", h->num_sent > 0 ? ((h->num_sent - h->num_recv) * 100) / h->num_sent : 0);
+            fprintf(stdout, "\"loss\": %d", calc_loss_pct(h->num_sent, h->num_recv));
 
             if (opt.outage_on) {
                 /* Time outage total */
-                outage_ms = (h->num_sent - h->num_recv) * opt.perhost_interval / 1e6;
-                fprintf(stdout, ", \"outage(ms)\": %d", outage_ms);
+                outage_ms = calc_outage_ms(h->num_sent, h->num_recv, opt.perhost_interval);
+                fprintf(stdout, ", \"outage(ms)\": %" PRId64, outage_ms);
             }
 
             if (h->num_recv) {

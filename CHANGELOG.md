@@ -37,6 +37,7 @@ Next
 - Fix F_GETFL error handling in open_ping_socket_ipv4() and open_ping_socket_ipv6() (#524, thanks @Wybuck)
 - Fix `setsockopt IP_RECVTOS: Invalid argument` error with `--print-tos` on macOS without root privileges (#527)
 - Fix sockaddr bounds, FD_SETSIZE, strdup() OOM, and unsigned char ctype defensive guards
+- Guard `--oiface` by `IP_PKTINFO`/`IPV6_PKTINFO` support and target address family
 
 fping 5.5 (2025-12-31)
 ======================

@@ -443,6 +443,9 @@ int main(int argc, char **argv)
     char *endptr;
     const uid_t suid = geteuid();
     int tos = 0;
+#if defined(IP_PKTINFO) || (defined(IPV6) && defined(IPV6_PKTINFO))
+    const char *oiface = NULL;
+#endif
     struct optparse optparse_state;
 #ifdef USE_SIGACTION
     struct sigaction act;
@@ -628,18 +631,11 @@ int main(int argc, char **argv)
                 opt.seqmap_timeout = strtod_strict(optparse_state.optarg) * 1000000;
             } else if (strstr(optparse_state.optlongname, "oiface") != NULL) {
                 opt.oiface_on = 1;
-#ifdef IP_PKTINFO
-                if (socket4 >= 0) {
-                    socket_set_outgoing_iface_ipv4(optparse_state.optarg);
-                }
-#ifdef IPV6
-                if (socket6 >= 0) {
-                    socket_set_outgoing_iface_ipv6(optparse_state.optarg);
-                }
-#endif
+#if defined(IP_PKTINFO) || (defined(IPV6) && defined(IPV6_PKTINFO))
+                oiface = optparse_state.optarg;
 #else
                 fprintf(stderr, "%s: --oiface is not supported on this platform (IP_PKTINFO unavailable)\n", prog);
-                exit(3);
+                exit(1);
 #endif
             } else if (strstr(optparse_state.optlongname, "frag") != NULL) {
 #if defined(IP_MTU_DISCOVER) || defined(IP_DONTFRAG)
@@ -991,6 +987,33 @@ int main(int argc, char **argv)
         fprintf(stderr, "%s: specify only --oiface or -I, --iface\n", prog);
         exit(1);
     }
+
+#if defined(IP_PKTINFO) || (defined(IPV6) && defined(IPV6_PKTINFO))
+    if (opt.oiface_on) {
+#ifdef IP_PKTINFO
+        if (socket4 >= 0 && hints_ai_family != AF_INET6) {
+            socket_set_outgoing_iface_ipv4(oiface);
+        }
+#else
+        if (hints_ai_family == AF_INET) {
+            fprintf(stderr, "%s: --oiface is not supported for IPv4 on this platform (IP_PKTINFO unavailable)\n", prog);
+            exit(1);
+        }
+#endif
+#ifdef IPV6
+#ifdef IPV6_PKTINFO
+        if (socket6 >= 0 && hints_ai_family != AF_INET) {
+            socket_set_outgoing_iface_ipv6(oiface);
+        }
+#else
+        if (hints_ai_family == AF_INET6) {
+            fprintf(stderr, "%s: --oiface is not supported for IPv6 on this platform (IPV6_PKTINFO unavailable)\n", prog);
+            exit(1);
+        }
+#endif
+#endif
+    }
+#endif
 
     if (opt.count_on && opt.loop_on) {
         fprintf(stderr, "%s: specify only one of c, l\n", prog);
@@ -2170,6 +2193,9 @@ int receive_packet(int64_t wait_time,
   )
 {
     struct timeval to;
+#if defined(IPV6) && !defined(IPV6_PKTINFO)
+    (void)recv_dst_addr_ipv6;
+#endif
     int s = 0;
     int recv_len;
     static union {
@@ -2254,11 +2280,13 @@ packet_received:
             if (cmsg->cmsg_level == IPPROTO_IPV6 && cmsg->cmsg_type == IPV6_HOPLIMIT) {
                 memcpy(ip_header_ttl, CMSG_DATA(cmsg), sizeof(*ip_header_ttl));
             }
+#ifdef IPV6_PKTINFO
             if (cmsg->cmsg_level == IPPROTO_IPV6 && cmsg->cmsg_type == IPV6_PKTINFO) {
                 struct in6_pktinfo *pktinfo = (struct in6_pktinfo *)CMSG_DATA(cmsg);
                 if (recv_dst_addr_ipv6)
                     memcpy(recv_dst_addr_ipv6, &pktinfo->ipi6_addr, sizeof(*recv_dst_addr_ipv6));
             }
+#endif
 #endif
         }
     }
@@ -2928,6 +2956,23 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
     int n;
     int64_t *i;
 
+#if !defined(IP_PKTINFO) || (defined(IPV6) && !defined(IPV6_PKTINFO))
+    if (opt.oiface_on) {
+#ifndef IP_PKTINFO
+        if (ipaddr->sa_family == AF_INET) {
+            fprintf(stderr, "%s: --oiface is not supported for IPv4 on this platform (IP_PKTINFO unavailable)\n", prog);
+            exit(1);
+        }
+#endif
+#if defined(IPV6) && !defined(IPV6_PKTINFO)
+        if (ipaddr->sa_family == AF_INET6) {
+            fprintf(stderr, "%s: --oiface is not supported for IPv6 on this platform (IPV6_PKTINFO unavailable)\n", prog);
+            exit(1);
+        }
+#endif
+    }
+#endif
+
     p = (HOST_ENTRY *)calloc(1, sizeof(HOST_ENTRY));
     if (!p)
         crash_and_burn("can't allocate HOST_ENTRY");
@@ -3231,7 +3276,7 @@ FPING_NORETURN void usage(int is_error)
 #ifdef SO_BINDTODEVICE
     fprintf(out, "   -I, --iface=IFACE  bind to a particular interface\n");
 #endif
-#ifdef IP_PKTINFO
+#if defined(IP_PKTINFO) || (defined(IPV6) && defined(IPV6_PKTINFO))
     fprintf(out, "       --oiface=IFACE  send pings via a specific outgoing interface (receive from any)\n");
 #endif
 #ifdef SO_MARK

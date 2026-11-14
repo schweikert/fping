@@ -94,7 +94,9 @@ void print_per_system_stats_json(void)
         else
             fprintf(stdout, "{\"summary\": {");
 
-        fprintf(stdout, "\"host\": \"%s\", ", h->host);
+        fprintf(stdout, "\"host\": ");
+        print_json_string(stdout, h->host);
+        fprintf(stdout, ", ");
 
         if (opt.report_all_rtts_on) {
             fprintf(stdout, "\"values\": [");

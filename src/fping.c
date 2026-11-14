@@ -2864,7 +2864,11 @@ void add_name(char *name)
 
         // Handle JSON output for invalid hosts
         if (opt.print_json_on) {
-            fprintf(stdout, "{\"warning\": {\"host\": \"%s\", \"message\": \"%s\"}}\n", name, gai_strerror(ret_ga));
+            fprintf(stdout, "{\"warning\": {\"host\": ");
+            print_json_string(stdout, name);
+            fprintf(stdout, ", \"message\": ");
+            print_json_string(stdout, gai_strerror(ret_ga));
+            fprintf(stdout, "}}\n");
             return;
         }
 

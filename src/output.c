@@ -71,6 +71,47 @@ const char *sprint_tm(int64_t ns)
     return (buf);
 }
 
+void print_json_string(FILE *out, const char *s)
+{
+    const unsigned char *p = (const unsigned char *)(s ? s : "");
+
+    fputc('"', out);
+    for (; *p; p++) {
+        unsigned char c = *p;
+        switch (c) {
+            case '"':
+                fputs("\\\"", out);
+                break;
+            case '\\':
+                fputs("\\\\", out);
+                break;
+            case '\b':
+                fputs("\\b", out);
+                break;
+            case '\f':
+                fputs("\\f", out);
+                break;
+            case '\n':
+                fputs("\\n", out);
+                break;
+            case '\r':
+                fputs("\\r", out);
+                break;
+            case '\t':
+                fputs("\\t", out);
+                break;
+            default:
+                if (c < 0x20) {
+                    fprintf(out, "\\u%04x", c);
+                } else {
+                    fputc(c, out);
+                }
+                break;
+        }
+    }
+    fputc('"', out);
+}
+
 /************************************************************
 
   Function: print_human_readable_time from current_time_ns
@@ -141,7 +182,9 @@ void print_recv(HOST_ENTRY *h, int64_t recv_time, int result, int this_count, in
         if (opt.timestamp_on)
             print_timestamp_format(recv_time, opt.timestamp_format);
 
-        printf("\"host\": \"%s\", ", h->host);
+        printf("\"host\": ");
+        print_json_string(stdout, h->host);
+        printf(", ");
         printf("\"seq\": %d, ", this_count);
         printf("\"size\": %d, ", result);
         printf("\"rtt\": %s", sprint_tm(this_reply));
@@ -178,7 +221,9 @@ void print_timeout(HOST_ENTRY *h, int ping_index) {
         if (opt.timestamp_on)
             print_timestamp_format(current_time_ns, opt.timestamp_format);
 
-        printf("\"host\": \"%s\", ", h->host);
+        printf("\"host\": ");
+        print_json_string(stdout, h->host);
+        printf(", ");
         printf("\"seq\": %d", ping_index);
         printf("}}\n");
         return;
@@ -457,7 +502,9 @@ void print_per_system_splits_json(void)
         h = table[i];
         fprintf(stdout, "{\"intSum\": {");
         fprintf(stdout, "\"time\": %" PRId64 ",", curr_time_s);
-        fprintf(stdout, "\"host\": \"%s\", ", h->host);
+        fprintf(stdout, "\"host\": ");
+        print_json_string(stdout, h->host);
+        fprintf(stdout, ", ");
         fprintf(stdout, "\"xmt\": %d, ", h->num_sent_i);
         fprintf(stdout, "\"rcv\": %d, ", h->num_recv_i);
         fprintf(stdout, "\"loss\": %d", h->num_sent_i > 0 ? ((h->num_sent_i - h->num_recv_i) * 100) / h->num_sent_i : 0);

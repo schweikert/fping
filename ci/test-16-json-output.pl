@@ -1,7 +1,8 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 69;
+use Test::Command tests => 75;
 use Test::More;
+use JSON::PP qw(decode_json);
 
 # fping -J -c 2 127.0.0.1
 {
@@ -208,4 +209,18 @@ my $cmd = Test::Command->new(cmd => "fping -J 127.0.0.1");
 $cmd->exit_is_num(1);
 $cmd->stdout_is_eq("");
 $cmd->stderr_is_eq("fping: option -J, --json requires -c, -C, or -l\n");
+}
+
+# fping -J escapes quotes, backslashes, and control characters in host warnings
+{
+my $bad_host = "bad\"\\slash\x01\thost.invalid";
+my $cmd = Test::Command->new(cmd => ['fping', '-J', '-c', '1', '-q', $bad_host]);
+$cmd->exit_is_num(2, 'JSON escaping warning exits 2');
+$cmd->stdout_like(qr/\\"\\\\slash\\u0001\\thost\.invalid/, 'JSON escaping warning uses short and \\u0001 escapes');
+$cmd->stderr_is_eq("", 'JSON escaping warning stderr empty');
+my $out = $cmd->stdout_value;
+my $decoded = eval { decode_json($out) };
+ok(defined $decoded, 'JSON escaping warning parses as valid JSON');
+is($decoded ? $decoded->{warning}{host} : undef, $bad_host, 'JSON escaping warning round-trips host string');
+ok($decoded && length($decoded->{warning}{message} // '') > 0, 'JSON escaping warning includes message');
 }

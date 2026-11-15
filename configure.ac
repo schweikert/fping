@@ -151,6 +151,11 @@ AC_CHECK_HEADERS([unistd.h sys/file.h stdlib.h sys/select.h])
 AC_CHECK_DECL([MSG_DONTWAIT], [AC_DEFINE(HAVE_MSG_DONTWAIT, [1], [MSG_DONTWAIT is defined])], [], [#include <sys/types.h>
 #include <sys/socket.h>])
 
+dnl Check for struct in_pktinfo.ipi_spec_dst (missing on NetBSD, Cygwin, AIX).
+AC_CHECK_MEMBERS([struct in_pktinfo.ipi_spec_dst], [], [], [#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>])
+
 dnl Probe compiler warning flags (GCC and Clang set GCC=yes).
 dnl Keep compatible with AC_PREREQ(2.59): no AX_CHECK_COMPILE_FLAG or AS_VAR_IF.
 dnl Omit user CFLAGS during probing so unrelated user flags (e.g. -w or linker

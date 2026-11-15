@@ -53,7 +53,7 @@ size_t ping_pkt_size_ipv4;
 /* Interface index for outgoing packets (0 = not set, use routing table) */
 static unsigned int outgoing_iface_idx_ipv4 = 0;
 
-/* Source address for outgoing packets (used to populate ipi_spec_dst) */
+/* Source address for outgoing packets (used to populate ipi_spec_dst or ipi_addr) */
 static struct in_addr outgoing_src_addr_ipv4;
 static int outgoing_src_addr_set_ipv4 = 0;
 #endif
@@ -111,7 +111,7 @@ void socket_set_src_addr_ipv4(int s, struct in_addr* src_addr, int *ident)
     socklen_t len = sizeof(sa);
 
 #ifdef IP_PKTINFO
-    /* Remember source address so we can set ipi_spec_dst in sendmsg() */
+    /* Remember source address so we can set ipi_spec_dst or ipi_addr in sendmsg() */
     outgoing_src_addr_ipv4 = *src_addr;
     outgoing_src_addr_set_ipv4 = 1;
 #endif
@@ -215,7 +215,11 @@ int socket_sendto_ping_ipv4(int s, struct sockaddr* saddr, socklen_t saddr_len, 
         memset(pktinfo, 0, sizeof(*pktinfo));
         pktinfo->ipi_ifindex = outgoing_iface_idx_ipv4;
         if (outgoing_src_addr_set_ipv4) {
+#ifdef HAVE_STRUCT_IN_PKTINFO_IPI_SPEC_DST
             pktinfo->ipi_spec_dst = outgoing_src_addr_ipv4;
+#else
+            pktinfo->ipi_addr = outgoing_src_addr_ipv4;
+#endif
         }
 
         return sendmsg(s, &msg, 0);

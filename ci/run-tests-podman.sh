@@ -213,10 +213,12 @@ fi
 chown root:root /tmp/fping/src/fping
 chmod u+s /tmp/fping/src/fping
 
+RUN_ALL=0
 PL_TESTS=()
 UNSAFE_PL_TESTS=()
 SH_TESTS=()
 if [ $# -eq 0 ]; then
+    RUN_ALL=1
     while IFS= read -r f; do
         PL_TESTS+=("$f")
     done < <(cd /tmp/fping && ls ci/test-*.pl | grep -v internet-hosts)
@@ -262,12 +264,29 @@ if [ "${#UNSAFE_PL_TESTS[@]}" -gt 0 ]; then
     ' _ "${UNSAFE_PL_TESTS[@]}"
 fi
 
-for sh_test in ${SH_TESTS[@]+"${SH_TESTS[@]}"}; do
-    echo "==> Running $sh_test..."
+run_sh_test() {
     sudo -u runner -- bash -euo pipefail -c '
         cd /tmp/fping
         sudo env "PATH=/tmp/fping/src:$PATH" FPING_RUN_UNSAFE_TESTS=1 bash "$1"
-    ' _ "$sh_test"
+    ' _ "$1"
+}
+
+for sh_test in ${SH_TESTS[@]+"${SH_TESTS[@]}"}; do
+    echo "==> Running $sh_test..."
+    if [ "$RUN_ALL" -eq 1 ]; then
+        log_file="$(mktemp)"
+        if run_sh_test "$sh_test" >"$log_file" 2>&1; then
+            echo "==> PASS: $sh_test"
+            rm -f "$log_file"
+        else
+            echo "==> FAIL: $sh_test" >&2
+            cat "$log_file" >&2
+            rm -f "$log_file"
+            exit 1
+        fi
+    else
+        run_sh_test "$sh_test"
+    fi
 done
 CONTAINER_EOF
 

@@ -1,8 +1,59 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 92;
+use Test::Command tests => 209;
 use Test::More;
+use File::Temp;
 use JSON::PP qw(decode_json);
+
+# Validate LF-framed JSONL where each line is a 1-key fping JSON object
+# envelope (e.g. {"resp": {...}}). Emits 2 assertions.
+sub decode_jsonl_ok {
+    my ($stdout, $label) = @_;
+    $stdout //= '';
+    my $ends_nl = length($stdout) > 0 && substr($stdout, -1) eq "\n";
+    ok($ends_nl, "$label ends with newline");
+    # Limit -1 preserves trailing empty fields; popping the final LF leaves extra blank lines visible.
+    my @lines = split /\n/, $stdout, -1;
+    pop @lines if $ends_nl;
+    my @docs;
+    my @errors;
+    if (!@lines) {
+        push @errors, 'empty output';
+    }
+    for my $i (0 .. $#lines) {
+        my $line = $lines[$i];
+        if ($line eq '') {
+            push @errors, "line " . ($i + 1) . ": empty line";
+            next;
+        }
+        if (substr($line, -1) eq "\r") {
+            push @errors, "line " . ($i + 1) . ": trailing CR";
+            next;
+        }
+        my ($doc, $eval_err);
+        {
+            local $@;
+            $doc = eval { decode_json($line) };
+            $eval_err = $@;
+        }
+        if ($eval_err || !defined($doc) || ref($doc) ne 'HASH') {
+            my $err = $eval_err ? $eval_err : 'not a JSON object';
+            $err =~ s/\s+$//;
+            push @errors, "line " . ($i + 1) . ": $err ($line)";
+            next;
+        }
+        # Enforce fping's {"<type>": {...}} envelope to catch malformed or merged records.
+        my @keys = keys %$doc;
+        if (@keys != 1 || ref($doc->{$keys[0]}) ne 'HASH') {
+            push @errors, "line " . ($i + 1) . ": expected 1-key JSON object envelope ($line)";
+            next;
+        }
+        push @docs, $doc;
+    }
+    ok(!@errors, "$label parses all lines as valid JSON objects")
+        or diag(join("\n", @errors));
+    return @docs;
+}
 
 # fping -J -c 2 127.0.0.1
 {
@@ -12,18 +63,20 @@ $cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":
 \{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s1,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -c 2 127.0.0.1');
 }
 
 # fping -J -c 1 --icmp-timestamp 127.0.0.1
 SKIP: {
 if($^O eq 'darwin') {
-    skip 'On macOS, this test is unreliable', 3;
+    skip 'On macOS, this test is unreliable', 5;
 }
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 --icmp-timestamp 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"timestamps":\s\{"originate":\s\d+,\s"receive":\s\d+,\s"transmit":\s\d+,\s"localreceive":\s\d+\}\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -c 1 --icmp-timestamp 127.0.0.1');
 }
 
 # fping -J -c 1 --print-ttl 127.0.0.1
@@ -33,6 +86,7 @@ $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"ttl":\s\d+\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -c 1 --print-ttl 127.0.0.1');
 }
 
 # fping -J -c 1 --print-tos 127.0.0.1
@@ -42,6 +96,7 @@ $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"tos":\s\d+\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -c 1 --print-tos 127.0.0.1');
 }
 
 # fping -J -c 1 --print-ttl --print-tos 127.0.0.1
@@ -51,6 +106,7 @@ $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"tos":\s\d+,\s"ttl":\s\d+\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -c 1 --print-ttl --print-tos 127.0.0.1');
 }
 
 # fping -J -c 1 192.0.2.47
@@ -60,6 +116,7 @@ $cmd->exit_is_num(1);
 $cmd->stdout_like(qr/^\{"timeout":\s\{"host":\s"192\.0\.2\.47",\s"seq":\s\d+\}\}
 \{"summary":\s\{"host":\s"192\.0\.2\.47",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -c 1 192.0.2.47');
 }
 
 # fping -J -c 2 -D 127.0.0.1 (timestamp >= 1000000000 checks Unix epoch vs CLOCK_MONOTONIC uptime)
@@ -70,6 +127,7 @@ $cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"[1-9]\d{9,}\.\d+",\s"host":\s"
 \{"resp":\s\{"timestamp":\s"[1-9]\d{9,}\.\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s1,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -c 2 -D 127.0.0.1');
 }
 
 # fping -J -c 1 -D --timestamp-format=ctime 127.0.0.1
@@ -79,15 +137,17 @@ $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"\w+\s\w+\s+\d+\s[\d+:]+\s\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -c 1 -D --timestamp-format=ctime 127.0.0.1');
 }
 
 # fping -J -c 1 -D --timestamp-format=iso 127.0.0.1
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 -D --timestamp-format=iso 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"[\d+-]+T[\d+:]+\+\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
+$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"[\d+-]+T[\d+:]+[+-]\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -c 1 -D --timestamp-format=iso 127.0.0.1');
 }
 
 # fping -J -c 1 -D --timestamp-format=rfc3339 127.0.0.1
@@ -97,6 +157,7 @@ $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"[\d+-]+\s[\d+:]+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -c 1 -D --timestamp-format=rfc3339 127.0.0.1');
 }
 
 # fping -J -c 1 --print-reply-dst 127.0.0.1
@@ -106,18 +167,20 @@ $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"replyDst":\s"127\.0\.0\.1"\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -c 1 --print-reply-dst 127.0.0.1');
 }
 
 # fping -J -c 1 --print-reply-dst ::1
 SKIP: {
 if ($ENV{SKIP_IPV6}) {
-    skip 'Skip IPv6 tests', 3;
+    skip 'Skip IPv6 tests', 5;
 }
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 --print-reply-dst ::1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"::1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"replyDst":\s"::1"\}\}
 \{"summary":\s\{"host":\s"::1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -c 1 --print-reply-dst ::1');
 }
 
 # fping -J -c 1 -q 127.0.0.1
@@ -126,15 +189,17 @@ my $cmd = Test::Command->new(cmd => "fping -J -c 1 -q 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -c 1 -q 127.0.0.1');
 }
 
 # fping -J -C 1 127.0.0.1
 {
 my $cmd = Test::Command->new(cmd => "fping -J -C 1 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s\d+,\s"size":\s\d+,\s"rtt":\s\d+.\d+\}\}
-\{"vSum":\s\{"host":\s"127\.0\.0\.1",\s"values":\s\[\d+.\d+\]\}\}?$/);
+$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s\d+,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
+\{"vSum":\s\{"host":\s"127\.0\.0\.1",\s"values":\s\[\d+\.\d+\]\}\}\n$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -C 1 127.0.0.1');
 }
 
 # fping -J -C 1 192.0.2.47
@@ -142,8 +207,9 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping -J -C 1 192.0.2.47");
 $cmd->exit_is_num(1);
 $cmd->stdout_like(qr/^\{"timeout":\s\{"host":\s"192\.0\.2\.47",\s"seq":\s\d+\}\}
-\{"vSum":\s\{"host":\s"192\.0\.2\.47",\s"values":\s\[null\]\}\}?$/);
+\{"vSum":\s\{"host":\s"192\.0\.2\.47",\s"values":\s\[null\]\}\}\n$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -C 1 192.0.2.47');
 }
 
 # fping -J -C 1 -q 127.0.0.1
@@ -152,6 +218,7 @@ my $cmd = Test::Command->new(cmd => "fping -J -C 1 -q 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"vSum":\s\{"host":\s"\d+\.\d+\.\d+\.\d+",\s"values":\s\[\d+\.\d+\]\}\}\n?$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -C 1 -q 127.0.0.1');
 }
 
 # fping -J -C 1 -q 127.0.0.1 127.0.0.2
@@ -161,14 +228,16 @@ $cmd->exit_is_num(0);  # Both hosts are reachable in this test
 $cmd->stdout_like(qr/^\{"vSum":\s\{"host":\s"\d+\.\d+\.\d+\.\d+",\s"values":\s\[\d+\.\d+\]\}\}
 \{"vSum":\s\{"host":\s"\d+\.\d+\.\d+\.\d+",\s"values":\s\[\d+\.\d+\]\}\}\n?$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -C 1 -q 127.0.0.1 127.0.0.2');
 }
 
 # fping -J -C3 -p 100 -q 127.0.0.1
 {
 my $cmd = Test::Command->new(cmd => "fping -J -C3 -p 100 -q 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"vSum":\s\{"host":\s"\d+\.\d+\.\d+\.\d+",\s"values":\s\[\d+\.\d+\,\s\d+\.\d+,\s\d+\.\d+\]\}\}\n?$/);
+$cmd->stdout_like(qr/^\{"vSum":\s\{"host":\s"\d+\.\d+\.\d+\.\d+",\s"values":\s\[\d+\.\d+,\s\d+\.\d+,\s\d+\.\d+\]\}\}\n?$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -C3 -p 100 -q 127.0.0.1');
 }
 
 # fping -J -c 1 -q host.invalid
@@ -177,6 +246,7 @@ my $cmd = Test::Command->new(cmd => "fping -J -c 1 -q host.invalid");
 $cmd->exit_is_num(2);  # Exit code 2 indicates name resolution error
 $cmd->stdout_like(qr/^\{"warning":\s\{"host":\s"host\.invalid",\s"message":\s"[^"]*(?i:name|address|host|resolv)[^"]*"\}\}\n$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -c 1 -q host.invalid');
 }
 
 # fping -J -c 1 -q -g 127.0.0.1/30
@@ -184,8 +254,9 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 -q -g 127.0.0.1/30");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}
-\{"summary":\s\{"host":\s"127\.0\.0\.2",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}?$/);
+\{"summary":\s\{"host":\s"127\.0\.0\.2",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -c 1 -q -g 127.0.0.1/30');
 }
 
 # fping -J -c 2 -Q 1 127.0.0.1 (time >= 1000000000 checks Unix epoch vs CLOCK_MONOTONIC uptime)
@@ -193,8 +264,9 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping -J -c 2 -Q 1 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"intSum":\s\{"time":\s[1-9]\d{9,},"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}
-\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}?$/);
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -c 2 -Q 1 127.0.0.1');
 }
 
 # fping -J -s -q -c 2 127.0.0.1
@@ -202,8 +274,9 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping -J -s -q -c 2 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}
-\{"stats":\s\{"targets":\s\d+,\s"alive":\s\d+,\s"unreachable":\s\d+,\s"unknownAddresses":\s\d+,\s"timeouts":\s\d+,\s"icmpEchosSent":\s\d+,\s"icmpEchoRepliesReceived":\s\d+,\s"otherIcmpReceived":\s0,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+,\s"elapsed":\s\d+\.\d+\}\}?$/);
+\{"stats":\s\{"targets":\s\d+,\s"alive":\s\d+,\s"unreachable":\s\d+,\s"unknownAddresses":\s\d+,\s"timeouts":\s\d+,\s"icmpEchosSent":\s\d+,\s"icmpEchoRepliesReceived":\s\d+,\s"otherIcmpReceived":\s0,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+,\s"elapsed":\s\d+\.\d+\}\}\n$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -s -q -c 2 127.0.0.1');
 }
 
 # fping -J 127.0.0.1
@@ -221,11 +294,10 @@ my $cmd = Test::Command->new(cmd => ['fping', '-J', '-c', '1', '-q', $bad_host])
 $cmd->exit_is_num(2, 'JSON escaping warning exits 2');
 $cmd->stdout_like(qr/\\"\\\\slash\\u0001\\thost\.invalid/, 'JSON escaping warning uses short and \\u0001 escapes');
 $cmd->stderr_is_eq("", 'JSON escaping warning stderr empty');
-my $out = $cmd->stdout_value;
-my $decoded = eval { decode_json($out) };
-ok(defined $decoded, 'JSON escaping warning parses as valid JSON');
-is($decoded ? $decoded->{warning}{host} : undef, $bad_host, 'JSON escaping warning round-trips host string');
-ok($decoded && length($decoded->{warning}{message} // '') > 0, 'JSON escaping warning includes message');
+my @docs = decode_jsonl_ok($cmd->stdout_value, 'JSON escaping warning');
+is(scalar @docs, 1, 'JSON escaping warning emits 1 warning record');
+is($docs[0] && $docs[0]->{warning} ? $docs[0]->{warning}{host} : undef, $bad_host, 'JSON escaping warning round-trips host string');
+ok($docs[0] && $docs[0]->{warning} && length($docs[0]->{warning}{message} // '') > 0, 'JSON escaping warning includes message');
 }
 
 # fping -J -x / -X are rejected as mutually exclusive
@@ -258,18 +330,20 @@ $cmd->stdout_like(qr/^\{"timeout":\s\{"timestamp":\s"[1-9]\d{9,}\.\d+",\s"host":
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s1,\s"rcv":\s0,\s"loss":\s100,\s"outage\(ms\)":\s1000\}\}
 \{"stats":\s\{"targets":\s1,\s"alive":\s0,\s"unreachable":\s1,\s"unknownAddresses":\s0,\s"timeouts":\s1,\s"icmpEchosSent":\s1,\s"icmpEchoRepliesReceived":\s0,\s"otherIcmpReceived":\s0,\s"rttMin":\s0\.000,\s"rttAvg":\s0\.000,\s"rttMax":\s0\.000,\s"elapsed":\s\d+\.\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J --seqmap-timeout 0 -D -o -s -c 1 -t 50 127.0.0.1');
 }
 
 # fping -J --seqmap-timeout 0 -c 2 -t 50 -Q 0.8 -p 1000 -o 127.0.0.1
 SKIP: {
 if($^O eq 'darwin') {
-    skip 'On macOS, -Q tests are unreliable', 3;
+    skip 'On macOS, -Q tests are unreliable', 5;
 }
 my $cmd = Test::Command->new(cmd => "fping -J --seqmap-timeout 0 -c 2 -t 50 -Q 0.8 -p 1000 -o 127.0.0.1");
 $cmd->exit_is_num(1);
 $cmd->stdout_like(qr/^(?:\{"intSum":\s\{[^\n]+\}\}\n)*\{"intSum":\s\{"time":\s[1-9]\d{9,},"host":\s"127\.0\.0\.1",\s"xmt":\s1,\s"rcv":\s0,\s"loss":\s100,\s"outage\(ms\)":\s1000\}\}
 (?:\{"intSum":\s\{[^\n]+\}\}\n)*\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s2,\s"rcv":\s0,\s"loss":\s100,\s"outage\(ms\)":\s2000\}\}\n?$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J --seqmap-timeout 0 -c 2 -t 50 -Q 0.8 -p 1000 -o 127.0.0.1');
 }
 
 # fping -J -p 100 -t 1000 -l 127.0.0.1 with SIGQUIT
@@ -278,4 +352,107 @@ my $cmd = Test::Command->new(cmd => '(sleep 1; pkill -QUIT fping; sleep 1; pkill
 $cmd->stdout_like(qr/^(?:\{"(?:resp|timeout)":\s\{[^\n]+\}\}\n)*\{"intSum":\s\{"time":\s[1-9]\d{9,},"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+(?:,\s"rttMin":\s\d+(?:\.\d+)?,\s"rttAvg":\s\d+(?:\.\d+)?,\s"rttMax":\s\d+(?:\.\d+)?)?\}\}
 (?:\{"(?:resp|timeout)":\s\{[^\n]+\}\}\n)*\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+(?:,\s"rttMin":\s\d+(?:\.\d+)?,\s"rttAvg":\s\d+(?:\.\d+)?,\s"rttMax":\s\d+(?:\.\d+)?)?\}\}\n?$/);
 $cmd->stderr_is_eq("");
+decode_jsonl_ok($cmd->stdout_value, 'fping -J -p 100 -t 1000 -l 127.0.0.1 with SIGQUIT');
+}
+
+# fping -J without -q emits both stderr warning and stdout JSON warning
+{
+my $warn_host = "bad\"\\host\n.invalid";
+my $cmd = Test::Command->new(cmd => ['fping', '-J', '-c', '1', $warn_host]);
+$cmd->exit_is_num(2, 'JSON non-quiet warning exits 2');
+# No /s: \Q...\E matches $warn_host's embedded \n while [^\n]+ enforces a single error line.
+$cmd->stderr_like(qr/^\Q$warn_host\E: [^\n]+\n\z/, 'JSON non-quiet warning writes text warning to stderr');
+my @docs = decode_jsonl_ok($cmd->stdout_value, 'JSON non-quiet warning');
+is(scalar @docs, 1, 'JSON non-quiet warning emits 1 warning record');
+is($docs[0] && $docs[0]->{warning} ? $docs[0]->{warning}{host} : undef, $warn_host, 'JSON non-quiet warning round-trips host');
+ok($docs[0] && $docs[0]->{warning} && length($docs[0]->{warning}{message} // '') > 0, 'JSON non-quiet warning includes message');
+}
+
+# fping -J with mixed invalid and valid targets emits valid NDJSON (warning + resp + summary)
+{
+my $cmd = Test::Command->new(cmd => ['fping', '-J', '-c', '1', 'bad"host.invalid', '127.0.0.1']);
+$cmd->exit_is_num(2, 'JSON mixed invalid+valid targets exits 2');
+$cmd->stderr_like(qr/^\Qbad"host.invalid\E: [^\n]+\n\z/, 'JSON mixed invalid+valid targets writes warning to stderr');
+my @docs = decode_jsonl_ok($cmd->stdout_value, 'JSON mixed invalid+valid targets');
+is(scalar @docs, 3, 'JSON mixed invalid+valid targets emits 3 JSONL records');
+is($docs[0] && $docs[0]->{warning} ? $docs[0]->{warning}{host} : undef, 'bad"host.invalid', 'JSON mixed invalid+valid line 1 warning host');
+ok($docs[0] && $docs[0]->{warning} && length($docs[0]->{warning}{message} // '') > 0, 'JSON mixed invalid+valid line 1 warning includes message');
+is($docs[1] && $docs[1]->{resp} ? $docs[1]->{resp}{host} : undef, '127.0.0.1', 'JSON mixed invalid+valid line 2 resp host');
+is($docs[1] && $docs[1]->{resp} ? $docs[1]->{resp}{seq} : undef, 0, 'JSON mixed invalid+valid line 2 resp seq');
+is($docs[2] && $docs[2]->{summary} ? $docs[2]->{summary}{host} : undef, '127.0.0.1', 'JSON mixed invalid+valid line 3 summary host');
+is($docs[2] && $docs[2]->{summary} ? $docs[2]->{summary}{xmt} : undef, 1, 'JSON mixed invalid+valid line 3 summary xmt');
+is($docs[2] && $docs[2]->{summary} ? $docs[2]->{summary}{rcv} : undef, 1, 'JSON mixed invalid+valid line 3 summary rcv');
+is($docs[2] && $docs[2]->{summary} ? $docs[2]->{summary}{loss} : undef, 0, 'JSON mixed invalid+valid line 3 summary loss');
+}
+
+# fping -J -f - reads targets from stdin and escapes warning hosts
+{
+my $tmp = File::Temp->new();
+my $stdin_bad = "bad\"\\slash\x01\x1f\x7f.invalid";
+print $tmp "$stdin_bad\n127.0.0.1\n";
+close($tmp);
+# POSIX single-quote the temp path since shell redirection is used for stdin.
+my $q = $tmp->filename;
+$q =~ s/'/'\\''/g;
+my $cmd = Test::Command->new(cmd => "fping -J -c 1 -q -f - < '$q'");
+$cmd->exit_is_num(2, 'JSON -f - stdin targets exits 2');
+$cmd->stderr_is_eq("", 'JSON -f - stdin targets stderr empty');
+my @docs = decode_jsonl_ok($cmd->stdout_value, 'JSON -f - stdin targets');
+is(scalar @docs, 2, 'JSON -f - stdin targets emits 2 JSONL records');
+is($docs[0] && $docs[0]->{warning} ? $docs[0]->{warning}{host} : undef, $stdin_bad, 'JSON -f - stdin warning round-trips host');
+ok($docs[0] && $docs[0]->{warning} && length($docs[0]->{warning}{message} // '') > 0, 'JSON -f - stdin warning includes message');
+is($docs[1] && $docs[1]->{summary} ? $docs[1]->{summary}{host} : undef, '127.0.0.1', 'JSON -f - stdin summary matches 127.0.0.1');
+is($docs[1] && $docs[1]->{summary} ? $docs[1]->{summary}{xmt} : undef, 1, 'JSON -f - stdin summary xmt');
+is($docs[1] && $docs[1]->{summary} ? $docs[1]->{summary}{rcv} : undef, 1, 'JSON -f - stdin summary rcv');
+is($docs[1] && $docs[1]->{summary} ? $docs[1]->{summary}{loss} : undef, 0, 'JSON -f - stdin summary loss');
+}
+
+# fping -J -n (reverse DNS)
+{
+my $cmd = Test::Command->new(cmd => ['fping', '-J', '-c', '1', '-n', '127.0.0.1']);
+$cmd->exit_is_num(0, 'JSON -n reverse DNS exits 0');
+$cmd->stderr_is_eq("", 'JSON -n reverse DNS stderr empty');
+my @docs = decode_jsonl_ok($cmd->stdout_value, 'JSON -n reverse DNS');
+is(scalar @docs, 2, 'JSON -n reverse DNS emits 2 JSONL records');
+my $resp_host = $docs[0] && $docs[0]->{resp} ? $docs[0]->{resp}{host} : undef;
+my $summary_host = $docs[1] && $docs[1]->{summary} ? $docs[1]->{summary}{host} : undef;
+ok(defined($resp_host) && length($resp_host) > 0, 'JSON -n resp host is non-empty');
+is($summary_host, $resp_host, 'JSON -n summary host matches resp host');
+is($docs[0] && $docs[0]->{resp} ? $docs[0]->{resp}{seq} : undef, 0, 'JSON -n resp seq');
+is($docs[1] && $docs[1]->{summary} ? $docs[1]->{summary}{xmt} : undef, 1, 'JSON -n summary xmt');
+is($docs[1] && $docs[1]->{summary} ? $docs[1]->{summary}{rcv} : undef, 1, 'JSON -n summary rcv');
+is($docs[1] && $docs[1]->{summary} ? $docs[1]->{summary}{loss} : undef, 0, 'JSON -n summary loss');
+}
+
+# fping -J -A -n (reverse DNS + numeric address)
+{
+my $cmd = Test::Command->new(cmd => ['fping', '-J', '-c', '1', '-A', '-n', '127.0.0.1']);
+$cmd->exit_is_num(0, 'JSON -A -n reverse DNS + addr exits 0');
+$cmd->stderr_is_eq("", 'JSON -A -n reverse DNS + addr stderr empty');
+my @docs = decode_jsonl_ok($cmd->stdout_value, 'JSON -A -n reverse DNS + addr');
+is(scalar @docs, 2, 'JSON -A -n reverse DNS + addr emits 2 JSONL records');
+my $resp_host = $docs[0] && $docs[0]->{resp} ? $docs[0]->{resp}{host} : undef;
+my $summary_host = $docs[1] && $docs[1]->{summary} ? $docs[1]->{summary}{host} : undef;
+like($resp_host // '', qr/^\S+ \(127\.0\.0\.1\)$/, 'JSON -A -n resp host matches "<name> (127.0.0.1)"');
+is($summary_host, $resp_host, 'JSON -A -n summary host matches resp host');
+is($docs[0] && $docs[0]->{resp} ? $docs[0]->{resp}{seq} : undef, 0, 'JSON -A -n resp seq');
+is($docs[1] && $docs[1]->{summary} ? $docs[1]->{summary}{xmt} : undef, 1, 'JSON -A -n summary xmt');
+is($docs[1] && $docs[1]->{summary} ? $docs[1]->{summary}{rcv} : undef, 1, 'JSON -A -n summary rcv');
+is($docs[1] && $docs[1]->{summary} ? $docs[1]->{summary}{loss} : undef, 0, 'JSON -A -n summary loss');
+}
+
+# fping -J -c 1 -q -s with invalid and valid targets reports unknownAddresses == 1
+{
+my $cmd = Test::Command->new(cmd => ['fping', '-J', '-c', '1', '-q', '-s', 'host.invalid', '127.0.0.1']);
+$cmd->exit_is_num(2, 'JSON -s with invalid target exits 2');
+$cmd->stderr_is_eq("", 'JSON -s with invalid target stderr empty');
+my @docs = decode_jsonl_ok($cmd->stdout_value, 'JSON -s with invalid target');
+is(scalar @docs, 3, 'JSON -s with invalid target emits 3 JSONL records');
+is($docs[0] && $docs[0]->{warning} ? $docs[0]->{warning}{host} : undef, 'host.invalid', 'JSON -s line 1 warning host');
+ok($docs[0] && $docs[0]->{warning} && length($docs[0]->{warning}{message} // '') > 0, 'JSON -s line 1 warning includes message');
+is($docs[1] && $docs[1]->{summary} ? $docs[1]->{summary}{host} : undef, '127.0.0.1', 'JSON -s line 2 summary host');
+is($docs[2] && $docs[2]->{stats} ? $docs[2]->{stats}{targets} : undef, 1, 'JSON -s line 3 stats targets');
+is($docs[2] && $docs[2]->{stats} ? $docs[2]->{stats}{alive} : undef, 1, 'JSON -s line 3 stats alive');
+is($docs[2] && $docs[2]->{stats} ? $docs[2]->{stats}{unreachable} : undef, 0, 'JSON -s line 3 stats unreachable');
+is($docs[2] && $docs[2]->{stats} ? $docs[2]->{stats}{unknownAddresses} : undef, 1, 'JSON -s line 3 stats unknownAddresses');
 }

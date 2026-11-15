@@ -25,6 +25,7 @@ typedef struct {
     unsigned int count;
     unsigned int min_reachable;
     unsigned int ttl;
+    const char *oiface;
 
     /* switches: 0 = off, 1 = on */
     int version_on;
@@ -56,7 +57,6 @@ typedef struct {
     int random_data_on;
     int check_source_on;
     int size_on;
-    int oiface_on;
     int bindiface_on;
     int timestamp_on;
     int timestamp_format;

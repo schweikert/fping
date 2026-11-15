@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 47;
+use Test::Command tests => 53;
 use Test::More;
 
 #  -i n       interval between sending ping packets (in millisec) (default 25)
@@ -177,7 +177,7 @@ $cmd->stderr_is_eq("");
 # fping --oiface error cases
 SKIP: {
 if($^O ne 'linux') {
-    skip '--oiface option functionality is only tested on Linux', 6;
+    skip '--oiface option functionality is only tested on Linux', 9;
 }
 my $cmd1 = Test::Command->new(cmd => 'fping --oiface=NotAnInterface 127.0.0.1');
 $cmd1->exit_is_num(1);
@@ -188,6 +188,19 @@ my $cmd2 = Test::Command->new(cmd => 'fping -I lo --oiface=lo 127.0.0.1');
 $cmd2->exit_is_num(1);
 $cmd2->stdout_is_eq("");
 $cmd2->stderr_is_eq("fping: specify only --oiface or -I, --iface\n");
+
+my $cmd3 = Test::Command->new(cmd => 'fping --oiface=NotAnInterface -I lo 127.0.0.1');
+$cmd3->exit_is_num(1);
+$cmd3->stdout_is_eq("");
+$cmd3->stderr_is_eq("fping: specify only --oiface or -I, --iface\n");
+}
+
+# fping --oiface with -v skips interface validation
+{
+my $cmd = Test::Command->new(cmd => 'fping --oiface=NotAnInterface -v');
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr{^fping: Version \S+});
+$cmd->stderr_is_eq("");
 }
 
 # fping -l with -p > -t

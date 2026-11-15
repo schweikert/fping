@@ -629,20 +629,7 @@ int main(int argc, char **argv)
             } else if (longindex >= 0 && strcmp(longopts[longindex].longname, "seqmap-timeout") == 0) {
                 opt.seqmap_timeout = strtod_strict(optparse_state.optarg) * 1000000;
             } else if (longindex >= 0 && strcmp(longopts[longindex].longname, "oiface") == 0) {
-                opt.oiface_on = 1;
-#ifdef IP_PKTINFO
-                if (socket4 >= 0) {
-                    socket_set_outgoing_iface_ipv4(optparse_state.optarg);
-                }
-#ifdef IPV6
-                if (socket6 >= 0) {
-                    socket_set_outgoing_iface_ipv6(optparse_state.optarg);
-                }
-#endif
-#else
-                fprintf(stderr, "%s: --oiface is not supported on this platform (IP_PKTINFO unavailable)\n", prog);
-                exit(3);
-#endif
+                opt.oiface = optparse_state.optarg;
             } else if (longindex >= 0 && strcmp(longopts[longindex].longname, "frag") == 0) {
 #if defined(IP_MTU_DISCOVER) || defined(IP_DONTFRAG)
                 opt.frag_on = 1;
@@ -1000,9 +987,25 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    if (opt.oiface_on && opt.bindiface_on) {
+    if (opt.oiface && opt.bindiface_on) {
         fprintf(stderr, "%s: specify only --oiface or -I, --iface\n", prog);
         exit(1);
+    }
+
+    if (opt.oiface) {
+#ifdef IP_PKTINFO
+        if (hints_ai_family != AF_INET6) {
+            socket_set_outgoing_iface_ipv4(opt.oiface);
+        }
+#ifdef IPV6
+        if (hints_ai_family != AF_INET) {
+            socket_set_outgoing_iface_ipv6(opt.oiface);
+        }
+#endif
+#else
+        fprintf(stderr, "%s: --oiface is not supported on this platform (IP_PKTINFO unavailable)\n", prog);
+        exit(1);
+#endif
     }
 
     if (opt.count_on && opt.loop_on) {

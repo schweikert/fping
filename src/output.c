@@ -82,40 +82,43 @@ void print_timestamp_format(int64_t current_time_ns, int timestamp_format)
     time_t current_time_s;
     struct tm *local_time;
     int64_t wall_time_ns = get_wallclock_ns(current_time_ns);
+    const char *fmt;
+
+    if (timestamp_format == TIMESTAMP_FORMAT_EPOCH) {
+        if (opt.print_json_on)
+            printf("\"timestamp\": \"%.5f\", ", (double)wall_time_ns / 1e9);
+        else
+            printf("[%.5f] ", (double)wall_time_ns / 1e9);
+        return;
+    }
+
+    switch (timestamp_format) {
+        case TIMESTAMP_FORMAT_CTIME:
+            fmt = "%c";
+            break;
+        case TIMESTAMP_FORMAT_ISO:
+            fmt = "%Y-%m-%dT%T%z";
+            break;
+        case TIMESTAMP_FORMAT_RFC3339:
+            fmt = "%Y-%m-%d %H:%M:%S";
+            break;
+        default:
+            crash_and_burn("invalid timestamp format"); /* LCOV_EXCL_LINE */
+    }
 
     current_time_s = wall_time_ns / 1000000000;
     local_time = localtime(&current_time_s);
-    switch(timestamp_format) {
-        case 1:
-            // timestamp-format ctime
-            strftime(time_buffer, sizeof(time_buffer), "%c", local_time);
-            if (opt.print_json_on)
-                printf("\"timestamp\": \"%s\", ", time_buffer);
-            else
-                printf("[%s] ", time_buffer);
-            break;
-        case 2:
-            // timestamp-format iso
-            strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%dT%T%z", local_time);
-            if (opt.print_json_on)
-                printf("\"timestamp\": \"%s\", ", time_buffer);
-            else
-                printf("[%s] ", time_buffer);
-            break;
-        case 3:
-            // timestamp-format rfc3339
-            strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S", local_time);
-            if (opt.print_json_on)
-                printf("\"timestamp\": \"%s\", ", time_buffer);
-            else
-                printf("[%s] ", time_buffer);
-            break;
-        default:
-            if (opt.print_json_on)
-                printf("\"timestamp\": \"%.5f\", ", (double)wall_time_ns / 1e9);
-            else
-                printf("[%.5f] ", (double)wall_time_ns / 1e9);
+    if (local_time == NULL) {
+        time_buffer[0] = '\0';
     }
+    else if (strftime(time_buffer, sizeof(time_buffer), fmt, local_time) == 0) {
+        time_buffer[0] = '\0';
+    }
+
+    if (opt.print_json_on)
+        printf("\"timestamp\": \"%s\", ", time_buffer);
+    else
+        printf("[%s] ", time_buffer);
 }
 
 /************************************************************

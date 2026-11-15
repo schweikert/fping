@@ -556,11 +556,11 @@ int main(int argc, char **argv)
         case 0:
             if(strstr(optparse_state.optlongname, "timestamp-format") != NULL) {
                 if(strcmp(optparse_state.optarg, "ctime") == 0) {
-                    opt.timestamp_format = 1;
+                    opt.timestamp_format = TIMESTAMP_FORMAT_CTIME;
                 }else if(strcmp(optparse_state.optarg, "iso") == 0) {
-                    opt.timestamp_format = 2;
+                    opt.timestamp_format = TIMESTAMP_FORMAT_ISO;
                 }else if(strcmp(optparse_state.optarg, "rfc3339") == 0) {
-                    opt.timestamp_format = 3;
+                    opt.timestamp_format = TIMESTAMP_FORMAT_RFC3339;
                 }else{
                     usage(1);
                 }

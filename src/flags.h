@@ -7,6 +7,11 @@
 /* sized so as to be like traditional ping */
 #define DEFAULT_PING_DATA_SIZE 56
 
+#define TIMESTAMP_FORMAT_EPOCH   0
+#define TIMESTAMP_FORMAT_CTIME   1
+#define TIMESTAMP_FORMAT_ISO     2
+#define TIMESTAMP_FORMAT_RFC3339 3
+
 typedef struct {
     /* options with values */
     /* all time-related values are int64_t nanoseconds */

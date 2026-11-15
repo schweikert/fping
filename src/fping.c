@@ -259,7 +259,7 @@ char *icmp6_param_prob_str[ICMP6_PARAM_PROB_MAXCODE + 1] = {
 };
 #endif
 
-IP_HEADER_RESULT default_ip_header_result(void) {
+static IP_HEADER_RESULT default_ip_header_result(void) {
     IP_HEADER_RESULT res;
     res.tos = -1;
     res.ttl = -1;
@@ -341,6 +341,7 @@ unsigned int fwmark = 0;
 
 char *filename = NULL; /* file containing hosts to ping */
 
+#if defined(SO_MARK) || defined(SO_BINDTODEVICE)
 /************************************************************
 
   Function: p_setsockopt
@@ -356,7 +357,7 @@ char *filename = NULL; /* file containing hosts to ping */
 
 ************************************************************/
 
-int p_setsockopt(uid_t p_uid, int sockfd, int level, int optname,
+static int p_setsockopt(uid_t p_uid, int sockfd, int level, int optname,
     const void *optval, socklen_t optlen)
 {
     const uid_t saved_uid = geteuid();
@@ -378,8 +379,9 @@ int p_setsockopt(uid_t p_uid, int sockfd, int level, int optname,
 
     return res;
 }
+#endif
 
-unsigned long strtoul_strict(const char *arg, int base)
+static unsigned long strtoul_strict(const char *arg, int base)
 {
     char *endptr;
     unsigned long val;
@@ -399,7 +401,7 @@ unsigned long strtoul_strict(const char *arg, int base)
     return val;
 }
 
-double strtod_strict(const char *arg)
+static double strtod_strict(const char *arg)
 {
     char *endptr;
     double val;
@@ -2122,7 +2124,7 @@ int send_ping(HOST_ENTRY *h, int index)
     return (ret);
 }
 
-int socket_can_read(struct timeval *timeout)
+static int socket_can_read(struct timeval *timeout)
 {
     int nfound;
     fd_set readset;
@@ -2191,7 +2193,7 @@ static void cmsg_extract_int_or_byte(struct cmsghdr *cmsg, int *out)
     }
 }
 
-int receive_packet(int64_t wait_time,
+static int receive_packet(int64_t wait_time,
 #if HAVE_SO_TIMESTAMPNS
     int64_t *reply_timestamp,
 #else
@@ -2396,7 +2398,7 @@ static inline int ipv4_header_len(const struct ip *ip)
 #endif
 }
 
-int decode_icmp_ipv4(
+static int decode_icmp_ipv4(
     struct sockaddr *response_addr,
     size_t response_addr_len,
     char *reply_buf,
@@ -2543,7 +2545,7 @@ int decode_icmp_ipv4(
 }
 
 #ifdef IPV6
-int decode_icmp_ipv6(
+static int decode_icmp_ipv6(
     struct sockaddr *response_addr,
     size_t response_addr_len,
     char *reply_buf,

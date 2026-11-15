@@ -259,7 +259,7 @@ char *icmp6_param_prob_str[ICMP6_PARAM_PROB_MAXCODE + 1] = {
 };
 #endif
 
-IP_HEADER_RESULT default_ip_header_result() {
+IP_HEADER_RESULT default_ip_header_result(void) {
     IP_HEADER_RESULT res;
     res.tos = -1;
     res.ttl = -1;
@@ -1756,7 +1756,7 @@ void add_addr_range_ipv6(uint64_t start_upper, uint64_t start_lower,
 }
 #endif /* IPv6 */
 
-void main_loop()
+void main_loop(void)
 {
     int64_t lt;
     int64_t wait_time_ns;
@@ -1952,7 +1952,7 @@ void signal_handler(int signum)
 
 *************************************************************/
 
-void update_current_time()
+void update_current_time(void)
 {
     struct timespec ts = { 0 };
     clock_gettime(CLOCKID, &ts);

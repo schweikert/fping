@@ -159,7 +159,8 @@ Set the interface (requires SO_BINDTODEVICE support).
 
 =item B<--oiface>=I<IFACE>
 
-Send pings via a specific outgoing interface (receive from any)
+Send pings via a specific outgoing interface (receive from any).
+Cannot be used together with B<-I>, B<--iface>.
 
 =item B<--icmp-timestamp>
 

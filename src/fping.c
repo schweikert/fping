@@ -1006,18 +1006,32 @@ int fping_main(int argc, char **argv)
     }
 
     if (opt.oiface) {
+#if !defined(IP_PKTINFO) && !(defined(IPV6) && defined(IPV6_PKTINFO))
+        fprintf(stderr, "%s: --oiface is not supported on this platform\n", prog);
+        exit(1);
+#else
 #ifdef IP_PKTINFO
         if (hints_ai_family != AF_INET6) {
             socket_set_outgoing_iface_ipv4(opt.oiface);
         }
+#else
+        if (hints_ai_family == AF_INET || socket6 < 0) {
+            fprintf(stderr, "%s: --oiface is not supported for IPv4 on this platform (IP_PKTINFO unavailable)\n", prog);
+            exit(1);
+        }
+#endif
 #ifdef IPV6
+#ifdef IPV6_PKTINFO
         if (hints_ai_family != AF_INET) {
             socket_set_outgoing_iface_ipv6(opt.oiface);
         }
-#endif
 #else
-        fprintf(stderr, "%s: --oiface is not supported on this platform (IP_PKTINFO unavailable)\n", prog);
-        exit(1);
+        if (hints_ai_family == AF_INET6 || socket4 < 0) {
+            fprintf(stderr, "%s: --oiface is not supported for IPv6 on this platform (IPV6_PKTINFO unavailable)\n", prog);
+            exit(1);
+        }
+#endif
+#endif
 #endif
     }
 
@@ -2229,6 +2243,9 @@ static int receive_packet(int64_t wait_time,
   )
 {
     struct timeval to;
+#if defined(IPV6) && !defined(IPV6_PKTINFO)
+    (void)recv_dst_addr_ipv6;
+#endif
     int s = 0;
     int recv_len;
     static union {
@@ -3037,6 +3054,23 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
     int n;
     int64_t *i;
 
+#if !defined(IP_PKTINFO) || (defined(IPV6) && !defined(IPV6_PKTINFO))
+    if (opt.oiface) {
+#ifndef IP_PKTINFO
+        if (ipaddr->sa_family == AF_INET) {
+            fprintf(stderr, "%s: --oiface is not supported for IPv4 on this platform (IP_PKTINFO unavailable)\n", prog);
+            exit(1);
+        }
+#endif
+#if defined(IPV6) && !defined(IPV6_PKTINFO)
+        if (ipaddr->sa_family == AF_INET6) {
+            fprintf(stderr, "%s: --oiface is not supported for IPv6 on this platform (IPV6_PKTINFO unavailable)\n", prog);
+            exit(1);
+        }
+#endif
+    }
+#endif
+
     p = (HOST_ENTRY *)calloc(1, sizeof(HOST_ENTRY));
     if (!p)
         crash_and_burn("can't allocate HOST_ENTRY"); /* LCOV_EXCL_LINE */
@@ -3364,7 +3398,7 @@ FPING_NORETURN void usage(int is_error)
 #ifdef SO_BINDTODEVICE
     fprintf(out, "   -I, --iface=IFACE  bind to a particular interface\n");
 #endif
-#ifdef IP_PKTINFO
+#if defined(IP_PKTINFO) || (defined(IPV6) && defined(IPV6_PKTINFO))
     fprintf(out, "       --oiface=IFACE  send pings via a specific outgoing interface (receive from any)\n");
 #endif
 #ifdef SO_MARK

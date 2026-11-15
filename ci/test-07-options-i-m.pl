@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 53;
+use Test::Command tests => 62;
 use Test::More;
 
 #  -i n       interval between sending ping packets (in millisec) (default 25)
@@ -77,13 +77,15 @@ $cmd->stderr_is_eq("");
 
 # fping --oiface=IFACE (IPv6)
 SKIP: {
-    if($^O ne 'linux') {
-        skip '--oiface option functionality is only tested on Linux', 3;
+    my $lo_iface = $^O eq 'linux' ? 'lo' :
+                   ($^O eq 'freebsd' || $^O eq 'openbsd') ? 'lo0' : '';
+    if(!$lo_iface) {
+        skip 'IPv6 --oiface test is only run on Linux, FreeBSD, and OpenBSD', 3;
     }
     if($ENV{SKIP_IPV6}) {
         skip 'Skip IPv6 tests', 3;
     }
-    my $cmd = Test::Command->new(cmd => 'fping -6 --oiface=lo ::1');
+    my $cmd = Test::Command->new(cmd => "fping -6 --oiface=$lo_iface ::1");
     $cmd->exit_is_num(0);
     $cmd->stdout_is_eq("::1 is alive\n");
     $cmd->stderr_is_eq("");
@@ -193,6 +195,32 @@ my $cmd3 = Test::Command->new(cmd => 'fping --oiface=NotAnInterface -I lo 127.0.
 $cmd3->exit_is_num(1);
 $cmd3->stdout_is_eq("");
 $cmd3->stderr_is_eq("fping: specify only --oiface or -I, --iface\n");
+}
+
+# fping --oiface on platforms with IPV6_PKTINFO only (FreeBSD, OpenBSD)
+SKIP: {
+if($^O ne 'freebsd' && $^O ne 'openbsd') {
+    skip 'IPv4 --oiface unavailable / IPV6_PKTINFO-only tests only run on FreeBSD and OpenBSD', 9;
+}
+my $cmd1 = Test::Command->new(cmd => 'fping -4 --oiface=lo0 127.0.0.1');
+$cmd1->exit_is_num(1);
+$cmd1->stdout_is_eq("");
+$cmd1->stderr_is_eq("fping: --oiface is not supported for IPv4 on this platform (IP_PKTINFO unavailable)\n");
+
+my $cmd2 = Test::Command->new(cmd => 'fping --oiface=lo0 127.0.0.1');
+$cmd2->exit_is_num(1);
+$cmd2->stdout_is_eq("");
+$cmd2->stderr_is_eq("fping: --oiface is not supported for IPv4 on this platform (IP_PKTINFO unavailable)\n");
+
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd3 = Test::Command->new(cmd => 'fping -6 --oiface=NotAnInterface ::1');
+    $cmd3->exit_is_num(1);
+    $cmd3->stdout_is_eq("");
+    $cmd3->stderr_is_eq("fping: unknown interface 'NotAnInterface'\n");
+}
 }
 
 # fping --oiface with -v skips interface validation

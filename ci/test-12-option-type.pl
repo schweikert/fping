@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 270;
+use Test::Command tests => 281;
 use Test::More;
 
 # some options require a numeric argument
@@ -85,4 +85,22 @@ for my $target (qw(127.0.0.1/24abc 127.0.0.1/ 127.0.0.1/abc)) {
     $cmd->exit_is_num(1);
     $cmd->stdout_is_eq("");
     $cmd->stderr_like(qr{Usage:});
+}
+
+# long-option --opt=val must dispatch by option name, not substring match in value
+for my $args (
+    '--seqmap-timeout=check-source -h',
+    '--seqmap-timeout=icmp-timestamp -h',
+    '--seqmap-timeout=print-ttl -h',
+) {
+    my $cmd = Test::Command->new(cmd => "fping $args");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_like(qr{Usage:});
+}
+
+{
+    my $cmd = Test::Command->new(cmd => "fping --oiface=check-source 127.0.0.1");
+    $cmd->exit_isnt_num(0);
+    $cmd->stdout_is_eq("");
 }

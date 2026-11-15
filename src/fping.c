@@ -109,8 +109,6 @@ extern "C" {
 
 /*** externals ***/
 
-extern char *optarg;
-extern int optind, opterr;
 #ifndef h_errno
 extern int h_errno;
 #endif
@@ -494,7 +492,6 @@ int main(int argc, char **argv)
 
     optparse_init(&optparse_state, argv);
     ident4 = ident6 = htons(getpid() & 0xFFFF);
-    opterr = 1;
 
     /* get command line options */
 
@@ -556,10 +553,11 @@ int main(int argc, char **argv)
     };
 
     double opt_val_double;
-    while ((c = optparse_long(&optparse_state, longopts, NULL)) != EOF) {
+    int longindex = -1;
+    while ((c = optparse_long(&optparse_state, longopts, &longindex)) != EOF) {
         switch (c) {
         case 0:
-            if(strstr(optparse_state.optlongname, "timestamp-format") != NULL) {
+            if (longindex >= 0 && strcmp(longopts[longindex].longname, "timestamp-format") == 0) {
                 if(strcmp(optparse_state.optarg, "ctime") == 0) {
                     opt.timestamp_format = TIMESTAMP_FORMAT_CTIME;
                 }else if(strcmp(optparse_state.optarg, "iso") == 0) {
@@ -569,9 +567,9 @@ int main(int argc, char **argv)
                 }else{
                     usage(1);
                 }
-            } else if (strstr(optparse_state.optlongname, "check-source") != NULL) {
+            } else if (longindex >= 0 && strcmp(longopts[longindex].longname, "check-source") == 0) {
                 opt.check_source_on = 1;
-            } else if (strstr(optparse_state.optlongname, "icmp-timestamp") != NULL) {
+            } else if (longindex >= 0 && strcmp(longopts[longindex].longname, "icmp-timestamp") == 0) {
 #ifdef IPV6
                 if (hints_ai_family != AF_UNSPEC && hints_ai_family != AF_INET) {
                     fprintf(stderr, "%s: ICMP Timestamp is IPv4 only\n", prog);
@@ -581,7 +579,7 @@ int main(int argc, char **argv)
 #endif
                 opt.icmp_request_typ = 13;
                 opt.ping_data_size = ICMP_TIMESTAMP_DATA_SIZE;
-            } else if (strstr(optparse_state.optlongname, "print-tos") != NULL) {
+            } else if (longindex >= 0 && strcmp(longopts[longindex].longname, "print-tos") == 0) {
                 opt.print_tos_on = 1;
 #if defined(HAVE_IP_RECVTOS)
                 if (socket4 >= 0 && socket4_strips_ip_header) {
@@ -597,7 +595,7 @@ int main(int argc, char **argv)
                     }
                 }
 #endif
-            } else if (strstr(optparse_state.optlongname, "print-ttl") != NULL) {
+            } else if (longindex >= 0 && strcmp(longopts[longindex].longname, "print-ttl") == 0) {
                 opt.print_ttl_on = 1;
 #ifdef IP_RECVTTL
                 if (socket4 >= 0 && socket4_strips_ip_header) {
@@ -613,7 +611,7 @@ int main(int argc, char **argv)
                     }
                 }
 #endif
-            } else if (strstr(optparse_state.optlongname, "print-reply-dst") != NULL) {
+            } else if (longindex >= 0 && strcmp(longopts[longindex].longname, "print-reply-dst") == 0) {
                 opt.print_reply_dst_on = 1;
 #if defined(IPV6)
                 if (socket6 >= 0) {
@@ -628,9 +626,9 @@ int main(int argc, char **argv)
 #endif
                 }
 #endif
-            } else if (strstr(optparse_state.optlongname, "seqmap-timeout") != NULL) {
+            } else if (longindex >= 0 && strcmp(longopts[longindex].longname, "seqmap-timeout") == 0) {
                 opt.seqmap_timeout = strtod_strict(optparse_state.optarg) * 1000000;
-            } else if (strstr(optparse_state.optlongname, "oiface") != NULL) {
+            } else if (longindex >= 0 && strcmp(longopts[longindex].longname, "oiface") == 0) {
                 opt.oiface_on = 1;
 #ifdef IP_PKTINFO
                 if (socket4 >= 0) {
@@ -645,7 +643,7 @@ int main(int argc, char **argv)
                 fprintf(stderr, "%s: --oiface is not supported on this platform (IP_PKTINFO unavailable)\n", prog);
                 exit(3);
 #endif
-            } else if (strstr(optparse_state.optlongname, "frag") != NULL) {
+            } else if (longindex >= 0 && strcmp(longopts[longindex].longname, "frag") == 0) {
 #if defined(IP_MTU_DISCOVER) || defined(IP_DONTFRAG)
                 opt.frag_on = 1;
 #else

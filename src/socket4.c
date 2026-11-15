@@ -80,9 +80,9 @@ int open_ping_socket_ipv4(int *socktype)
         int flags;
 
         if ((flags = fcntl(s, F_GETFL, 0)) < 0)
-            perror("fcntl");
+            perror("fcntl"); /* LCOV_EXCL_LINE */
         else if (fcntl(s, F_SETFL, flags | O_NONBLOCK) < 0)
-            perror("fcntl");
+            perror("fcntl"); /* LCOV_EXCL_LINE */
     }
 
     return s;
@@ -106,7 +106,7 @@ void init_ping_buffer_ipv4(size_t ping_data_size)
     ping_pkt_size_ipv4 = ping_data_size + ICMP_MINLEN;
     ping_buffer_ipv4 = (char*)calloc(1, ping_pkt_size_ipv4);
     if (!ping_buffer_ipv4)
-        crash_and_burn("can't malloc ping packet");
+        crash_and_burn("can't malloc ping packet"); /* LCOV_EXCL_LINE */
 }
 
 void socket_set_src_addr_ipv4(int s, struct in_addr* src_addr, int *ident)
@@ -129,7 +129,7 @@ void socket_set_src_addr_ipv4(int s, struct in_addr* src_addr, int *ident)
     if (ident) {
         memset(&sa, 0, len);
         if (getsockname(s, (struct sockaddr *)&sa, &len) < 0)
-            errno_crash_and_burn("can't get ICMP socket identity");
+            errno_crash_and_burn("can't get ICMP socket identity"); /* LCOV_EXCL_LINE */
 
         if (sa.sin_port)
             *ident = sa.sin_port;

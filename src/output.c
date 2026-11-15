@@ -46,7 +46,7 @@ const char *sprint_tm(int64_t ns)
 
     if (t < 0.0) {
         /* negative (unexpected) */
-        snprintf(buf, sizeof(buf), "%.2g", t);
+        snprintf(buf, sizeof(buf), "%.2g", t); /* LCOV_EXCL_LINE */
     }
     else if (t < 1.0) {
         /* <= 0.99 ms */

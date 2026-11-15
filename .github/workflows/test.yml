@@ -26,6 +26,8 @@ jobs:
           sudo sysctl net.ipv4.ping_group_range='0 2147483647'
 
       - name: Build
+        env:
+          CONFIGURE_FLAGS: --enable-werror
         run: |
           ci/build-1-autotools.sh
           ci/build-4-compile.sh

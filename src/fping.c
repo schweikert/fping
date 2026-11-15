@@ -650,7 +650,7 @@ int main(int argc, char **argv)
 #endif
 
             } else {
-                usage(1);
+                usage(1); /* LCOV_EXCL_LINE */
             }
             break;
         case '4':
@@ -1348,7 +1348,7 @@ int main(int argc, char **argv)
         }
     }
     else {
-        usage(1);
+        usage(1); /* LCOV_EXCL_LINE */
     }
 
     if (!num_hosts) {
@@ -1507,9 +1507,11 @@ void add_cidr(char *addr)
         add_cidr_ipv6(net_upper, net_lower, mask, scope_str);
 #endif /* IPV6 */
     } else {
+        /* LCOV_EXCL_START */
         freeaddrinfo(addr_res);
         fprintf(stderr, "%s: -g does not support this address family\n", prog);
         exit(1);
+        /* LCOV_EXCL_STOP */
     }
 }
 
@@ -1613,9 +1615,11 @@ void add_range(char *start, char *end)
         freeaddrinfo(addr_res);
 #endif /* IPV6 */
     } else {
+        /* LCOV_EXCL_START */
         freeaddrinfo(addr_res);
         fprintf(stderr, "%s: -g does not support this address family\n", prog);
         exit(1);
+        /* LCOV_EXCL_STOP */
     }
 
 #ifdef IPV6
@@ -1654,9 +1658,11 @@ void add_range(char *start, char *end)
         add_addr_range_ipv6(start_upper, start_lower, end_upper, end_lower, start_scope_str);
 #endif /* IPV6 */
     } else {
+        /* LCOV_EXCL_START */
         freeaddrinfo(addr_res);
         fprintf(stderr, "%s: -g does not support this address family\n", prog);
         exit(1);
+        /* LCOV_EXCL_STOP */
     }
 }
 
@@ -2112,10 +2118,10 @@ int socket_can_read(struct timeval *timeout)
 
     /* FD_SET() has undefined behavior (buffer overflow) if fd >= FD_SETSIZE. */
     if (socketmax < 0) {
-        return -1;
+        return -1; /* LCOV_EXCL_LINE */
     }
     if (socketmax >= (int)FD_SETSIZE) {
-        crash_and_burn("socket descriptor exceeds FD_SETSIZE");
+        crash_and_burn("socket descriptor exceeds FD_SETSIZE"); /* LCOV_EXCL_LINE */
     }
 
 select_again:
@@ -2434,8 +2440,10 @@ int decode_icmp_ipv4(
                     icmp_type_str[icp->icmp_type], addr_ascii, h->host);
             }
             else {
+                /* LCOV_EXCL_START */
                 print_warning("ICMP %d from %s for ICMP Echo sent to %s",
                     icp->icmp_type, addr_ascii, h->host);
+                /* LCOV_EXCL_STOP */
             }
             print_warning("\n");
             num_othericmprcvd++;
@@ -2687,7 +2695,7 @@ int wait_for_reply(int64_t wait_time)
     }
 #endif
     else {
-        return 1;
+        return 1; /* LCOV_EXCL_LINE */
     }
 
     seqmap_value = seqmap_fetch(seq, current_time_ns);
@@ -2937,7 +2945,7 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
     if (!p->name || !p->host)
         crash_and_burn("can't allocate memory");
     if (ipaddr_len > (socklen_t)sizeof(p->saddr))
-        crash_and_burn("sockaddr too large");
+        crash_and_burn("sockaddr too large"); /* LCOV_EXCL_LINE */
     memcpy(&p->saddr, ipaddr, ipaddr_len);
     p->saddr_len = ipaddr_len;
     p->timeout = opt.timeout;
@@ -3066,7 +3074,7 @@ int addr_cmp(struct sockaddr *a, struct sockaddr *b)
         }
     }
 
-    return 0;
+    return 0; /* LCOV_EXCL_LINE */
 }
 
 void host_add_ping_event(HOST_ENTRY *h, int index, int64_t ev_time)
@@ -3165,7 +3173,7 @@ struct event *ev_dequeue(struct event_queue *queue)
     struct event *dequeued;
 
     if (queue->first == NULL) {
-        return NULL;
+        return NULL; /* LCOV_EXCL_LINE */
     }
     dequeued = queue->first;
     ev_remove(queue, dequeued);

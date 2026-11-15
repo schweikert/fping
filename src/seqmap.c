@@ -76,8 +76,10 @@ unsigned int seqmap_add(unsigned int host_nr, unsigned int ping_count, int64_t t
     SEQMAP_VALUE* next_value;
 
     if (!seqmap_map) {
+        /* LCOV_EXCL_START */
         fprintf(stderr, "fping internal error: seqmap not initialized.\n");
         exit(4);
+        /* LCOV_EXCL_STOP */
     }
 
     /* check if expired (note that unused seqmap values will have fields set to

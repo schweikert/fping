@@ -69,7 +69,7 @@ extern "C" {
 #include <sys/time.h>
 #include <sys/types.h>
 
-#if HAVE_SYS_FILE_H
+#ifdef HAVE_SYS_FILE_H
 #include <sys/file.h>
 #endif /* HAVE_SYS_FILE_H */
 
@@ -1246,7 +1246,7 @@ int fping_main(int argc, char **argv)
 #endif
     }
 
-#if HAVE_SO_TIMESTAMPNS
+#ifdef HAVE_SO_TIMESTAMPNS
     {
         int sock_opt = 1;
         if (socket4 >= 0) {
@@ -1499,7 +1499,7 @@ int64_t get_wallclock_ns(int64_t timestamp_ns)
 #endif
 }
 
-#if HAVE_SO_TIMESTAMPNS
+#ifdef HAVE_SO_TIMESTAMPNS
 /* convert a struct timeval to nanoseconds */
 static inline int64_t timeval_ns(struct timeval *a)
 {
@@ -2247,7 +2247,7 @@ static void cmsg_extract_int_or_byte(struct cmsghdr *cmsg, int *out)
 }
 
 static int receive_packet(int64_t wait_time,
-#if HAVE_SO_TIMESTAMPNS
+#ifdef HAVE_SO_TIMESTAMPNS
     int64_t *reply_timestamp,
 #else
     int64_t *reply_timestamp __attribute__((unused)),
@@ -2284,7 +2284,7 @@ static int receive_packet(int64_t wait_time,
     struct cmsghdr *cmsg;
 
     /* Wait for a socket to become ready */
-#if HAVE_MSG_DONTWAIT
+#ifdef HAVE_MSG_DONTWAIT
     if (wait_time == 0) {
         /* Optimization: if wait_time is 0, we can skip select() and just try to
          * read from the sockets with MSG_DONTWAIT */
@@ -2313,17 +2313,19 @@ static int receive_packet(int64_t wait_time,
         return 0;
     }
 
+#ifdef HAVE_MSG_DONTWAIT
 packet_received:
+#endif
     /* ancilliary data */
     {
-#if HAVE_SO_TIMESTAMPNS
+#ifdef HAVE_SO_TIMESTAMPNS
         struct timespec reply_timestamp_ts;
         struct timeval reply_timestamp_tv;
 #endif
         for (cmsg = CMSG_FIRSTHDR(&recv_msghdr);
              cmsg != NULL;
              cmsg = CMSG_NXTHDR(&recv_msghdr, cmsg)) {
-#if HAVE_SO_TIMESTAMPNS
+#ifdef HAVE_SO_TIMESTAMPNS
             if (cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SCM_TIMESTAMPNS &&
                 cmsg->cmsg_len >= CMSG_LEN(sizeof(reply_timestamp_ts))) {
                 memcpy(&reply_timestamp_ts, CMSG_DATA(cmsg), sizeof(reply_timestamp_ts));

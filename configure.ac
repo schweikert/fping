@@ -93,6 +93,9 @@ AC_ARG_ENABLE([debug],
 AS_IF([test "x$enable_debug" = "xyes"], [
   AC_DEFINE([DEBUG], [1], [Define if debugging is enabled])])
 
+AC_ARG_ENABLE([werror],
+  AS_HELP_STRING([--enable-werror], [Treat compiler warnings as errors @<:@default=no@:>@]), [enable_werror=$enableval], [enable_werror=no])
+
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_MAINTAINER_MODE
 
@@ -145,6 +148,61 @@ AC_CHECK_HEADERS([unistd.h sys/file.h stdlib.h sys/select.h])
 
 AC_CHECK_DECL([MSG_DONTWAIT], [AC_DEFINE(HAVE_MSG_DONTWAIT, [1], [MSG_DONTWAIT is defined])], [], [#include <sys/types.h>
 #include <sys/socket.h>])
+
+dnl Probe compiler warning flags (GCC and Clang set GCC=yes).
+dnl Keep compatible with AC_PREREQ(2.59): no AX_CHECK_COMPILE_FLAG or AS_VAR_IF.
+dnl Omit user CFLAGS during probing so unrelated user flags (e.g. -w or linker
+dnl flags on Clang) cannot poison -Werror probes, and use main(void) so
+dnl -Wstrict-prototypes -Werror succeeds on valid flags.
+AC_DEFUN([FPING_APPEND_WARN_CFLAG], [
+  if test -z "$WARN_CFLAGS"; then
+    WARN_CFLAGS="$1"
+  else
+    WARN_CFLAGS="$WARN_CFLAGS $1"
+  fi
+])
+
+AC_DEFUN([FPING_CHECK_CFLAG], [
+  AC_MSG_CHECKING([whether $CC supports $1])
+  fping_save_CFLAGS="$CFLAGS"
+  CFLAGS="$WARN_CFLAGS -Werror $1"
+  AC_COMPILE_IFELSE(
+    [AC_LANG_SOURCE([[int main(void) { return 0; }]])],
+    [fping_cflag_supported=yes],
+    [fping_cflag_supported=no])
+  CFLAGS="$fping_save_CFLAGS"
+  AC_MSG_RESULT([$fping_cflag_supported])
+  if test "x$fping_cflag_supported" = "xyes"; then
+    m4_if([$2], [], [FPING_APPEND_WARN_CFLAG([$1])], [$2])
+  fi
+])
+
+WARN_CFLAGS=""
+fping_werror_ok=no
+if test "x$GCC" = "xyes"; then
+  FPING_CHECK_CFLAG([-Wall])
+  FPING_CHECK_CFLAG([-Wextra])
+  FPING_CHECK_CFLAG([-Wsign-compare], [FPING_APPEND_WARN_CFLAG([-Wno-sign-compare])])
+  FPING_CHECK_CFLAG([-Wstrict-prototypes])
+  FPING_CHECK_CFLAG([-Wold-style-definition])
+  FPING_CHECK_CFLAG([-Wmissing-prototypes])
+  FPING_CHECK_CFLAG([-Wshadow])
+  FPING_CHECK_CFLAG([-Wformat-security])
+  FPING_CHECK_CFLAG([-Wformat-nonliteral])
+  FPING_CHECK_CFLAG([-Wimplicit-fallthrough])
+  FPING_CHECK_CFLAG([-Wundef])
+  FPING_CHECK_CFLAG([-Wvla])
+  if test "x$enable_werror" = "xyes"; then
+    FPING_CHECK_CFLAG([-Werror], [
+      FPING_APPEND_WARN_CFLAG([-Werror])
+      fping_werror_ok=yes
+    ])
+  fi
+fi
+if test "x$enable_werror" = "xyes" && test "x$fping_werror_ok" != "xyes"; then
+  AC_MSG_ERROR([--enable-werror is not supported by this compiler])
+fi
+AC_SUBST([WARN_CFLAGS])
 
 AC_CONFIG_FILES([Makefile
                  doc/Makefile

@@ -1,4 +1,4 @@
-AM_CFLAGS = -Wall -Wextra -Wno-sign-compare
+AM_CFLAGS = $(WARN_CFLAGS)
 
 FPING_CORE_FILES = fping.c flags.c output.c stats.c seqmap.c socket4.c fping.h flags.h options.h output.h stats.h seqmap.h optparse.c optparse.h
 if IPV6

@@ -10,7 +10,7 @@ if [ ! -d ci ]; then
 fi
 
 autoreconf -i
-./configure --enable-ipv4 --enable-ipv6 --enable-safe-limits --prefix=/opt/fping CFLAGS="-g -O0 -fprofile-arcs -ftest-coverage"
+./configure --enable-ipv4 --enable-ipv6 --enable-safe-limits --prefix=/opt/fping ${CONFIGURE_FLAGS:-} CFLAGS="-g -O0 -fprofile-arcs -ftest-coverage"
 rm -f a-conftest.gcno
 make
 

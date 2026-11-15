@@ -81,7 +81,7 @@ int open_ping_socket_ipv6(int *socktype)
         ICMP6_FILTER_SETPASS(ICMP6_PARAM_PROB, &recv_filter);
 
         if (setsockopt(s, IPPROTO_ICMPV6, ICMP6_FILTER, &recv_filter, sizeof(recv_filter))) {
-            errno_crash_and_burn("cannot set icmp6 message type filter");
+            errno_crash_and_burn("cannot set icmp6 message type filter"); /* LCOV_EXCL_LINE */
         }
     }
 
@@ -90,9 +90,9 @@ int open_ping_socket_ipv6(int *socktype)
         int flags;
 
         if ((flags = fcntl(s, F_GETFL, 0)) < 0)
-            perror("fcntl");
+            perror("fcntl"); /* LCOV_EXCL_LINE */
         else if (fcntl(s, F_SETFL, flags | O_NONBLOCK) < 0)
-            perror("fcntl");
+            perror("fcntl"); /* LCOV_EXCL_LINE */
     }
 
     return s;
@@ -114,7 +114,7 @@ void init_ping_buffer_ipv6(size_t ping_data_size)
     ping_pkt_size_ipv6 = ping_data_size + sizeof(struct icmp6_hdr);
     ping_buffer_ipv6 = (char*)calloc(1, ping_pkt_size_ipv6);
     if (!ping_buffer_ipv6)
-        crash_and_burn("can't malloc ping packet");
+        crash_and_burn("can't malloc ping packet"); /* LCOV_EXCL_LINE */
 }
 
 void socket_set_src_addr_ipv6(int s, struct in6_addr* src_addr, int *ident)
@@ -134,7 +134,7 @@ void socket_set_src_addr_ipv6(int s, struct in6_addr* src_addr, int *ident)
     if (ident) {
         memset(&sa, 0, len);
         if (getsockname(s, (struct sockaddr *)&sa, &len) < 0)
-            errno_crash_and_burn("can't get ICMP6 socket identity");
+            errno_crash_and_burn("can't get ICMP6 socket identity"); /* LCOV_EXCL_LINE */
 
         if (sa.sin6_port)
             *ident = sa.sin6_port;

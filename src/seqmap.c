@@ -65,8 +65,10 @@ void seqmap_init(int64_t timeout)
     seqmap_timeout_in_ns = timeout;
     seqmap_map = calloc(SEQMAP_MAXSEQ, sizeof(SEQMAP_VALUE));
     if (seqmap_map == NULL) {
+        /* LCOV_EXCL_START */
         perror("malloc error (can't allocate seqmap_map)");
         exit(4);
+        /* LCOV_EXCL_STOP */
     }
 }
 

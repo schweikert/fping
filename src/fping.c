@@ -367,15 +367,17 @@ int p_setsockopt(uid_t p_uid, int sockfd, int level, int optname,
     int res;
 
     if (p_uid != saved_uid && seteuid(p_uid)) {
-        perror("cannot elevate privileges for setsockopt");
+        perror("cannot elevate privileges for setsockopt"); /* LCOV_EXCL_LINE */
     }
 
     res = setsockopt(sockfd, level, optname, optval, optlen);
 
     if (p_uid != saved_uid && seteuid(saved_uid)) {
+        /* LCOV_EXCL_START */
         perror("fatal error: could not drop privileges after setsockopt");
         /* continuing would be a security hole */
         exit(4);
+        /* LCOV_EXCL_STOP */
     }
 
     return res;
@@ -483,8 +485,10 @@ int main(int argc, char **argv)
     if (suid == 0 && getuid() != 0) {
         /* *temporarily* drop privileges */
         if (seteuid(getuid()) == -1) {
+            /* LCOV_EXCL_START */
             perror("cannot setuid");
             exit(4);
+            /* LCOV_EXCL_STOP */
         }
     }
 
@@ -951,9 +955,11 @@ int main(int argc, char **argv)
     if (suid == 0 && getuid() != 0) {
         /* Restore root euid first so setuid() also clears the saved set-user-ID */
         if (seteuid(suid) == -1 || setuid(getuid()) == -1) {
+            /* LCOV_EXCL_START */
             perror("fatal: failed to permanently drop privileges");
             /* continuing would be a security hole */
             exit(4);
+            /* LCOV_EXCL_STOP */
         }
     }
 
@@ -1370,7 +1376,7 @@ int main(int argc, char **argv)
         int i = 0;
         table = (HOST_ENTRY **)calloc(num_hosts, sizeof(HOST_ENTRY *));
         if (!table)
-            crash_and_burn("Can't malloc array of hosts");
+            crash_and_burn("Can't malloc array of hosts"); /* LCOV_EXCL_LINE */
         /* initialize table of hosts. we know that we have ping events scheduled
          * for each of them */
         for (cursor = event_queue_ping.first; cursor; cursor = cursor->ev_next) {
@@ -1393,7 +1399,7 @@ int main(int argc, char **argv)
     sigaddset(&act.sa_mask, SIGQUIT);
     act.sa_flags = SA_RESTART;
     if (sigaction(SIGQUIT, &act, NULL) || sigaction(SIGINT, &act, NULL)) {
-        crash_and_burn("failure to set signal handler");
+        crash_and_burn("failure to set signal handler"); /* LCOV_EXCL_LINE */
     }
 #else
     signal(SIGINT, signal_handler);
@@ -2140,7 +2146,7 @@ select_again:
             goto select_again;
         }
         else {
-            perror("select");
+            perror("select"); /* LCOV_EXCL_LINE */
         }
     }
 
@@ -2891,10 +2897,12 @@ void add_name(char *name)
             ret = getnameinfo(res->ai_addr, res->ai_addrlen, addrbuf,
                 sizeof(addrbuf) / sizeof(char), NULL, 0, NI_NUMERICHOST);
             if (ret) {
+                /* LCOV_EXCL_START */
                 if (!opt.quiet_on) {
                     print_warning("%s: can't forward-lookup address (%s)\n", name, gai_strerror(ret));
                 }
                 continue;
+                /* LCOV_EXCL_STOP */
             }
 
             if (opt.name_on || opt.rdns_on) {
@@ -2938,12 +2946,12 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
 
     p = (HOST_ENTRY *)calloc(1, sizeof(HOST_ENTRY));
     if (!p)
-        crash_and_burn("can't allocate HOST_ENTRY");
+        crash_and_burn("can't allocate HOST_ENTRY"); /* LCOV_EXCL_LINE */
 
     p->name = strdup(name);
     p->host = strdup(host);
     if (!p->name || !p->host)
-        crash_and_burn("can't allocate memory");
+        crash_and_burn("can't allocate memory"); /* LCOV_EXCL_LINE */
     if (ipaddr_len > (socklen_t)sizeof(p->saddr))
         crash_and_burn("sockaddr too large"); /* LCOV_EXCL_LINE */
     memcpy(&p->saddr, ipaddr, ipaddr_len);
@@ -2971,7 +2979,7 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
 #endif
         i = (int64_t *)malloc(trials * sizeof(int64_t));
         if (!i)
-            crash_and_burn("can't allocate resp_times array");
+            crash_and_burn("can't allocate resp_times array"); /* LCOV_EXCL_LINE */
 
         for (n = 0; n < trials; n++)
             i[n] = RESP_UNUSED;
@@ -2982,11 +2990,11 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
     /* allocate event storage */
     p->event_storage_ping = (struct event *)calloc(event_storage_count, sizeof(struct event));
     if (!p->event_storage_ping) {
-        errno_crash_and_burn("can't allocate event_storage_ping");
+        errno_crash_and_burn("can't allocate event_storage_ping"); /* LCOV_EXCL_LINE */
     }
     p->event_storage_timeout = (struct event *)calloc(event_storage_count, sizeof(struct event));
     if (!p->event_storage_timeout) {
-        errno_crash_and_burn("can't allocate event_storage_timeout");
+        errno_crash_and_burn("can't allocate event_storage_timeout"); /* LCOV_EXCL_LINE */
     }
 
     /* schedule first ping */

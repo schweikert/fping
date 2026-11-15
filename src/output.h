@@ -13,5 +13,5 @@ void print_per_system_splits_json(void);
 void print_json_string(FILE *out, const char *s);
 
 const char *sprint_tm(int64_t ns);
-void print_timestamp_format(int64_t current_time_ns, int timestamp_format);
+void print_timestamp_format(int64_t timestamp_ns, int timestamp_format);
 #endif

@@ -114,15 +114,15 @@ void print_json_string(FILE *out, const char *s)
 
 /************************************************************
 
-  Function: print_human_readable_time from current_time_ns
+  Function: print_human_readable_time from timestamp_ns
 
 *************************************************************/
-void print_timestamp_format(int64_t current_time_ns, int timestamp_format)
+void print_timestamp_format(int64_t timestamp_ns, int timestamp_format)
 {
     char time_buffer[100];
     time_t current_time_s;
     struct tm *local_time;
-    int64_t wall_time_ns = get_wallclock_ns(current_time_ns);
+    int64_t wall_time_ns = get_wallclock_ns(timestamp_ns);
     const char *fmt;
 
     if (timestamp_format == TIMESTAMP_FORMAT_EPOCH) {

@@ -25,3 +25,8 @@ rm -f doc/fping.8
 rm -f src/*.gcda
 rm -f src/*.gcno
 rm -f src/*.gcov
+rm -f src/*_test
+rm -f src/*.log
+rm -f src/*.trs
+rm -f test-driver
+rm -f a-conftest.gcno

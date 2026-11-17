@@ -35,6 +35,7 @@ jobs:
         run: |
           set -ex
           PATH=`pwd`/src:$PATH
+          make check VERBOSE=1
           # avoid pinging internet hosts because it doesn't
           # work with GitHub Actions being hosted in Azure.
           prove $(ls ci/test-*.pl|grep -v internet-hosts)
@@ -113,6 +114,7 @@ jobs:
             make
             adduser -D testuser
             chown -R testuser:testuser .
+            su testuser -c "make check VERBOSE=1"
             chown root:root src/fping
             chmod u+s src/fping
             su testuser -c "PATH=/work/src:\$PATH prove \$(ls ci/test-*.pl | grep -v internet-hosts)"
@@ -138,6 +140,7 @@ jobs:
         run: |
           set -ex
           PATH=`pwd`/src:$PATH
+          make check VERBOSE=1
           # Skip unscoped ff02::1 multicast tests; unicast IPv6 (::1) tests run
           export SKIP_IPV6_MULTICAST=1
           prove $(ls ci/test-*.pl|grep -v internet-hosts)

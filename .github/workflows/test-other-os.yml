@@ -40,6 +40,7 @@ jobs:
             gmake
             pw useradd testuser -m -s /bin/sh
             chown -R testuser .
+            su testuser -c "PATH=/usr/local/bin:\$PATH gmake check VERBOSE=1"
             chown root:wheel src/fping
             chmod 4755 src/fping
             su testuser -c "PATH=$(pwd)/src:/usr/local/bin:\$PATH SKIP_IPV6=1 prove \$(ls ci/test-*.pl | grep -v internet-hosts)"
@@ -78,6 +79,7 @@ jobs:
             gmake
             useradd -m -s /bin/sh testuser
             chown -R testuser .
+            su testuser -c "PATH=/usr/local/bin:\$PATH gmake check VERBOSE=1"
             chown root:wheel src/fping
             chmod 4755 src/fping
             su testuser -c "PATH=$(pwd)/src:/usr/local/bin:\$PATH SKIP_IPV6=1 prove \$(ls ci/test-*.pl | grep -v internet-hosts)"
@@ -115,6 +117,7 @@ jobs:
             # OmniOS /home is automounted; use /tmp/testuser for home directory
             useradd -d /tmp/testuser -m -s /bin/sh testuser
             chown -R testuser .
+            su testuser -c "PATH=$PATH gmake check VERBOSE=1"
             chown root:root src/fping
             chmod 4755 src/fping
             su testuser -c "PATH=$(pwd)/src:$PATH SKIP_IPV6=1 prove \$(ls ci/test-*.pl | grep -v internet-hosts)"

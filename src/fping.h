@@ -97,6 +97,7 @@ extern int64_t max_reply, min_reply, total_replies, sum_replies;
 #endif
 
 /* fping.c */
+int fping_main(int argc, char **argv);
 void add_name(char *name);
 void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_len);
 int send_ping(HOST_ENTRY *h, int index);

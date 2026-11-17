@@ -416,7 +416,7 @@ double strtod_strict(const char *arg)
 
 /************************************************************
 
-  Function: main
+  Function: fping_main
 
 *************************************************************
 
@@ -428,7 +428,7 @@ double strtod_strict(const char *arg)
 
 ************************************************************/
 
-int main(int argc, char **argv)
+int fping_main(int argc, char **argv)
 {
 /* Debug: debug_options_init() and CPU Performance */
 #if defined(DEBUG) || defined(_DEBUG)
@@ -1440,6 +1440,7 @@ int main(int argc, char **argv)
 #endif /* DEBUG || _DEBUG */
 
     finish();
+    return 0;
 }
 
 static inline int64_t timespec_ns(struct timespec *a)

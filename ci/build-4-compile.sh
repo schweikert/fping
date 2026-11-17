@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 set -x
 
 PATH=$(pwd)/ci/build/bin:$PATH
@@ -9,8 +10,9 @@ if [ ! -d ci ]; then
 fi
 
 autoreconf -i
-./configure --enable-ipv4 --enable-ipv6 --enable-safe-limits --prefix=/opt/fping
-make CFLAGS="-g -O0 -fprofile-arcs -ftest-coverage"
+./configure --enable-ipv4 --enable-ipv6 --enable-safe-limits --prefix=/opt/fping CFLAGS="-g -O0 -fprofile-arcs -ftest-coverage"
+rm -f a-conftest.gcno
+make
 
 # use setuid, since setcap is not available
 sudo chown root src/fping

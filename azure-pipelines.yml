@@ -23,6 +23,7 @@ jobs:
   - script: |
      set -ex
      PATH=`pwd`/src:$PATH
+     make check VERBOSE=1
      prove $(ls ci/test-*.pl|grep -v internet-hosts|grep -v -E "test-13-unknown-host.pl|test-14-ping-internet-hosts.pl")
      ci/test-tarball.sh
     displayName: 'build_test'
@@ -49,6 +50,7 @@ jobs:
     - script: |
        set -ex
        PATH=`pwd`/src:$PATH
+       make check VERBOSE=1
        export SKIP_IPV6=1
        prove $(ls ci/test-*.pl|grep -v internet-hosts|grep -v test-10-option-u-x.pl)
        ci/run-lcov.sh

@@ -196,11 +196,19 @@ sudo -u runner -- bash -euo pipefail -c '
     if [ -f Makefile ]; then
         make distclean >/dev/null 2>&1 || true
     fi
-    rm -f src/*.o src/fping src/fping6
+    rm -f src/*.o src/fping src/fping6 src/*_test src/*.log src/*.trs src/*.gcda src/*.gcno
     autoreconf -i
     ./configure --enable-ipv4 --enable-ipv6 --enable-safe-limits --prefix=/opt/fping >/dev/null
     make -j"$(nproc)" >/dev/null
 '
+
+if [ $# -eq 0 ]; then
+    echo "==> Running unit tests (make check)..."
+    sudo -u runner -- bash -euo pipefail -c '
+        cd /tmp/fping
+        exec make check VERBOSE=1
+    '
+fi
 
 chown root:root /tmp/fping/src/fping
 chmod u+s /tmp/fping/src/fping

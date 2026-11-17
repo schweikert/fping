@@ -28,4 +28,5 @@ DIRNAME=$(ls)
 cd $DIRNAME
 ./configure --enable-ipv4 --enable-ipv6 --prefix=/opt/fping
 make
+make check VERBOSE=1
 sudo make install 

@@ -40,6 +40,7 @@ jobs:
             gmake
             pw useradd testuser -m -s /bin/sh
             chown -R testuser .
+            su testuser -c "PATH=/usr/local/bin:\$PATH gmake check VERBOSE=1"
             chown root:wheel src/fping
             chmod 4755 src/fping
             # Skip unscoped ff02::1 multicast tests; unicast IPv6 (::1) tests run
@@ -79,6 +80,7 @@ jobs:
             gmake
             useradd -m -s /bin/sh testuser
             chown -R testuser .
+            su testuser -c "PATH=/usr/local/bin:\$PATH gmake check VERBOSE=1"
             chown root:wheel src/fping
             chmod 4755 src/fping
             # Skip unscoped ff02::1 multicast tests; unicast IPv6 (::1) tests run
@@ -117,6 +119,7 @@ jobs:
             # OmniOS /home is automounted; use /tmp/testuser for home directory
             useradd -d /tmp/testuser -m -s /bin/sh testuser
             chown -R testuser .
+            su testuser -c "PATH=$PATH gmake check VERBOSE=1"
             chown root:root src/fping
             chmod 4755 src/fping
             # Skip unscoped ff02::1 multicast tests; unicast IPv6 (::1) tests run

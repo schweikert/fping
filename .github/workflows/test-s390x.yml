@@ -37,6 +37,7 @@ jobs:
             make -j$(nproc)
             useradd -m -s /bin/sh testuser
             chown -R testuser:testuser .
+            su testuser -c "LC_ALL=C.UTF-8 make check VERBOSE=1"
             chown root:root src/fping
             chmod u+s src/fping
             su testuser -c "LC_ALL=C.UTF-8 PATH=$(pwd)/src:\$PATH prove \$(ls ci/test-*.pl | grep -v internet-hosts)"

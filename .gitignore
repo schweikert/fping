@@ -25,6 +25,7 @@ doc/fping.8
 doc/fping6.8
 install-sh
 missing
+stamp-h1
 src/*.gcda
 src/*.gcno
 src/*.gcov
@@ -32,4 +33,7 @@ src/*.o
 src/fping
 src/fping6
 src/tags
-stamp-h1
+src/*_test
+src/*.log
+src/*.trs
+test-driver

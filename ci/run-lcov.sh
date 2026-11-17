@@ -2,6 +2,8 @@
 set -eu
 trap 'rm -f lcov-all.info lcov-filtered.info' EXIT
 
+rm -f src/*_test.gcda src/*_test.gcno
+
 lcov -c -no-external \
     -d . \
     -b src \

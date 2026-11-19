@@ -2407,6 +2407,13 @@ void stats_reset_interval(HOST_ENTRY *h)
     h->total_time_i = 0;
 }
 
+static void format_numeric_addr(struct sockaddr *addr, char *buf, socklen_t buflen)
+{
+    socklen_t salen = (addr->sa_family == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6);
+    if (getnameinfo(addr, salen, buf, buflen, NULL, 0, NI_NUMERICHOST) != 0)
+        snprintf(buf, buflen, "unknown");
+}
+
 static inline int ipv4_header_len(const struct ip *ip)
 {
 #if defined(__alpha__) && __STDC__ && !defined(__GLIBC__) && !defined(__NetBSD__) && !defined(__OpenBSD__)
@@ -2418,7 +2425,6 @@ static inline int ipv4_header_len(const struct ip *ip)
 
 static int decode_icmp_ipv4(
     struct sockaddr *response_addr,
-    size_t response_addr_len,
     char *reply_buf,
     size_t reply_buf_len,
     unsigned short *id,
@@ -2446,8 +2452,8 @@ static int decode_icmp_ipv4(
     if (reply_buf_len < hlen + ICMP_MINLEN) {
         /* too short */
         if (opt.verbose_on) {
-            char buf[INET6_ADDRSTRLEN];
-            getnameinfo(response_addr, response_addr_len, buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+            char buf[64];
+            format_numeric_addr(response_addr, buf, sizeof(buf));
             printf("received packet too short for ICMP (%d bytes from %s)\n", (int)reply_buf_len, buf);
         }
         return -1;
@@ -2462,7 +2468,7 @@ static int decode_icmp_ipv4(
         int sent_hlen;
         struct icmp *sent_icmp;
         SEQMAP_VALUE *seqmap_value;
-        char addr_ascii[INET6_ADDRSTRLEN];
+        char addr_ascii[64];
         HOST_ENTRY *h;
 
         /* reply icmp packet (hlen + ICMP_MINLEN) followed by "sent packet" (ip + icmp headers) */
@@ -2492,7 +2498,7 @@ static int decode_icmp_ipv4(
             return -1;
         }
 
-        getnameinfo(response_addr, response_addr_len, addr_ascii, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+        format_numeric_addr(response_addr, addr_ascii, sizeof(addr_ascii));
 
         switch (icp->icmp_type) {
         case ICMP_UNREACH:
@@ -2540,8 +2546,8 @@ static int decode_icmp_ipv4(
         /* Check that reply_buf_len is sufficiently big to contain the timestamps */
         if (reply_buf_len < hlen + ICMP_MINLEN + ICMP_TIMESTAMP_DATA_SIZE) {
             if (opt.verbose_on) {
-                char buf[INET6_ADDRSTRLEN];
-                getnameinfo(response_addr, response_addr_len, buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+                char buf[64];
+                format_numeric_addr(response_addr, buf, sizeof(buf));
                 printf("received packet too short for ICMP Timestamp Reply (%d bytes from %s)\n", (int)reply_buf_len, buf);
             }
             return -1;
@@ -2565,7 +2571,6 @@ static int decode_icmp_ipv4(
 #ifdef IPV6
 static int decode_icmp_ipv6(
     struct sockaddr *response_addr,
-    size_t response_addr_len,
     char *reply_buf,
     size_t reply_buf_len,
     unsigned short *id,
@@ -2577,8 +2582,8 @@ static int decode_icmp_ipv6(
 
     if (reply_buf_len < sizeof(struct icmp6_hdr)) {
         if (opt.verbose_on) {
-            char buf[INET6_ADDRSTRLEN];
-            getnameinfo(response_addr, response_addr_len, buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+            char buf[64];
+            format_numeric_addr(response_addr, buf, sizeof(buf));
             printf("received packet too short for ICMPv6 (%d bytes from %s)\n", (int)reply_buf_len, buf);
         }
         return 0; /* too short */
@@ -2591,7 +2596,7 @@ static int decode_icmp_ipv6(
         struct ip6_hdr *sent_ipv6;
         struct icmp6_hdr *sent_icmp;
         SEQMAP_VALUE *seqmap_value;
-        char addr_ascii[INET6_ADDRSTRLEN];
+        char addr_ascii[64];
         HOST_ENTRY *h;
 
         /* reply icmp packet (ICMPv6 header) followed by "sent packet" (IPv6 + ICMPv6 header) */
@@ -2621,7 +2626,7 @@ static int decode_icmp_ipv6(
             return 0;
         }
 
-        getnameinfo(response_addr, response_addr_len, addr_ascii, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+        format_numeric_addr(response_addr, addr_ascii, sizeof(addr_ascii));
         h = table[seqmap_value->host_nr];
 
         switch (icp->icmp6_type) {
@@ -2744,7 +2749,6 @@ int wait_for_reply(int64_t wait_time)
     if (response_addr.ss_family == AF_INET) {
         int ip_hlen = decode_icmp_ipv4(
             (struct sockaddr *)&response_addr,
-            sizeof(response_addr),
             recv_buf.buf,
             recv_buf_len,
             &id,
@@ -2766,7 +2770,6 @@ int wait_for_reply(int64_t wait_time)
     else if (response_addr.ss_family == AF_INET6) {
         if (!decode_icmp_ipv6(
                 (struct sockaddr *)&response_addr,
-                sizeof(response_addr),
                 recv_buf.buf,
                 recv_buf_len,
                 &id,
@@ -2813,8 +2816,8 @@ int wait_for_reply(int64_t wait_time)
                 h->host, this_count, result, sprint_tm(this_reply));
 
             if (addr_cmp((struct sockaddr *)&response_addr, (struct sockaddr *)&h->saddr)) {
-                char buf[INET6_ADDRSTRLEN];
-                getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+                char buf[64];
+                format_numeric_addr((struct sockaddr *)&response_addr, buf, sizeof(buf));
                 fprintf(stderr, " [<- %s]", buf);
             }
             fprintf(stderr, "\n");
@@ -2883,8 +2886,8 @@ int wait_for_reply(int64_t wait_time)
 
     if (opt.verbose_on || opt.alive_on || opt.per_recv_on) {
         if (addr_cmp((struct sockaddr *)&response_addr, (struct sockaddr *)&h->saddr)) {
-            char buf[INET6_ADDRSTRLEN];
-            getnameinfo((struct sockaddr *)&response_addr, sizeof(response_addr), buf, INET6_ADDRSTRLEN, NULL, 0, NI_NUMERICHOST);
+            char buf[64];
+            format_numeric_addr((struct sockaddr *)&response_addr, buf, sizeof(buf));
             fprintf(stderr, " [<- %s]", buf);
         }
         print_recv_ext(&ip_header_res,

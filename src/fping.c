@@ -98,13 +98,14 @@ extern "C" {
 #define AI_UNUSABLE 0
 #endif
 
-/* MSG_TRUNC available on Linux kernel 2.2+, makes recvmsg return the full
- * length of the raw packet received, even if the buffer is smaller */
-#ifndef MSG_TRUNC
+/* On Linux, MSG_TRUNC makes recvmsg() return the full packet length even if
+ * the buffer is smaller. On other platforms, use a 4096-byte buffer. */
+#if defined(__linux__) && defined(MSG_TRUNC)
+#define RECV_BUFSIZE 160
+#else
+#undef MSG_TRUNC
 #define MSG_TRUNC 0
 #define RECV_BUFSIZE 4096
-#else
-#define RECV_BUFSIZE 128
 #endif
 
 /*** externals ***/
@@ -2389,6 +2390,15 @@ void stats_reset_interval(HOST_ENTRY *h)
     h->total_time_i = 0;
 }
 
+static inline int ipv4_header_len(const struct ip *ip)
+{
+#if defined(__alpha__) && __STDC__ && !defined(__GLIBC__) && !defined(__NetBSD__) && !defined(__OpenBSD__)
+    return (ip->ip_vhl & 0x0F) << 2;
+#else
+    return ip->ip_hl << 2;
+#endif
+}
+
 int decode_icmp_ipv4(
     struct sockaddr *response_addr,
     size_t response_addr_len,
@@ -2403,19 +2413,17 @@ int decode_icmp_ipv4(
     struct ip *ip = NULL;
 
     if (!socket4_strips_ip_header) {
+        if (reply_buf_len < sizeof(struct ip)) {
+            return -1;
+        }
         ip = (struct ip *)reply_buf;
         ip_header_res->tos = ip->ip_tos;
         ip_header_res->ttl = ip->ip_ttl;
 
-#if defined(__alpha__) && __STDC__ && !defined(__GLIBC__) && !defined(__NetBSD__) && !defined(__OpenBSD__)
-        /* The alpha headers are decidedly broken.
-         * Using an ANSI compiler, it provides ip_vhl instead of ip_hl and
-         * ip_v.  So, to get ip_hl, we mask off the bottom four bits.
-         */
-        hlen = (ip->ip_vhl & 0x0F) << 2;
-#else
-        hlen = ip->ip_hl << 2;
-#endif
+        hlen = ipv4_header_len(ip);
+        if (hlen < (int)sizeof(struct ip)) {
+            return -1;
+        }
     }
 
     if (reply_buf_len < hlen + ICMP_MINLEN) {
@@ -2433,6 +2441,8 @@ int decode_icmp_ipv4(
     if ((opt.icmp_request_typ == 0 && icp->icmp_type != ICMP_ECHOREPLY) ||
         (opt.icmp_request_typ == 13 && icp->icmp_type != ICMP_TSTAMPREPLY)) {
         /* Handle other ICMP packets */
+        struct ip *sent_ip;
+        int sent_hlen;
         struct icmp *sent_icmp;
         SEQMAP_VALUE *seqmap_value;
         char addr_ascii[INET6_ADDRSTRLEN];
@@ -2444,7 +2454,14 @@ int decode_icmp_ipv4(
             return -1;
         }
 
-        sent_icmp = (struct icmp *)(reply_buf + hlen + ICMP_MINLEN + sizeof(struct ip));
+        sent_ip = (struct ip *)(reply_buf + hlen + ICMP_MINLEN);
+        sent_hlen = ipv4_header_len(sent_ip);
+        if (sent_ip->ip_p != IPPROTO_ICMP || sent_hlen < (int)sizeof(struct ip) ||
+            reply_buf_len < hlen + ICMP_MINLEN + sent_hlen + ICMP_MINLEN) {
+            return -1;
+        }
+
+        sent_icmp = (struct icmp *)(reply_buf + hlen + ICMP_MINLEN + sent_hlen);
 
         if ((opt.icmp_request_typ == 0 && sent_icmp->icmp_type != ICMP_ECHO) ||
             (opt.icmp_request_typ == 13 && sent_icmp->icmp_type != ICMP_TSTAMP) ||
@@ -2660,7 +2677,11 @@ int decode_icmp_ipv6(
 int wait_for_reply(int64_t wait_time)
 {
     int result;
-    static char buffer[RECV_BUFSIZE];
+    static union {
+        char buf[RECV_BUFSIZE];
+        uint64_t align; /* portable C99 8-byte alignment for struct ip/icmp casts */
+    } recv_buf;
+    size_t recv_buf_len;
     struct sockaddr_storage response_addr = { 0 };
     int n;
     int64_t avg;
@@ -2683,8 +2704,8 @@ int wait_for_reply(int64_t wait_time)
         &recv_time, /* reply_timestamp */
         (struct sockaddr *)&response_addr, /* reply_src_addr */
         sizeof(response_addr), /* reply_src_addr_len */
-        buffer, /* reply_buf */
-        sizeof(buffer), /* reply_buf_len */
+        recv_buf.buf, /* reply_buf */
+        sizeof(recv_buf.buf), /* reply_buf_len */
         &ip_header_res.tos, /* TOS resp. TC byte */
         &ip_header_res.ttl /* TTL resp. hop limit */
 #ifdef IPV6
@@ -2696,6 +2717,8 @@ int wait_for_reply(int64_t wait_time)
         return 0;
     }
 
+    recv_buf_len = (size_t)result < sizeof(recv_buf.buf) ? (size_t)result : sizeof(recv_buf.buf);
+
     update_current_time();
     if (recv_time == 0)
         recv_time = current_time_ns;
@@ -2705,8 +2728,8 @@ int wait_for_reply(int64_t wait_time)
         int ip_hlen = decode_icmp_ipv4(
             (struct sockaddr *)&response_addr,
             sizeof(response_addr),
-            buffer,
-            sizeof(buffer),
+            recv_buf.buf,
+            recv_buf_len,
             &id,
             &seq,
             &ip_header_res);
@@ -2727,8 +2750,8 @@ int wait_for_reply(int64_t wait_time)
         if (!decode_icmp_ipv6(
                 (struct sockaddr *)&response_addr,
                 sizeof(response_addr),
-                buffer,
-                sizeof(buffer),
+                recv_buf.buf,
+                recv_buf_len,
                 &id,
                 &seq,
                 &ip_header_res,

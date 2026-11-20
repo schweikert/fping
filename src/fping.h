@@ -46,9 +46,8 @@ typedef struct host_entry {
     int64_t total_time_i; /* sum of response times */
     int64_t *resp_times; /* individual response times */
 
-    /* to avoid allocating two struct events each time that we send a ping, we
-     * preallocate here two struct events for each ping that we might send for
-     * this host. */
+    /* Preallocated event storage for this host: one ping event (at most one is
+     * queued at a time) and a ring buffer of timeout events for in-flight pings. */
     struct event *event_storage_ping;
     struct event *event_storage_timeout;
 } HOST_ENTRY;

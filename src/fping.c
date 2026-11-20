@@ -1683,20 +1683,24 @@ void add_range(char *start, char *end)
 
 void add_addr_range_ipv4(unsigned long start_long, unsigned long end_long)
 {
+    if (end_long < start_long) {
+        return;
+    }
+
     /* check if generator limit is exceeded */
-    if (end_long >= start_long + MAX_GENERATE) {
+    if (end_long - start_long >= MAX_GENERATE) {
         fprintf(stderr, "%s: -g parameter generates too many addresses\n", prog);
         exit(1);
     }
 
     /* generate */
-    for (; start_long <= end_long; start_long++) {
+    do {
         struct in_addr in_addr_tmp;
         char buffer[20];
         in_addr_tmp.s_addr = htonl(start_long);
         inet_ntop(AF_INET, &in_addr_tmp, buffer, sizeof(buffer));
         add_name(buffer);
-    }
+    } while (start_long++ != end_long);
 }
 
 #ifdef IPV6
@@ -1725,18 +1729,21 @@ void add_addr_range_ipv6(uint64_t start_upper, uint64_t start_lower,
     struct in6_addr in6_addr_tmp;
     char buffer[100];
 
-    /* prevent generating too many addresses */
-    if ((start_upper + 1 < end_upper) ||
-        (start_upper + 1 == end_upper && end_lower >= start_lower) ||
-        (start_upper + 1 == end_upper && end_lower - MAX_GENERATE >= start_lower) ||
-        (start_upper == end_upper && end_lower - MAX_GENERATE >= start_lower &&
-                                     start_lower + MAX_GENERATE <= end_lower)) {
+    if (end_upper < start_upper ||
+        (end_upper == start_upper && end_lower < start_lower)) {
+        return;
+    }
+
+    /* prevent generating too many addresses; when end_upper - start_upper == 1
+     * and end_lower < start_lower, uint64_t subtraction wraps to the exact distance */
+    if (end_upper - start_upper > 1 ||
+        (end_upper - start_upper == 1 && end_lower >= start_lower) ||
+        end_lower - start_lower >= MAX_GENERATE) {
         fprintf(stderr, "%s: -g parameter generates too many addresses\n", prog);
         exit(1);
     }
 
-    while ((start_upper < end_upper) ||
-           (start_upper == end_upper && start_lower <= end_lower)) {
+    while (1) {
         uint64_to_be_octets(start_upper, in6_addr_tmp.s6_addr);
         uint64_to_be_octets(start_lower, in6_addr_tmp.s6_addr + 8);
         inet_ntop(AF_INET6, &in6_addr_tmp, buffer, sizeof(buffer));
@@ -1748,6 +1755,9 @@ void add_addr_range_ipv6(uint64_t start_upper, uint64_t start_lower,
             strncat(buffer, scope_str, sizeof(buffer) - strlen(buffer) - 1);
         }
         add_name(buffer);
+        if (start_upper == end_upper && start_lower == end_lower) {
+            break;
+        }
         start_lower++;
         if (start_lower == 0) {
             start_upper++;

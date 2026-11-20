@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 161;
+use Test::Command tests => 166;
 use Test::More;
 use File::Temp;
 
@@ -398,6 +398,27 @@ SKIP: {
     $cmd->exit_is_num(1);
     $cmd->stdout_is_eq("");
     $cmd->stderr_is_eq("fping: -g parameter generates too many addresses\n");
+}
+
+# fping -g (range - too many addresses across 64-bit boundary)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -g 2001:db8:0:0:ffff:: 2001:db8:0:1::2:0");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_is_eq("fping: -g parameter generates too many addresses\n");
+}
+
+# fping -g (range - UINT64_MAX boundary without overflow/wraparound)
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 2;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -t10 -i1 -r0 -g ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe is unreachable\nffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff is unreachable\n");
 }
 
 # fping -6 -g (range - mixed address families - start address IPv6)

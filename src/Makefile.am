@@ -11,9 +11,11 @@ fping_DEPENDENCIES = ../config.h
 
 # unit testing
 noinst_HEADERS = greatest.h
-check_PROGRAMS = output_test socket4_test
+check_PROGRAMS = output_test socket4_test fping_test
 TESTS = $(check_PROGRAMS)
 output_test_SOURCES = output_test.c $(FPING_CORE_FILES)
 output_test_DEPENDENCIES = ../config.h
 socket4_test_SOURCES = socket4_test.c $(FPING_CORE_FILES)
 socket4_test_DEPENDENCIES = ../config.h
+fping_test_SOURCES = fping_test.c $(FPING_CORE_FILES)
+fping_test_DEPENDENCIES = ../config.h

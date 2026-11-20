@@ -100,6 +100,7 @@ extern int64_t max_reply, min_reply, total_replies, sum_replies;
 
 /* fping.c */
 int fping_main(int argc, char **argv);
+int calc_loop_event_storage_count(int64_t timeout, int64_t perhost_interval, int64_t interval);
 void add_name(char *name);
 void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_len);
 int send_ping(HOST_ENTRY *h, int index);

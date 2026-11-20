@@ -412,6 +412,19 @@ double strtod_strict(const char *arg)
     return val;
 }
 
+int calc_loop_event_storage_count(int64_t timeout, int64_t perhost_interval, int64_t interval)
+{
+    int64_t min_interval = perhost_interval > interval ? perhost_interval : interval;
+    if (timeout <= 0) {
+        return 1;
+    }
+    if (min_interval <= 0) {
+        return SEQMAP_MAXSEQ;
+    }
+    int64_t in_flight = timeout / min_interval;
+    return (in_flight >= SEQMAP_MAXSEQ) ? SEQMAP_MAXSEQ : (int)(1 + in_flight);
+}
+
 /************************************************************
 
   Function: fping_main
@@ -1237,12 +1250,7 @@ int fping_main(int argc, char **argv)
         event_storage_count = opt.count;
     }
     else if (opt.loop_on) {
-        if (opt.perhost_interval > opt.timeout) {
-            event_storage_count = 1;
-        }
-        else {
-            event_storage_count = 1 + opt.timeout / opt.perhost_interval;
-        }
+        event_storage_count = calc_loop_event_storage_count(opt.timeout, opt.perhost_interval, opt.interval);
     }
     else {
         event_storage_count = 1;

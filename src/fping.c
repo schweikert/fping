@@ -3061,7 +3061,7 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
     }
 
     /* allocate event storage */
-    p->event_storage_ping = (struct event *)calloc(event_storage_count, sizeof(struct event));
+    p->event_storage_ping = (struct event *)calloc(1, sizeof(struct event));
     if (!p->event_storage_ping) {
         errno_crash_and_burn("can't allocate event_storage_ping"); /* LCOV_EXCL_LINE */
     }
@@ -3165,7 +3165,7 @@ static int ev_is_enqueued(const struct event_queue *queue, const struct event *e
 
 void host_add_ping_event(HOST_ENTRY *h, int index, int64_t ev_time)
 {
-    struct event *event = &h->event_storage_ping[index % event_storage_count];
+    struct event *event = h->event_storage_ping;
     event->host = h;
     event->ping_index = index;
     event->ev_time = ev_time;

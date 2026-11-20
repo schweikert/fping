@@ -2787,7 +2787,7 @@ int wait_for_reply(int64_t wait_time)
     }
 
     /* discard duplicates */
-    if (seqmap_value->replied || (!opt.loop_on && h->resp_times[this_count] >= 0)) {
+    if (seqmap_value->replied) {
         if (!opt.per_recv_on && !opt.quiet_on) {
             fprintf(stderr, "%s : duplicate for [%d], %d bytes, %s ms",
                 h->host, this_count, result, sprint_tm(this_reply));
@@ -2799,6 +2799,13 @@ int wait_for_reply(int64_t wait_time)
             }
             fprintf(stderr, "\n");
         }
+        return 1;
+    }
+
+    /* In default retry mode, retries share ping_index 0; silently ignore
+     * replies to other retries once this trial has already been answered. */
+    if (!opt.loop_on && h->resp_times[this_count] >= 0) {
+        seqmap_value->replied = 1;
         return 1;
     }
 

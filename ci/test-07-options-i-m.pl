@@ -1,7 +1,8 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 53;
+use Test::Command tests => 60;
 use Test::More;
+use Time::HiRes qw(gettimeofday tv_interval);
 
 #  -i n       interval between sending ping packets (in millisec) (default 25)
 #  -I IFACE   bind to a particular interface, not always available
@@ -215,4 +216,28 @@ my $cmd = Test::Command->new(cmd => "fping -4 -m localhost");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr{^(localhost is alive\n)+$});
 $cmd->stderr_is_eq("");
+}
+
+# fping -l responds promptly to SIGQUIT and SIGINT during a long select() wait
+{
+my $t0 = [gettimeofday];
+my $cmd = Test::Command->new(cmd => '(sleep 0.5; pkill -QUIT fping; sleep 0.3; pkill -INT fping)& fping -l -p 10000 -t 10000 127.0.0.1');
+$cmd->exit_is_num(0);
+my $elapsed = tv_interval($t0);
+cmp_ok($elapsed, '<', 4.0, 'SIGQUIT/SIGINT interrupts 10s select() wait promptly');
+$cmd->stdout_like(qr{^127\.0\.0\.1 : \[0\], 64 bytes, \d+(?:\.\d+)? ms \(\d+(?:\.\d+)? avg, 0% loss\)\n$});
+$cmd->stderr_like(qr{\[\d\d:\d\d:\d\d\]\n127\.0\.0\.1 : xmt/rcv/%loss = 1/1/0%[^\n]*\n\n127\.0\.0\.1 : xmt/rcv/%loss = 1/1/0%});
+}
+
+# fping -Q preserves interval statistics across SIGQUIT snapshots
+SKIP: {
+if($^O eq 'darwin') {
+    skip 'On macOS, -Q tests are unreliable', 3;
+}
+my $cmd = Test::Command->new(cmd => '(sleep 0.5; pkill -QUIT fping)& fping -c 13 -p 100 -t 1000 -Q 1 127.0.0.1');
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("");
+my @xmts = ($cmd->stderr_value =~ /127\.0\.0\.1 : xmt\/rcv\/%loss = (\d+)\//g);
+ok(scalar(@xmts) == 3 && $xmts[0] >= 1 && $xmts[2] == 13 && ($xmts[0] + $xmts[1]) > $xmts[2],
+    'SIGQUIT snapshot did not reset -Q interval counters (xmt counts: ' . join(',', @xmts) . ')');
 }

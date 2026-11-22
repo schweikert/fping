@@ -1784,6 +1784,11 @@ void main_loop(void)
     struct host_entry *h;
 
     while (event_queue_ping.first || event_queue_timeout.first) {
+        /* Exit immediately if SIGINT was received or fast_reachable condition
+         * was met during wait_for_reply() in the previous iteration. */
+        if (finish_requested)
+            break;
+
         dbg_printf("%s", "# main_loop\n");
 
         /* timeout event ? */
@@ -1905,18 +1910,19 @@ void main_loop(void)
         /* (this is what sleeps during each loop iteration) */
         dbg_printf("waiting up to %.0f ms\n", wait_time_ns / 1e6);
         if (wait_for_reply(wait_time_ns)) {
-            while (wait_for_reply(0))
+            while (!finish_requested && wait_for_reply(0))
                 ; /* process other replies in the queue */
         }
 
         update_current_time();
 
         if (status_snapshot) {
+            int reset_interval = (report_interval == 0);
             status_snapshot = 0;
             if (opt.print_json_on)
-                print_per_system_splits_json();
+                print_per_system_splits_json(reset_interval);
             else
-                print_per_system_splits();
+                print_per_system_splits(reset_interval);
         }
 
         /* Print report */
@@ -1925,10 +1931,10 @@ void main_loop(void)
                 print_netdata();
             }
             else if (opt.print_json_on) {
-                print_per_system_splits_json();
+                print_per_system_splits_json(1);
             }
             else {
-                print_per_system_splits();
+                print_per_system_splits(1);
             }
 
             while (current_time_ns >= next_report_time) {
@@ -2162,7 +2168,6 @@ static int socket_can_read(struct timeval *timeout)
         crash_and_burn("socket descriptor exceeds FD_SETSIZE"); /* LCOV_EXCL_LINE */
     }
 
-select_again:
     FD_ZERO(&readset);
     if (socket4 >= 0)
         FD_SET(socket4, &readset);
@@ -2174,8 +2179,8 @@ select_again:
     nfound = select(socketmax + 1, &readset, NULL, NULL, timeout);
     if (nfound < 0) {
         if (errno == EINTR) {
-            /* interrupted system call: redo the select */
-            goto select_again;
+            /* Interrupted by signal: return so main_loop() can process flags */
+            return -1;
         }
         else {
             perror("select"); /* LCOV_EXCL_LINE */

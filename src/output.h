@@ -8,8 +8,8 @@ void print_recv(HOST_ENTRY *h, int64_t recv_time, int result, int this_count, in
 void print_timeout(HOST_ENTRY *h, int ping_index);
 void print_recv_ext(IP_HEADER_RESULT *ip_header_res, int64_t recv_time, int64_t this_reply);
 void print_netdata(void);
-void print_per_system_splits(void);
-void print_per_system_splits_json(void);
+void print_per_system_splits(int reset_interval);
+void print_per_system_splits_json(int reset_interval);
 void print_json_string(FILE *out, const char *s);
 
 const char *sprint_tm(int64_t ns);

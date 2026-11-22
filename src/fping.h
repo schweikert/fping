@@ -97,12 +97,16 @@ extern int64_t max_reply, min_reply, total_replies, sum_replies;
 
 #if defined(__GNUC__) || defined(__clang__)
 #define FPING_NORETURN __attribute__((__noreturn__))
+#define FPING_PRINTF(fmt, args) __attribute__((__format__(__printf__, fmt, args)))
 #elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L
 #define FPING_NORETURN [[noreturn]]
+#define FPING_PRINTF(fmt, args)
 #elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
 #define FPING_NORETURN _Noreturn
+#define FPING_PRINTF(fmt, args)
 #else
 #define FPING_NORETURN
+#define FPING_PRINTF(fmt, args)
 #endif
 
 /* fping.c */
@@ -130,7 +134,7 @@ void uint64_to_be_octets(uint64_t, uint8_t*);
 void add_cidr_ipv6(uint64_t, uint64_t, unsigned long, const char *);
 void add_addr_range_ipv6(uint64_t, uint64_t, uint64_t, uint64_t, const char *);
 #endif
-void print_warning(char *fmt, ...);
+void print_warning(const char *fmt, ...) FPING_PRINTF(1, 2);
 int addr_cmp(struct sockaddr *a, struct sockaddr *b);
 void host_add_ping_event(HOST_ENTRY *h, int index, int64_t ev_time);
 void host_add_timeout_event(HOST_ENTRY *h, int index, int64_t ev_time);

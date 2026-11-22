@@ -3197,7 +3197,7 @@ FPING_NORETURN void errno_crash_and_burn(char *message)
 
 *************************************************************/
 
-void print_warning(char *format, ...)
+void print_warning(const char *format, ...)
 {
     va_list args;
     if (!opt.quiet_on) {

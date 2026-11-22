@@ -124,7 +124,6 @@ void print_timestamp_format(int64_t timestamp_ns, int timestamp_format)
     time_t current_time_s;
     struct tm *local_time;
     int64_t wall_time_ns = get_wallclock_ns(timestamp_ns);
-    const char *fmt;
 
     if (timestamp_format == TIMESTAMP_FORMAT_EPOCH) {
         if (opt.print_json_on)
@@ -134,27 +133,29 @@ void print_timestamp_format(int64_t timestamp_ns, int timestamp_format)
         return;
     }
 
-    switch (timestamp_format) {
-        case TIMESTAMP_FORMAT_CTIME:
-            fmt = "%c";
-            break;
-        case TIMESTAMP_FORMAT_ISO:
-            fmt = "%Y-%m-%dT%T%z";
-            break;
-        case TIMESTAMP_FORMAT_RFC3339:
-            fmt = "%Y-%m-%d %H:%M:%S";
-            break;
-        default:
-            crash_and_burn("invalid timestamp format"); /* LCOV_EXCL_LINE */
-    }
-
     current_time_s = wall_time_ns / 1000000000;
     local_time = localtime(&current_time_s);
     if (local_time == NULL) {
         time_buffer[0] = '\0';
     }
-    else if (strftime(time_buffer, sizeof(time_buffer), fmt, local_time) == 0) {
-        time_buffer[0] = '\0';
+    else {
+        size_t len = 0;
+        switch (timestamp_format) {
+            case TIMESTAMP_FORMAT_CTIME:
+                len = strftime(time_buffer, sizeof(time_buffer), "%c", local_time);
+                break;
+            case TIMESTAMP_FORMAT_ISO:
+                len = strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%dT%T%z", local_time);
+                break;
+            case TIMESTAMP_FORMAT_RFC3339:
+                len = strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S", local_time);
+                break;
+            default:
+                crash_and_burn("invalid timestamp format"); /* LCOV_EXCL_LINE */
+        }
+        if (len == 0) {
+            time_buffer[0] = '\0';
+        }
     }
 
     if (opt.print_json_on)

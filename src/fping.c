@@ -2413,10 +2413,10 @@ void stats_add(HOST_ENTRY *h, int index, int success, int64_t latency)
     }
 
     /* minimum */
-    if (!h->min_reply || latency < h->min_reply) {
+    if (h->num_recv == 1 || latency < h->min_reply) {
         h->min_reply = latency;
     }
-    if (!h->min_reply_i || latency < h->min_reply_i) {
+    if (h->num_recv_i == 1 || latency < h->min_reply_i) {
         h->min_reply_i = latency;
     }
 
@@ -2832,6 +2832,9 @@ int wait_for_reply(int64_t wait_time)
     h = table[n];
     this_count = seqmap_value->ping_count;
     this_reply = recv_time - seqmap_value->ping_ts;
+    /* Clamp to 0 in case of backward CLOCK_REALTIME adjustments or timestamp skew */
+    if (this_reply < 0)
+        this_reply = 0;
 
     /* update stats that include invalid replies */
     num_pingreceived++;
@@ -2886,7 +2889,7 @@ int wait_for_reply(int64_t wait_time)
     // TODO: move to stats_add?
     if (!max_reply || this_reply > max_reply)
         max_reply = this_reply;
-    if (!min_reply || this_reply < min_reply)
+    if (total_replies == 0 || this_reply < min_reply)
         min_reply = this_reply;
     sum_replies += this_reply;
     total_replies++;

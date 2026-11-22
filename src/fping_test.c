@@ -5,6 +5,7 @@
 #include "seqmap.h"
 
 #include <stdint.h>
+#include <string.h>
 
 TEST calc_loop_event_storage_count_normal_cases(void)
 {
@@ -60,11 +61,50 @@ TEST calc_loop_event_storage_count_seqmap_cap_and_overflow(void)
     PASS();
 }
 
+TEST stats_add_preserves_zero_min_reply(void)
+{
+    HOST_ENTRY h;
+    int64_t resp_times[4];
+
+    memset(&opt, 0, sizeof(opt));
+    memset(&h, 0, sizeof(h));
+    h.resp_times = resp_times;
+
+    /* First reply has 0 ns RTT: subsequent larger RTT must not overwrite min */
+    stats_add(&h, 0, 1, 0);
+    stats_add(&h, 1, 1, 5000);
+    ASSERT_EQ(2, h.num_recv);
+    ASSERT_EQ(0, h.min_reply);
+    ASSERT_EQ(0, h.min_reply_i);
+    ASSERT_EQ(5000, h.max_reply);
+    ASSERT_EQ(5000, h.max_reply_i);
+
+    /* Same behavior after resetting interval stats */
+    stats_reset_interval(&h);
+    stats_add(&h, 2, 1, 0);
+    stats_add(&h, 3, 1, 8000);
+    ASSERT_EQ(0, h.min_reply_i);
+    ASSERT_EQ(8000, h.max_reply_i);
+
+    /* Descending non-zero -> smaller -> zero updates min properly */
+    memset(&h, 0, sizeof(h));
+    h.resp_times = resp_times;
+    stats_add(&h, 0, 1, 5000);
+    ASSERT_EQ(5000, h.min_reply);
+    stats_add(&h, 1, 1, 1000);
+    ASSERT_EQ(1000, h.min_reply);
+    stats_add(&h, 2, 1, 0);
+    ASSERT_EQ(0, h.min_reply);
+
+    PASS();
+}
+
 SUITE(fping_suite)
 {
     RUN_TEST(calc_loop_event_storage_count_normal_cases);
     RUN_TEST(calc_loop_event_storage_count_zero_and_negative);
     RUN_TEST(calc_loop_event_storage_count_seqmap_cap_and_overflow);
+    RUN_TEST(stats_add_preserves_zero_min_reply);
 }
 
 GREATEST_MAIN_DEFS();

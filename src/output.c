@@ -423,14 +423,14 @@ void print_netdata(void)
 
 *************************************************************
 
-  Inputs:  void (none)
+  Inputs:  int reset_interval (non-zero to reset interval stats)
 
   Description:
 
 
 ************************************************************/
 
-void print_per_system_splits(void)
+void print_per_system_splits(int reset_interval)
 {
     int i;
     int64_t avg, outage_ms_i;
@@ -470,7 +470,7 @@ void print_per_system_splits(void)
         }
 
         fprintf(stderr, "\n");
-        if (!opt.cumulative_stats_on) {
+        if (!opt.cumulative_stats_on && reset_interval) {
             stats_reset_interval(h);
         }
     }
@@ -482,14 +482,14 @@ void print_per_system_splits(void)
 
 *************************************************************
 
-  Inputs:  void (none)
+  Inputs:  int reset_interval (non-zero to reset interval stats)
 
   Description:
 
 
 ************************************************************/
 
-void print_per_system_splits_json(void)
+void print_per_system_splits_json(int reset_interval)
 {
     int i;
     int64_t avg, outage_ms_i;
@@ -524,7 +524,7 @@ void print_per_system_splits_json(void)
         }
 
         fprintf(stdout, "}}\n");
-        if (!opt.cumulative_stats_on) {
+        if (!opt.cumulative_stats_on && reset_interval) {
             stats_reset_interval(h);
         }
     }

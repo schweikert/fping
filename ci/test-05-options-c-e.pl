@@ -207,7 +207,7 @@ $cmd->stderr_like(qr{localhost : \d+\.\d+ \d+\.\d+
 
 # fping -C n -i -q
 {
-my $cmd = Test::Command->new(cmd => "fping --quiet --interval=1 --vcount=20 --period=50 127.0.0.1 127.0.0.2");
+my $cmd = Test::Command->new(cmd => "fping --quiet --interval=1 --vcount=20 --period=50 --timeout=500 127.0.0.1 127.0.0.2");
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("");
 $cmd->stderr_like(qr{127\.0\.0\.1 :( \d+\.\d+){20}

@@ -1,8 +1,50 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 92;
+use Test::Command tests => 121;
 use Test::More;
+use File::Temp;
 use JSON::PP qw(decode_json);
+
+# Validate LF-framed JSONL where each line is a 1-key fping JSON object
+# envelope (e.g. {"resp": {...}}). Emits 1 assertion and returns decoded docs.
+sub jsonl_ok {
+    local $Test::Builder::Level = $Test::Builder::Level + 1;
+    my ($cmd) = @_;
+    my $label = ref($cmd->{cmd}) eq 'ARRAY' ? join(' ', @{$cmd->{cmd}}) : ($cmd->{cmd} // '');
+    $label =~ s/[\x00-\x1f\x7f]/ /g;
+    my $stdout = $cmd->stdout_value // '';
+    my @errors;
+    my $ends_nl = length($stdout) > 0 && substr($stdout, -1) eq "\n";
+    push @errors, 'missing trailing newline' if !$ends_nl;
+    # Limit -1 preserves trailing empty fields; popping the final LF leaves extra blank lines visible.
+    my @lines = split /\n/, $stdout, -1;
+    pop @lines if $ends_nl;
+    push @errors, 'empty output' if !@lines;
+    my @docs;
+    for my $i (0 .. $#lines) {
+        my $line = $lines[$i];
+        if ($line eq '' || substr($line, -1) eq "\r") {
+            push @errors, "line " . ($i + 1) . ($line eq '' ? ': empty line' : ': trailing CR');
+            next;
+        }
+        my ($doc, $eval_err);
+        { local $@; $doc = eval { decode_json($line) }; $eval_err = $@; }
+        if ($eval_err || ref($doc) ne 'HASH') {
+            (my $err = $eval_err || 'not a JSON object') =~ s/\s+$//;
+            push @errors, "line " . ($i + 1) . ": $err ($line)";
+            next;
+        }
+        # Enforce fping's {"<type>": {...}} envelope to catch malformed or merged records.
+        my @keys = keys %$doc;
+        if (@keys != 1 || ref($doc->{$keys[0]}) ne 'HASH') {
+            push @errors, "line " . ($i + 1) . ": expected 1-key JSON object envelope ($line)";
+            next;
+        }
+        push @docs, $doc;
+    }
+    ok(!@errors, "$label: valid JSONL") or diag(join("\n", @errors));
+    return @docs;
+}
 
 # fping -J -c 2 127.0.0.1
 {
@@ -221,11 +263,10 @@ my $cmd = Test::Command->new(cmd => ['fping', '-J', '-c', '1', '-q', $bad_host])
 $cmd->exit_is_num(2, 'JSON escaping warning exits 2');
 $cmd->stdout_like(qr/\\"\\\\slash\\u0001\\thost\.invalid/, 'JSON escaping warning uses short and \\u0001 escapes');
 $cmd->stderr_is_eq("", 'JSON escaping warning stderr empty');
-my $out = $cmd->stdout_value;
-my $decoded = eval { decode_json($out) };
-ok(defined $decoded, 'JSON escaping warning parses as valid JSON');
-is($decoded ? $decoded->{warning}{host} : undef, $bad_host, 'JSON escaping warning round-trips host string');
-ok($decoded && length($decoded->{warning}{message} // '') > 0, 'JSON escaping warning includes message');
+my @docs = jsonl_ok($cmd);
+is(scalar @docs, 1, 'JSON escaping warning emits 1 record');
+is($docs[0]{warning}{host}, $bad_host, 'JSON escaping warning round-trips host string');
+ok(length($docs[0]{warning}{message} // '') > 0, 'JSON escaping warning includes message');
 }
 
 # fping -J -x / -X are rejected as mutually exclusive
@@ -263,13 +304,14 @@ $cmd->stderr_is_eq("");
 # fping -J --seqmap-timeout 0 -c 2 -t 50 -Q 0.8 -p 1000 -o 127.0.0.1
 SKIP: {
 if($^O eq 'darwin') {
-    skip 'On macOS, -Q tests are unreliable', 3;
+    skip 'On macOS, -Q tests are unreliable', 4;
 }
 my $cmd = Test::Command->new(cmd => "fping -J --seqmap-timeout 0 -c 2 -t 50 -Q 0.8 -p 1000 -o 127.0.0.1");
 $cmd->exit_is_num(1);
 $cmd->stdout_like(qr/^(?:\{"intSum":\s\{[^\n]+\}\}\n)*\{"intSum":\s\{"time":\s[1-9]\d{9,},"host":\s"127\.0\.0\.1",\s"xmt":\s1,\s"rcv":\s0,\s"loss":\s100,\s"outage\(ms\)":\s1000\}\}
 (?:\{"intSum":\s\{[^\n]+\}\}\n)*\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s2,\s"rcv":\s0,\s"loss":\s100,\s"outage\(ms\)":\s2000\}\}\n?$/);
 $cmd->stderr_is_eq("");
+jsonl_ok($cmd);
 }
 
 # fping -J -p 100 -t 1000 -l 127.0.0.1 with SIGQUIT
@@ -278,4 +320,76 @@ my $cmd = Test::Command->new(cmd => '(sleep 1; pkill -QUIT fping; sleep 1; pkill
 $cmd->stdout_like(qr/^(?:\{"(?:resp|timeout)":\s\{[^\n]+\}\}\n)*\{"intSum":\s\{"time":\s[1-9]\d{9,},"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+(?:,\s"rttMin":\s\d+(?:\.\d+)?,\s"rttAvg":\s\d+(?:\.\d+)?,\s"rttMax":\s\d+(?:\.\d+)?)?\}\}
 (?:\{"(?:resp|timeout)":\s\{[^\n]+\}\}\n)*\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+(?:,\s"rttMin":\s\d+(?:\.\d+)?,\s"rttAvg":\s\d+(?:\.\d+)?,\s"rttMax":\s\d+(?:\.\d+)?)?\}\}\n?$/);
 $cmd->stderr_is_eq("");
+jsonl_ok($cmd);
+}
+
+# fping -J without -q emits both stderr warning and stdout JSON warning
+{
+my $warn_host = "bad\"\\host\n.invalid";
+my $cmd = Test::Command->new(cmd => ['fping', '-J', '-c', '1', $warn_host]);
+$cmd->exit_is_num(2, 'JSON non-quiet warning exits 2');
+# No /s: \Q...\E matches $warn_host's embedded \n while [^\n]+ enforces a single error line.
+$cmd->stderr_like(qr/^\Q$warn_host\E: [^\n]+\n\z/, 'JSON non-quiet warning writes stderr');
+$cmd->stdout_like(qr/^\{"warning":\s\{"host":\s"bad\\"\\\\host\\n\.invalid",\s"message":\s"[^"\n]+"\}\}\n\z/, 'JSON non-quiet warning writes stdout');
+my @docs = jsonl_ok($cmd);
+is($docs[0]{warning}{host}, $warn_host, 'JSON non-quiet warning round-trips host');
+}
+
+# fping -J with mixed invalid and valid targets emits valid NDJSON (warning + resp + summary)
+{
+my $cmd = Test::Command->new(cmd => ['fping', '-J', '-c', '1', 'bad"host.invalid', '127.0.0.1']);
+$cmd->exit_is_num(2);
+$cmd->stderr_like(qr/^\Qbad"host.invalid\E: [^\n]+\n\z/);
+$cmd->stdout_like(qr/^\{"warning":\s\{"host":\s"bad\\"host\.invalid",\s"message":\s"[^"\n]+"\}\}
+\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s1,\s"rcv":\s1,\s"loss":\s0,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n\z/);
+jsonl_ok($cmd);
+}
+
+# fping -J -f - reads targets from stdin and escapes warning hosts
+{
+my $tmp = File::Temp->new();
+my $stdin_bad = "bad\"\\slash\x01\x1f\x7f.invalid";
+print $tmp "$stdin_bad\n127.0.0.1\n";
+close($tmp);
+# POSIX single-quote the temp path since shell redirection is used for stdin.
+(my $q = $tmp->filename) =~ s/'/'\\''/g;
+my $cmd = Test::Command->new(cmd => "fping -J -c 1 -q -f - < '$q'");
+$cmd->exit_is_num(2);
+$cmd->stderr_is_eq("");
+$cmd->stdout_like(qr/^\{"warning":\s\{"host":\s"bad\\"\\\\slash\\u0001\\u001f\x7f\.invalid",\s"message":\s"[^"\n]+"\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s1,\s"rcv":\s1,\s"loss":\s0,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n\z/);
+my @docs = jsonl_ok($cmd);
+is($docs[0]{warning}{host}, $stdin_bad, 'JSON -f - stdin warning round-trips host');
+}
+
+# fping -J -n (reverse DNS)
+{
+my $cmd = Test::Command->new(cmd => "fping -J -c 1 -n 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"([^"\s]+)",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
+\{"summary":\s\{"host":\s"\1",\s"xmt":\s1,\s"rcv":\s1,\s"loss":\s0,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n\z/);
+$cmd->stderr_is_eq("");
+jsonl_ok($cmd);
+}
+
+# fping -J -A -n (reverse DNS + numeric address)
+{
+my $cmd = Test::Command->new(cmd => "fping -J -c 1 -A -n 127.0.0.1");
+$cmd->exit_is_num(0);
+$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"([^\s"]+ \(127\.0\.0\.1\))",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
+\{"summary":\s\{"host":\s"\1",\s"xmt":\s1,\s"rcv":\s1,\s"loss":\s0,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n\z/);
+$cmd->stderr_is_eq("");
+jsonl_ok($cmd);
+}
+
+# fping -J -c 1 -q -s with invalid and valid targets reports unknownAddresses == 1
+{
+my $cmd = Test::Command->new(cmd => "fping -J -c 1 -q -s host.invalid 127.0.0.1");
+$cmd->exit_is_num(2);
+$cmd->stdout_like(qr/^\{"warning":\s\{"host":\s"host\.invalid",\s"message":\s"[^"\n]+"\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s1,\s"rcv":\s1,\s"loss":\s0,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}
+\{"stats":\s\{"targets":\s1,\s"alive":\s1,\s"unreachable":\s0,\s"unknownAddresses":\s1,\s"timeouts":\s0,\s"icmpEchosSent":\s1,\s"icmpEchoRepliesReceived":\s1,\s"otherIcmpReceived":\s0,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+,\s"elapsed":\s\d+\.\d+\}\}\n\z/);
+$cmd->stderr_is_eq("");
+jsonl_ok($cmd);
 }

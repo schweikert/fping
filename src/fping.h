@@ -79,6 +79,13 @@ extern int num_alive, num_unreachable, num_noaddress, num_timeout;
 extern int num_pingsent, num_pingreceived, num_othericmprcvd;
 extern int64_t max_reply, min_reply, total_replies, sum_replies;
 
+#if defined(__GNUC__) || defined(__clang__)
+#define FPING_MAYBE_UNUSED __attribute__((__unused__))
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L
+#define FPING_MAYBE_UNUSED [[maybe_unused]]
+#else
+#define FPING_MAYBE_UNUSED
+#endif
 
 /* this requires variadic macros, part of C99 */
 #if (defined(DEBUG) || defined(_DEBUG))

@@ -85,7 +85,7 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 -D --timestamp-format=iso 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"[\d+-]+T[\d+:]+\+\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
+$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"[\d+-]+T[\d+:]+[+-]\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
@@ -132,8 +132,8 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -C 1 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s\d+,\s"size":\s\d+,\s"rtt":\s\d+.\d+\}\}
-\{"vSum":\s\{"host":\s"127\.0\.0\.1",\s"values":\s\[\d+.\d+\]\}\}?$/);
+$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s\d+,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
+\{"vSum":\s\{"host":\s"127\.0\.0\.1",\s"values":\s\[\d+\.\d+\]\}\}\n$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -142,7 +142,7 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping -J -C 1 192.0.2.47");
 $cmd->exit_is_num(1);
 $cmd->stdout_like(qr/^\{"timeout":\s\{"host":\s"192\.0\.2\.47",\s"seq":\s\d+\}\}
-\{"vSum":\s\{"host":\s"192\.0\.2\.47",\s"values":\s\[null\]\}\}?$/);
+\{"vSum":\s\{"host":\s"192\.0\.2\.47",\s"values":\s\[null\]\}\}\n$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -167,7 +167,7 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -C3 -p 100 -q 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"vSum":\s\{"host":\s"\d+\.\d+\.\d+\.\d+",\s"values":\s\[\d+\.\d+\,\s\d+\.\d+,\s\d+\.\d+\]\}\}\n?$/);
+$cmd->stdout_like(qr/^\{"vSum":\s\{"host":\s"\d+\.\d+\.\d+\.\d+",\s"values":\s\[\d+\.\d+,\s\d+\.\d+,\s\d+\.\d+\]\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -184,7 +184,7 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 -q -g 127.0.0.1/30");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}
-\{"summary":\s\{"host":\s"127\.0\.0\.2",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}?$/);
+\{"summary":\s\{"host":\s"127\.0\.0\.2",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -193,7 +193,7 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping -J -c 2 -Q 1 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"intSum":\s\{"time":\s[1-9]\d{9,},"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}
-\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}?$/);
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -202,7 +202,7 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping -J -s -q -c 2 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_like(qr/^\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}
-\{"stats":\s\{"targets":\s\d+,\s"alive":\s\d+,\s"unreachable":\s\d+,\s"unknownAddresses":\s\d+,\s"timeouts":\s\d+,\s"icmpEchosSent":\s\d+,\s"icmpEchoRepliesReceived":\s\d+,\s"otherIcmpReceived":\s0,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+,\s"elapsed":\s\d+\.\d+\}\}?$/);
+\{"stats":\s\{"targets":\s\d+,\s"alive":\s\d+,\s"unreachable":\s\d+,\s"unknownAddresses":\s\d+,\s"timeouts":\s\d+,\s"icmpEchosSent":\s\d+,\s"icmpEchoRepliesReceived":\s\d+,\s"otherIcmpReceived":\s0,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+,\s"elapsed":\s\d+\.\d+\}\}\n$/);
 $cmd->stderr_is_eq("");
 }
 

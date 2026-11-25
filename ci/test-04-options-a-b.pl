@@ -12,19 +12,25 @@ use Time::HiRes qw(gettimeofday tv_interval);
 #  -B f       set exponential backoff factor to f
 
 # fping -4 -6
-{
-my $cmd = Test::Command->new(cmd => "fping -4 -6 127.0.0.1");
-$cmd->exit_is_num(1);
-$cmd->stdout_is_eq("");
-$cmd->stderr_is_eq("fping: can't specify both -4 and -6\n");
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -4 -6 127.0.0.1");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_is_eq("fping: can't specify both -4 and -6\n");
 }
 
 # fping -6 -4
-{
-my $cmd = Test::Command->new(cmd => "fping -6 -4 127.0.0.1");
-$cmd->exit_is_num(1);
-$cmd->stdout_is_eq("");
-$cmd->stderr_is_eq("fping: can't specify both -4 and -6\n");
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -6 -4 127.0.0.1");
+    $cmd->exit_is_num(1);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_is_eq("fping: can't specify both -4 and -6\n");
 }
 
 # fping -4
@@ -53,11 +59,14 @@ SKIP: {
     $cmd->stderr_is_eq("");
 }
 
-{
-my $cmd = Test::Command->new(cmd => "fping -6 127.0.0.1");
-$cmd->exit_is_num(2);
-$cmd->stdout_is_eq("");
-$cmd->stderr_like(qr{^127\.0\.0\.1: .*(?i:name|address|host|resolv).*\n$});
+SKIP: {
+    if($ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 3;
+    }
+    my $cmd = Test::Command->new(cmd => "fping -6 127.0.0.1");
+    $cmd->exit_is_num(2);
+    $cmd->stdout_is_eq("");
+    $cmd->stderr_like(qr{^127\.0\.0\.1: .*(?i:name|address|host|resolv).*\n$});
 }
 
 # fping -a

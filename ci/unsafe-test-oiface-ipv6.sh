@@ -6,6 +6,10 @@ if [ "${FPING_RUN_UNSAFE_TESTS:-}" != "1" ]; then
     echo "Error: unsafe netns test disabled; run via ci/run-tests-podman.sh or set FPING_RUN_UNSAFE_TESTS=1 in a VM/container." >&2
     exit 1
 fi
+if [ -n "${SKIP_IPV6:-}" ] && [ "${SKIP_IPV6}" != "0" ]; then
+    echo "SKIP: IPv6 tests disabled (SKIP_IPV6=${SKIP_IPV6})"
+    exit 0
+fi
 if [ "$(id -u)" -ne 0 ]; then
     echo "Error: must run as root (e.g. via sudo)" >&2
     exit 1

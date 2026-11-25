@@ -1,6 +1,7 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 18;
+use Test::Command tests => 19;
+use Test::More;
 
 my $I_HELP = "   -I, --iface=IFACE  bind to a particular interface\n";
 $I_HELP = '' if $^O eq 'darwin';
@@ -50,3 +51,23 @@ my $cmd6 = Test::Command->new(cmd => "fping -i 50 -t 1234 -p 2000 --seqmap-timeo
 $cmd6->exit_is_num(0);
 $cmd6->stdout_like(qr{-i, --interval=MSEC .*?\(default: 10 ms\).*-p, --period=MSEC .*?\(in loop and count modes, default: 1000 ms\).*--seqmap-timeout=MSEC .*?\(default: 10000 ms\).*-t, --timeout=MSEC .*?\(default: 500 ms,}s);
 $cmd6->stderr_is_eq("");
+
+# fping -h lists --oiface with platform-appropriate family qualifier
+SKIP: {
+    my $has_ipv6 = (system('fping -6 -v >/dev/null 2>&1') == 0);
+    if ($^O eq 'linux' || $^O eq 'darwin' || $^O eq 'solaris') {
+        if ($has_ipv6) {
+            $cmd1->stdout_like(qr{^\s+--oiface=IFACE\s+send pings via a specific outgoing interface \(receive from any\)\n}m);
+        } else {
+            $cmd1->stdout_like(qr{^\s+--oiface=IFACE\s+send pings via a specific outgoing interface \(receive from any, IPv4 only\)\n}m);
+        }
+    } elsif ($^O eq 'freebsd' || $^O eq 'openbsd') {
+        if ($has_ipv6) {
+            $cmd1->stdout_like(qr{^\s+--oiface=IFACE\s+send pings via a specific outgoing interface \(receive from any, IPv6 only\)\n}m);
+        } else {
+            unlike($cmd1->stdout_value, qr{--oiface=IFACE}, 'IPv4-only build on IPV6_PKTINFO-only OS omits --oiface');
+        }
+    } else {
+        skip '--oiface usage check not configured for this OS', 1;
+    }
+}

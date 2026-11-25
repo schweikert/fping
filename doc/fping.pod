@@ -156,10 +156,16 @@ was configured with C<--enable-safe-limits>)).
 =item B<-I>, B<--iface>=I<IFACE>
 
 Set the interface (requires SO_BINDTODEVICE support).
+Cannot be used together with B<--oiface>.
 
 =item B<--oiface>=I<IFACE>
 
-Send pings via a specific outgoing interface (receive from any)
+Send pings via a specific outgoing interface (receive from any; requires
+IP_PKTINFO for IPv4, IPV6_PKTINFO for IPv6).
+Not supported on all operating systems; on systems where only IPv6 is
+supported (e.g. FreeBSD, OpenBSD), pass B<-6> when pinging dual-stack
+hostnames.
+Cannot be used together with B<-I>, B<--iface>.
 
 =item B<--icmp-timestamp>
 

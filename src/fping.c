@@ -110,6 +110,20 @@ extern "C" {
 #endif
 
 #ifdef IP_PKTINFO
+#define HAVE_OIFACE_IPV4 1
+#else
+#define HAVE_OIFACE_IPV4 0
+#endif
+
+#if defined(IPV6) && defined(IPV6_PKTINFO)
+#define HAVE_OIFACE_IPV6 1
+#else
+#define HAVE_OIFACE_IPV6 0
+#endif
+
+#define HAVE_OIFACE (HAVE_OIFACE_IPV4 || HAVE_OIFACE_IPV6)
+
+#if HAVE_OIFACE
 #include <net/if.h>
 #endif
 
@@ -444,13 +458,36 @@ int calc_loop_event_storage_count(int64_t timeout, int64_t perhost_interval, int
     return (in_flight >= SEQMAP_MAXSEQ) ? SEQMAP_MAXSEQ : (int)(1 + in_flight);
 }
 
+static void check_oiface_family(int family)
+{
+#if !HAVE_OIFACE_IPV4
+    if (family == AF_INET) {
+        fprintf(stderr, "%s: --oiface is not supported for IPv4 on this platform (IP_PKTINFO unavailable)\n", prog);
+        exit(1);
+    }
+#endif
+/* Guard AF_INET6 with defined(IPV6) since !HAVE_OIFACE_IPV6 holds when !IPV6. */
+#if defined(IPV6) && !HAVE_OIFACE_IPV6
+    if (family == AF_INET6) {
+        fprintf(stderr, "%s: --oiface is not supported for IPv6 on this platform (IPV6_PKTINFO unavailable)\n", prog);
+        exit(1);
+    }
+#endif
+    (void)family;
+}
+
+/* Socket-availability normalization in fping_main() pins hints_ai_family when
+ * only one socket family is open; we keep AF_UNSPEC un-narrowed so add_addr()
+ * fails closed with a clear error on unsupported or mixed/-m targets. */
 static void configure_oiface(const char *iface)
 {
-#ifndef IP_PKTINFO
+#if !HAVE_OIFACE
     (void)iface;
-    fprintf(stderr, "%s: --oiface is not supported on this platform (IP_PKTINFO unavailable)\n", prog);
+    fprintf(stderr, "%s: --oiface is not supported on this platform\n", prog);
     exit(1);
 #else
+    check_oiface_family(hints_ai_family);
+
     unsigned int ifindex = if_nametoindex(iface);
     if (ifindex == 0) {
         fprintf(stderr, "%s: unknown interface '%s'\n", prog, iface);
@@ -1561,6 +1598,9 @@ void add_cidr(char *addr)
         fprintf(stderr, "%s, can't parse address %s: %s\n", prog, addr, gai_strerror(ret));
         exit(1);
     }
+    if (opt.oiface) {
+        check_oiface_family(addr_res->ai_family);
+    }
     if (addr_res->ai_family == AF_INET) {
         net_addr = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
         freeaddrinfo(addr_res);
@@ -1671,6 +1711,9 @@ void add_range(char *start, char *end)
     }
     /* start and end must be from the same address family */
     hints_ai_family = addr_res->ai_family;
+    if (opt.oiface) {
+        check_oiface_family(addr_res->ai_family);
+    }
     if (addr_res->ai_family == AF_INET) {
         start_long = ntohl(((struct sockaddr_in*)addr_res->ai_addr)->sin_addr.s_addr);
         freeaddrinfo(addr_res);
@@ -3017,6 +3060,10 @@ void add_name(char *name)
      * (need to implement a separate option for this)
      */
     for (res = res0; res; res = res->ai_next) {
+        if (opt.oiface) {
+            check_oiface_family(res->ai_family);
+        }
+
         /* opt.name_on: addr -> name lookup requested) */
         if (opt.name_on || opt.rdns_on) {
             int do_rdns = opt.rdns_on ? 1 : 0;
@@ -3093,6 +3140,10 @@ void add_addr(char *name, char *host, struct sockaddr *ipaddr, socklen_t ipaddr_
     HOST_ENTRY *p;
     int n;
     int64_t *i;
+
+    if (opt.oiface) {
+        check_oiface_family(ipaddr->sa_family);
+    }
 
     p = (HOST_ENTRY *)calloc(1, sizeof(HOST_ENTRY));
     if (!p)
@@ -3421,8 +3472,12 @@ FPING_NORETURN void usage(int is_error)
 #ifdef SO_BINDTODEVICE
     fprintf(out, "   -I, --iface=IFACE  bind to a particular interface\n");
 #endif
-#ifdef IP_PKTINFO
+#if HAVE_OIFACE_IPV4 && HAVE_OIFACE_IPV6
     fprintf(out, "       --oiface=IFACE  send pings via a specific outgoing interface (receive from any)\n");
+#elif HAVE_OIFACE_IPV6
+    fprintf(out, "       --oiface=IFACE  send pings via a specific outgoing interface (receive from any, IPv6 only)\n");
+#elif HAVE_OIFACE_IPV4
+    fprintf(out, "       --oiface=IFACE  send pings via a specific outgoing interface (receive from any, IPv4 only)\n");
 #endif
 #ifdef SO_MARK
     fprintf(out, "   -k, --fwmark=FWMARK set the routing mark\n");

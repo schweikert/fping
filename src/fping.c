@@ -639,15 +639,16 @@ int fping_main(int argc, char **argv)
 #endif
             } else if (longindex >= 0 && strcmp(longopts[longindex].longname, "print-reply-dst") == 0) {
                 opt.print_reply_dst_on = 1;
-#if defined(IPV6)
+#if defined(IPV6) && defined(IPV6_PKTINFO)
+                /* RFC 3542 uses IPV6_RECVPKTINFO for setsockopt(); RFC 2292 reused IPV6_PKTINFO. */
                 if (socket6 >= 0) {
 #if defined(IPV6_RECVPKTINFO)
                     if (setsockopt(socket6, IPPROTO_IPV6, IPV6_RECVPKTINFO, &sock_opt_on, sizeof(sock_opt_on))) {
                         perror("setsockopt IPV6_RECVPKTINFO");
                     }
-# elif defined(IPV6_PKTINFO)
+#else
                     if (setsockopt(socket6, IPPROTO_IPV6, IPV6_PKTINFO, &sock_opt_on, sizeof(sock_opt_on))) {
-                      perror("setsockopt IPV6_PKTINFO");
+                        perror("setsockopt IPV6_PKTINFO");
                     }
 #endif
                 }
@@ -2247,27 +2248,24 @@ static void cmsg_extract_int_or_byte(struct cmsghdr *cmsg, int *out)
 }
 
 static int receive_packet(int64_t wait_time,
-#ifdef HAVE_SO_TIMESTAMPNS
-    int64_t *reply_timestamp,
-#else
-    int64_t *reply_timestamp __attribute__((unused)),
-#endif
+    FPING_MAYBE_UNUSED int64_t *reply_timestamp,
     struct sockaddr *reply_src_addr,
     size_t reply_src_addr_len,
     char *reply_buf,
     size_t reply_buf_len,
-    int *ip_header_tos,
+    FPING_MAYBE_UNUSED int *ip_header_tos,
     int *ip_header_ttl
 #ifdef IPV6
-    , struct in6_addr *recv_dst_addr_ipv6
+    , FPING_MAYBE_UNUSED struct in6_addr *recv_dst_addr_ipv6
 #endif
-  )
+)
 {
     struct timeval to;
     int s = 0;
     int recv_len;
+    /* Room for concurrent timestamp + TOS/TCLASS + TTL/HOPLIMIT + IPV6_PKTINFO cmsgs */
     static union {
-        unsigned char buf[128];
+        unsigned char buf[256];
         struct cmsghdr align;
     } msg_control;
     struct iovec msg_iov = {
@@ -2352,18 +2350,23 @@ packet_received:
                 cmsg_extract_int_or_byte(cmsg, ip_header_ttl);
             }
 #ifdef IPV6
+#ifdef IPV6_TCLASS
             if (cmsg->cmsg_level == IPPROTO_IPV6 && cmsg->cmsg_type == IPV6_TCLASS) {
                 cmsg_extract_int_or_byte(cmsg, ip_header_tos);
             }
+#endif
+#ifdef IPV6_HOPLIMIT
             if (cmsg->cmsg_level == IPPROTO_IPV6 && cmsg->cmsg_type == IPV6_HOPLIMIT) {
                 cmsg_extract_int_or_byte(cmsg, ip_header_ttl);
             }
+#endif
 #ifdef IPV6_PKTINFO
             if (cmsg->cmsg_level == IPPROTO_IPV6 && cmsg->cmsg_type == IPV6_PKTINFO &&
                 cmsg->cmsg_len >= CMSG_LEN(sizeof(struct in6_pktinfo))) {
-                struct in6_pktinfo *pktinfo = (struct in6_pktinfo *)CMSG_DATA(cmsg);
+                struct in6_pktinfo pktinfo;
+                memcpy(&pktinfo, CMSG_DATA(cmsg), sizeof(pktinfo));
                 if (recv_dst_addr_ipv6)
-                    memcpy(recv_dst_addr_ipv6, &pktinfo->ipi6_addr, sizeof(*recv_dst_addr_ipv6));
+                    *recv_dst_addr_ipv6 = pktinfo.ipi6_addr;
             }
 #endif
 #endif

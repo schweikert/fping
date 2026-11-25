@@ -1,10 +1,11 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 60;
+use Test::Command tests => 87;
 use Test::More;
 use Time::HiRes qw(gettimeofday tv_interval);
 
 my $RE_RTT = qr/\d+(?:\.\d+)?/;
+my $has_ipv6 = (system('fping -6 -v >/dev/null 2>&1') == 0);
 
 #  -i n       interval between sending ping packets (in millisec) (default 25)
 #  -I IFACE   bind to a particular interface, not always available
@@ -67,29 +68,92 @@ $cmd->stdout_is_eq("");
 $cmd->stderr_like(qr{binding to specific interface \(SO_BINDTODEVICE\):.*\n});
 }
 
-# fping --oiface=IFACE
+# fping --oiface=IFACE (IPv4)
 SKIP: {
-if($^O ne 'linux') {
-    skip '--oiface option functionality is only tested on Linux', 3;
-}
-my $cmd = Test::Command->new(cmd => 'fping --oiface=lo 127.0.0.1');
-$cmd->exit_is_num(0);
-$cmd->stdout_is_eq("127.0.0.1 is alive\n");
-$cmd->stderr_is_eq("");
+    my $lo_iface = $^O eq 'linux' ? 'lo' : $^O eq 'solaris' ? 'lo0' : '';
+    if (!$lo_iface) {
+        skip 'IPv4 --oiface test is only run on Linux and Solaris/illumos', 6;
+    }
+    my $cmd1 = Test::Command->new(cmd => "fping --oiface=$lo_iface 127.0.0.1");
+    $cmd1->exit_is_num(0);
+    $cmd1->stdout_is_eq("127.0.0.1 is alive\n");
+    $cmd1->stderr_is_eq("");
+
+    my $cmd2 = Test::Command->new(cmd => "fping -4 --oiface=$lo_iface 127.0.0.1");
+    $cmd2->exit_is_num(0);
+    $cmd2->stdout_is_eq("127.0.0.1 is alive\n");
+    $cmd2->stderr_is_eq("");
 }
 
 # fping --oiface=IFACE (IPv6)
 SKIP: {
-    if($^O ne 'linux') {
-        skip '--oiface option functionality is only tested on Linux', 3;
+    my $lo_iface = $^O eq 'linux' ? 'lo' :
+                   ($^O eq 'freebsd' || $^O eq 'openbsd' || $^O eq 'solaris' || $^O eq 'darwin') ? 'lo0' : '';
+    if (!$lo_iface) {
+        skip 'IPv6 --oiface test is only run on Linux, macOS, FreeBSD, OpenBSD, and Solaris/illumos', 6;
     }
-    if($ENV{SKIP_IPV6}) {
-        skip 'Skip IPv6 tests', 3;
+    if (!$has_ipv6 || $ENV{SKIP_IPV6}) {
+        skip 'Skip IPv6 tests', 6;
     }
-    my $cmd = Test::Command->new(cmd => 'fping -6 --oiface=lo ::1');
-    $cmd->exit_is_num(0);
-    $cmd->stdout_is_eq("::1 is alive\n");
-    $cmd->stderr_is_eq("");
+    my $cmd1 = Test::Command->new(cmd => "fping -6 --oiface=$lo_iface ::1");
+    $cmd1->exit_is_num(0);
+    $cmd1->stdout_is_eq("::1 is alive\n");
+    $cmd1->stderr_is_eq("");
+
+    my $cmd2 = Test::Command->new(cmd => "fping --oiface=$lo_iface ::1");
+    $cmd2->exit_is_num(0);
+    $cmd2->stdout_is_eq("::1 is alive\n");
+    $cmd2->stderr_is_eq("");
+}
+
+# fping --oiface=IFACE on IPV6_PKTINFO-only platforms (FreeBSD, OpenBSD)
+SKIP: {
+    if ($^O ne 'freebsd' && $^O ne 'openbsd') {
+        skip 'IPv4 --oiface rejection tests are only run on IPV6_PKTINFO-only platforms', 21;
+    }
+    my $ipv4_err = $has_ipv6
+        ? "fping: --oiface is not supported for IPv4 on this platform (IP_PKTINFO unavailable)\n"
+        : "fping: --oiface is not supported on this platform\n";
+
+    my $cmd1 = Test::Command->new(cmd => 'fping -4 --oiface=lo0 127.0.0.1');
+    $cmd1->exit_is_num(1);
+    $cmd1->stdout_is_eq("");
+    $cmd1->stderr_is_eq($ipv4_err);
+
+    my $cmd2 = Test::Command->new(cmd => 'fping --oiface=lo0 127.0.0.1');
+    $cmd2->exit_is_num(1);
+    $cmd2->stdout_is_eq("");
+    $cmd2->stderr_is_eq($ipv4_err);
+
+    my $cmd3 = Test::Command->new(cmd => 'fping -4 --oiface=NotAnInterface 127.0.0.1');
+    $cmd3->exit_is_num(1);
+    $cmd3->stdout_is_eq("");
+    $cmd3->stderr_is_eq($ipv4_err);
+
+    my $cmd_cidr = Test::Command->new(cmd => 'fping --oiface=lo0 -g 127.0.0.1/32');
+    $cmd_cidr->exit_is_num(1);
+    $cmd_cidr->stdout_is_eq("");
+    $cmd_cidr->stderr_is_eq($ipv4_err);
+
+    my $cmd_range = Test::Command->new(cmd => 'fping --oiface=lo0 -g 127.0.0.2 127.0.0.1');
+    $cmd_range->exit_is_num(1);
+    $cmd_range->stdout_is_eq("");
+    $cmd_range->stderr_is_eq($ipv4_err);
+
+    SKIP: {
+        if (!$has_ipv6 || $ENV{SKIP_IPV6}) {
+            skip 'Skip IPv6 tests', 6;
+        }
+        my $cmd4 = Test::Command->new(cmd => 'fping --oiface=lo0 ::1 127.0.0.1');
+        $cmd4->exit_is_num(1);
+        $cmd4->stdout_is_eq("");
+        $cmd4->stderr_is_eq($ipv4_err);
+
+        my $cmd5 = Test::Command->new(cmd => 'fping -6 --oiface=NotAnInterface ::1');
+        $cmd5->exit_is_num(1);
+        $cmd5->stdout_is_eq("");
+        $cmd5->stderr_is_eq("fping: unknown interface 'NotAnInterface'\n");
+    }
 }
 
 # fping -l
@@ -177,16 +241,22 @@ $cmd->stdout_is_eq("127.0.0.1 is alive\n");
 $cmd->stderr_is_eq("");
 }
 
-# fping --oiface error cases
+# fping --oiface unknown interface error case
 SKIP: {
-if($^O ne 'linux') {
-    skip '--oiface option functionality is only tested on Linux', 9;
+if ($^O ne 'linux' && $^O ne 'solaris' && $^O ne 'darwin') {
+    skip '--oiface unknown interface test is only run on IP_PKTINFO platforms', 3;
 }
 my $cmd1 = Test::Command->new(cmd => 'fping --oiface=NotAnInterface 127.0.0.1');
 $cmd1->exit_is_num(1);
 $cmd1->stdout_is_eq("");
 $cmd1->stderr_is_eq("fping: unknown interface 'NotAnInterface'\n");
+}
 
+# fping --oiface and -I mutual exclusion
+SKIP: {
+if($^O ne 'linux') {
+    skip '-I and --oiface mutual exclusion is only tested on Linux', 6;
+}
 my $cmd2 = Test::Command->new(cmd => 'fping -I lo --oiface=lo 127.0.0.1');
 $cmd2->exit_is_num(1);
 $cmd2->stdout_is_eq("");

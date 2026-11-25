@@ -37,7 +37,6 @@
 #include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <net/if.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,12 +47,14 @@
 char* ping_buffer_ipv6 = 0;
 size_t ping_pkt_size_ipv6;
 
+#ifdef IPV6_PKTINFO
 /* Interface index for outgoing packets (0 = not set, use routing table) */
-static int outgoing_iface_idx_ipv6 = 0;
+static unsigned int outgoing_iface_idx_ipv6 = 0;
 
 /* Source address for outgoing packets (used to populate ipi6_addr) */
 static struct in6_addr outgoing_src_addr_ipv6;
 static int outgoing_src_addr_set_ipv6 = 0;
+#endif
 
 int open_ping_socket_ipv6(int *socktype)
 {
@@ -98,14 +99,13 @@ int open_ping_socket_ipv6(int *socktype)
     return s;
 }
 
-void socket_set_outgoing_iface_ipv6(const char *iface_name)
+void socket_set_outgoing_iface_ipv6(unsigned int ifindex)
 {
-    unsigned int idx = if_nametoindex(iface_name);
-    if (idx == 0) {
-        fprintf(stderr, "fping: unknown interface '%s'\n", iface_name);
-        exit(1);
-    }
-    outgoing_iface_idx_ipv6 = (int)idx;
+#ifdef IPV6_PKTINFO
+    outgoing_iface_idx_ipv6 = ifindex;
+#else
+    (void)ifindex;
+#endif
 }
 
 void init_ping_buffer_ipv6(size_t ping_data_size)
@@ -122,8 +122,11 @@ void socket_set_src_addr_ipv6(int s, struct in6_addr* src_addr, int *ident)
     struct sockaddr_in6 sa;
     socklen_t len = sizeof(sa);
 
+#ifdef IPV6_PKTINFO
+    /* Remember source address so we can set ipi6_addr in sendmsg() */
     outgoing_src_addr_ipv6 = *src_addr;
     outgoing_src_addr_set_ipv6 = 1;
+#endif
 
     memset(&sa, 0, sizeof(sa));
     sa.sin6_family = AF_INET6;
@@ -160,7 +163,8 @@ int socket_sendto_ping_ipv6(int s, struct sockaddr* saddr, socklen_t saddr_len, 
 
     icp->icmp6_cksum = 0; /* The IPv6 stack calculates the checksum for us... */
 
-    if (outgoing_iface_idx_ipv6 > 0) {
+#ifdef IPV6_PKTINFO
+    if (outgoing_iface_idx_ipv6 != 0) {
         struct iovec iov = {
             .iov_base = icp,
             .iov_len  = ping_pkt_size_ipv6
@@ -190,15 +194,13 @@ int socket_sendto_ping_ipv6(int s, struct sockaddr* saddr, socklen_t saddr_len, 
         struct in6_pktinfo *pktinfo = (struct in6_pktinfo *)CMSG_DATA(cmsg);
         memset(pktinfo, 0, sizeof(*pktinfo));
         pktinfo->ipi6_ifindex = outgoing_iface_idx_ipv6;
-
         if (outgoing_src_addr_set_ipv6) {
             pktinfo->ipi6_addr = outgoing_src_addr_ipv6;
         }
 
-        n = sendmsg(s, &msg, 0);
-    } else {
-        n = sendto(s, icp, ping_pkt_size_ipv6, 0, saddr, saddr_len);
+        return sendmsg(s, &msg, 0);
     }
+#endif
 
-    return n;
+    return sendto(s, icp, ping_pkt_size_ipv6, 0, saddr, saddr_len);
 }

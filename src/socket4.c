@@ -40,7 +40,6 @@
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
-#include <net/if.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,7 +51,7 @@ size_t ping_pkt_size_ipv4;
 
 #ifdef IP_PKTINFO
 /* Interface index for outgoing packets (0 = not set, use routing table) */
-static int outgoing_iface_idx_ipv4 = 0;
+static unsigned int outgoing_iface_idx_ipv4 = 0;
 
 /* Source address for outgoing packets (used to populate ipi_spec_dst) */
 static struct in_addr outgoing_src_addr_ipv4;
@@ -88,17 +87,14 @@ int open_ping_socket_ipv4(int *socktype)
     return s;
 }
 
-#ifdef IP_PKTINFO
-void socket_set_outgoing_iface_ipv4(const char *iface_name)
+void socket_set_outgoing_iface_ipv4(unsigned int ifindex)
 {
-    unsigned int idx = if_nametoindex(iface_name);
-    if (idx == 0) {
-        fprintf(stderr, "fping: unknown interface '%s'\n", iface_name);
-        exit(1);
-    }
-    outgoing_iface_idx_ipv4 = (int)idx;
-}
+#ifdef IP_PKTINFO
+    outgoing_iface_idx_ipv4 = ifindex;
+#else
+    (void)ifindex;
 #endif
+}
 
 void init_ping_buffer_ipv4(size_t ping_data_size)
 {
@@ -188,7 +184,7 @@ int socket_sendto_ping_ipv4(int s, struct sockaddr* saddr, socklen_t saddr_len, 
     icp->icmp_cksum = calcsum((unsigned short*)icp, opt.random_data_on ? ping_pkt_size_ipv4 : hdr_len);
 
 #ifdef IP_PKTINFO
-    if (outgoing_iface_idx_ipv4 > 0) {
+    if (outgoing_iface_idx_ipv4 != 0) {
         struct iovec iov = {
             .iov_base = icp,
             .iov_len  = ping_pkt_size_ipv4
@@ -222,12 +218,9 @@ int socket_sendto_ping_ipv4(int s, struct sockaddr* saddr, socklen_t saddr_len, 
             pktinfo->ipi_spec_dst = outgoing_src_addr_ipv4;
         }
 
-        n = sendmsg(s, &msg, 0);
-    } else
-#endif
-    {
-        n = sendto(s, icp, ping_pkt_size_ipv4, 0, saddr, saddr_len);
+        return sendmsg(s, &msg, 0);
     }
+#endif
 
-    return n;
+    return sendto(s, icp, ping_pkt_size_ipv4, 0, saddr, saddr_len);
 }

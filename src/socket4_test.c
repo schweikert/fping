@@ -5,6 +5,7 @@
 #include "options.h"
 
 #include <arpa/inet.h>
+#include <errno.h>
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
@@ -128,12 +129,41 @@ TEST sendto_icmp_echo_odd_random_valid_checksum(void)
     PASS();
 }
 
+TEST sendto_with_outgoing_iface_builds_packet(void)
+{
+    memset(&opt, 0, sizeof(opt));
+    socket_set_outgoing_iface_ipv4(1);
+
+    init_ping_buffer_ipv4(DEFAULT_PING_DATA_SIZE);
+
+    struct sockaddr_in sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sin_family = AF_INET;
+    inet_pton(AF_INET, "127.0.0.1", &sa.sin_addr);
+
+    /* Invalid fd -1 makes sendmsg()/sendto() fail with EBADF right after
+     * constructing the ICMP packet and IP_PKTINFO cmsg. */
+    errno = 0;
+    int rc = socket_sendto_ping_ipv4(-1, (struct sockaddr *)&sa, sizeof(sa), 3, htons(0x5678), ICMP_ECHO);
+    ASSERT_EQ(-1, rc);
+    ASSERT_EQ(EBADF, errno);
+
+    ASSERT_EQ((size_t)(ICMP_MINLEN + DEFAULT_PING_DATA_SIZE), ping_pkt_size_ipv4);
+    ASSERT_EQ(0, calcsum((unsigned short *)ping_buffer_ipv4, (int)ping_pkt_size_ipv4));
+
+    free(ping_buffer_ipv4);
+    ping_buffer_ipv4 = NULL;
+    socket_set_outgoing_iface_ipv4(0);
+    PASS();
+}
+
 SUITE(socket4_suite)
 {
     RUN_TEST(calcsum_odd_length_no_overread_or_sign_extension);
     RUN_TEST(calcsum_roundtrip_verifies_to_zero);
     RUN_TEST(sendto_icmp_tstamp_with_random_preserves_timestamps);
     RUN_TEST(sendto_icmp_echo_odd_random_valid_checksum);
+    RUN_TEST(sendto_with_outgoing_iface_builds_packet);
 }
 
 GREATEST_MAIN_DEFS();

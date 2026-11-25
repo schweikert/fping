@@ -109,6 +109,10 @@ extern "C" {
 #define RECV_BUFSIZE 4096
 #endif
 
+#ifdef IP_PKTINFO
+#include <net/if.h>
+#endif
+
 /*** externals ***/
 
 #ifndef h_errno
@@ -438,6 +442,25 @@ int calc_loop_event_storage_count(int64_t timeout, int64_t perhost_interval, int
     }
     int64_t in_flight = timeout / min_interval;
     return (in_flight >= SEQMAP_MAXSEQ) ? SEQMAP_MAXSEQ : (int)(1 + in_flight);
+}
+
+static void configure_oiface(const char *iface)
+{
+#ifndef IP_PKTINFO
+    (void)iface;
+    fprintf(stderr, "%s: --oiface is not supported on this platform (IP_PKTINFO unavailable)\n", prog);
+    exit(1);
+#else
+    unsigned int ifindex = if_nametoindex(iface);
+    if (ifindex == 0) {
+        fprintf(stderr, "%s: unknown interface '%s'\n", prog, iface);
+        exit(1);
+    }
+    socket_set_outgoing_iface_ipv4(ifindex);
+#ifdef IPV6
+    socket_set_outgoing_iface_ipv6(ifindex);
+#endif
+#endif
 }
 
 /************************************************************
@@ -1022,19 +1045,7 @@ int fping_main(int argc, char **argv)
     }
 
     if (opt.oiface) {
-#ifdef IP_PKTINFO
-        if (hints_ai_family != AF_INET6) {
-            socket_set_outgoing_iface_ipv4(opt.oiface);
-        }
-#ifdef IPV6
-        if (hints_ai_family != AF_INET) {
-            socket_set_outgoing_iface_ipv6(opt.oiface);
-        }
-#endif
-#else
-        fprintf(stderr, "%s: --oiface is not supported on this platform (IP_PKTINFO unavailable)\n", prog);
-        exit(1);
-#endif
+        configure_oiface(opt.oiface);
     }
 
     if (opt.count_on && opt.loop_on) {

@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 166;
+use Test::Command tests => 169;
 use Test::More;
 use File::Temp;
 
@@ -39,6 +39,11 @@ close($tmpfile5);
 my $tmpfile6 = File::Temp->new();
 print $tmpfile6 "127.0.0.1 # this is ignored\n127.0.0.2 this is ignored\n";
 close($tmpfile6);
+
+# input file where a 255-byte chunk ends on the target and the continuation starts with NUL
+my $tmpfile7 = File::Temp->new();
+print $tmpfile7 (" " x 246) . "127.0.0.1\0\n";
+close($tmpfile7);
 
 # fping without option (-> equivalent to 'fping -f -')
 {
@@ -101,6 +106,14 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping -f ".$tmpfile6->filename);
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("127.0.0.1 is alive\n127.0.0.2 is alive\n");
+$cmd->stderr_is_eq("");
+}
+
+# fping -f file (255-byte chunk followed by NUL continuation)
+{
+my $cmd = Test::Command->new(cmd => "fping -f ".$tmpfile7->filename);
+$cmd->exit_is_num(0);
+$cmd->stdout_is_eq("127.0.0.1 is alive\n");
 $cmd->stderr_is_eq("");
 }
 

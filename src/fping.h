@@ -15,6 +15,15 @@
 /* ICMP Timestamp has a fixed payload size of 12 bytes */
 #define ICMP_TIMESTAMP_DATA_SIZE 12
 
+/* macOS defines IP_PKTINFO, but XNU ignores it on ICMP IPv4 sockets
+ * (both SOCK_RAW and SOCK_DGRAM delegate to rip_send() in raw_ip.c;
+ * only UDP honors IP_PKTINFO in udp_usrreq.c). */
+#if defined(IP_PKTINFO) && !defined(__APPLE__)
+#define HAVE_OIFACE_IPV4 1
+#else
+#define HAVE_OIFACE_IPV4 0
+#endif
+
 /* Structure definitions */
 typedef struct ip_header_result {
     int tos;

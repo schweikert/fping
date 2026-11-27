@@ -163,7 +163,7 @@ Cannot be used together with B<--oiface>.
 Send pings via a specific outgoing interface (receive from any; requires
 IP_PKTINFO for IPv4, IPV6_PKTINFO for IPv6).
 Not supported on all operating systems; on systems where only IPv6 is
-supported (e.g. FreeBSD, OpenBSD), pass B<-6> when pinging dual-stack
+supported (e.g. macOS, FreeBSD, OpenBSD), pass B<-6> when pinging dual-stack
 hostnames.
 Cannot be used together with B<-I>, B<--iface>.
 

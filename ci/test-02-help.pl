@@ -55,13 +55,13 @@ $cmd6->stderr_is_eq("");
 # fping -h lists --oiface with platform-appropriate family qualifier
 SKIP: {
     my $has_ipv6 = (system('fping -6 -v >/dev/null 2>&1') == 0);
-    if ($^O eq 'linux' || $^O eq 'darwin' || $^O eq 'solaris') {
+    if ($^O eq 'linux' || $^O eq 'solaris') {
         if ($has_ipv6) {
             $cmd1->stdout_like(qr{^\s+--oiface=IFACE\s+send pings via a specific outgoing interface \(receive from any\)\n}m);
         } else {
             $cmd1->stdout_like(qr{^\s+--oiface=IFACE\s+send pings via a specific outgoing interface \(receive from any, IPv4 only\)\n}m);
         }
-    } elsif ($^O eq 'freebsd' || $^O eq 'openbsd') {
+    } elsif ($^O eq 'freebsd' || $^O eq 'openbsd' || $^O eq 'darwin') {
         if ($has_ipv6) {
             $cmd1->stdout_like(qr{^\s+--oiface=IFACE\s+send pings via a specific outgoing interface \(receive from any, IPv6 only\)\n}m);
         } else {

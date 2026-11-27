@@ -106,9 +106,9 @@ SKIP: {
     $cmd2->stderr_is_eq("");
 }
 
-# fping --oiface=IFACE on IPV6_PKTINFO-only platforms (FreeBSD, OpenBSD)
+# fping --oiface=IFACE on IPV6_PKTINFO-only platforms (macOS, FreeBSD, OpenBSD)
 SKIP: {
-    if ($^O ne 'freebsd' && $^O ne 'openbsd') {
+    if ($^O ne 'freebsd' && $^O ne 'openbsd' && $^O ne 'darwin') {
         skip 'IPv4 --oiface rejection tests are only run on IPV6_PKTINFO-only platforms', 21;
     }
     my $ipv4_err = $has_ipv6
@@ -243,8 +243,8 @@ $cmd->stderr_is_eq("");
 
 # fping --oiface unknown interface error case
 SKIP: {
-if ($^O ne 'linux' && $^O ne 'solaris' && $^O ne 'darwin') {
-    skip '--oiface unknown interface test is only run on IP_PKTINFO platforms', 3;
+if ($^O ne 'linux' && $^O ne 'solaris') {
+    skip '--oiface unknown interface test is only run on IPv4 --oiface platforms', 3;
 }
 my $cmd1 = Test::Command->new(cmd => 'fping --oiface=NotAnInterface 127.0.0.1');
 $cmd1->exit_is_num(1);

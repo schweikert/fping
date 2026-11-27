@@ -82,7 +82,7 @@ if (!run_ok("$in_rt sysctl -w net.ipv4.ip_forward=1")) {
     exit 0;
 }
 
-my ($ipv4_tests, $ipv6_tests) = (12, 6);
+my ($ipv4_tests, $ipv6_tests) = (15, 9);
 plan tests => $ipv4_tests + $ipv6_tests;
 
 # Enable IPv6 and disable DAD before creating veths; ignore failure if IPv6 is disabled.
@@ -127,7 +127,13 @@ sub run_fping {
     my $cmd = run_fping('-4 -s -r 0 -t 500 -i 10 -H 1 198.51.100.1 198.51.100.2 198.51.100.3');
     $cmd->exit_is_num(1);
     $cmd->stdout_is_eq("198.51.100.1 is unreachable\n198.51.100.2 is unreachable\n198.51.100.3 is unreachable\n");
-    $cmd->stderr_like(qr{\A(?=.*^ICMP Time Exceeded from 10\.99\.0\.2 for ICMP Echo sent to 198\.51\.100\.1\n)(?=.*^ICMP Time Exceeded from 10\.99\.0\.2 for ICMP Echo sent to 198\.51\.100\.2\n)(?=.*^ICMP Time Exceeded from 10\.99\.0\.2 for ICMP Echo sent to 198\.51\.100\.3\n).*^ +3 timeouts \(waiting for response\)\n +3 ICMP Echos sent\n +0 ICMP Echo Replies received\n +3 other ICMP received\n}ms);
+    my $stderr = $cmd->stderr_value;
+    for my $dst (qw(198.51.100.1 198.51.100.2 198.51.100.3)) {
+        like($stderr, qr{^ICMP Time Exceeded from 10\.99\.0\.2 for ICMP Echo sent to \Q$dst\E$}m,
+            "IPv4 Time Exceeded reported for $dst");
+    }
+    like($stderr, qr{^ +3 timeouts \(waiting for response\)\n +3 ICMP Echos sent\n +0 ICMP Echo Replies received\n +3 other ICMP received\n}m,
+        'IPv4 multi-target stats report 3 timeouts and 3 other ICMP');
 }
 
 # 3. IPv4 -q suppresses ICMP error warnings while still counting other ICMP received
@@ -176,6 +182,14 @@ SKIP: {
         my $cmd = run_fping('-6 -s -r 0 -t 500 -i 10 -b 1400 2001:db8:99::1 2001:db8:99::2 2001:db8:99::3');
         $cmd->exit_is_num(1);
         $cmd->stdout_is_eq("2001:db8:99::1 is unreachable\n2001:db8:99::2 is unreachable\n2001:db8:99::3 is unreachable\n");
-        $cmd->stderr_like(qr{\A(?=.*^ICMPv6 Packet Too Big from fd99::2 for ICMPv6 Echo Request sent to 2001:db8:99::1\n)(?=.*^ICMPv6 Destination Unreachable \(No route to destination\) from fd99::2 for ICMPv6 Echo Request sent to 2001:db8:99::2\n)(?=.*^ICMPv6 Destination Unreachable \(Communication with destination administratively prohibited\) from fd99::2 for ICMPv6 Echo Request sent to 2001:db8:99::3\n).*^ +3 timeouts \(waiting for response\)\n +3 ICMP Echos sent\n +0 ICMP Echo Replies received\n +3 other ICMP received\n}ms);
+        my $stderr = $cmd->stderr_value;
+        like($stderr, qr{^ICMPv6 Packet Too Big from fd99::2 for ICMPv6 Echo Request sent to 2001:db8:99::1$}m,
+            'IPv6 Packet Too Big reported for 2001:db8:99::1');
+        like($stderr, qr{^ICMPv6 Destination Unreachable \(No route to destination\) from fd99::2 for ICMPv6 Echo Request sent to 2001:db8:99::2$}m,
+            'IPv6 No route to destination reported for 2001:db8:99::2');
+        like($stderr, qr{^ICMPv6 Destination Unreachable \(Communication with destination administratively prohibited\) from fd99::2 for ICMPv6 Echo Request sent to 2001:db8:99::3$}m,
+            'IPv6 Administratively prohibited reported for 2001:db8:99::3');
+        like($stderr, qr{^ +3 timeouts \(waiting for response\)\n +3 ICMP Echos sent\n +0 ICMP Echo Replies received\n +3 other ICMP received\n}m,
+            'IPv6 multi-target stats report 3 timeouts and 3 other ICMP');
     }
 }

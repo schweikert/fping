@@ -4,7 +4,11 @@ use Test::Command tests => 96;
 use Test::More;
 use Time::HiRes qw(gettimeofday tv_interval);
 
-my $RE_RTT = qr/\d+(?:\.\d+)?/;
+my $RE_RTT        = qr/\d+(?:\.\d+)?/;
+my $RE_TS_EPOCH   = qr/[1-9]\d{9,}\.\d{5}/;
+my $RE_TS_CTIME   = qr/\w+\s\w+\s+\d+\s\d{2}:\d{2}:\d{2}\s\d{4}/;
+my $RE_TS_ISO     = qr/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4}/;
+my $RE_TS_RFC3339 = qr/\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}/;
 
 #  -c n           count of pings to send to each target (default 1)
 #  -C n           same as -c, report results in verbose format
@@ -291,8 +295,8 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -D -c 2 -p 100 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr{\[\d+\.\d+\] 127\.0\.0\.1 : \[0\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
-\[\d+\.\d+\] 127\.0\.0\.1 : \[1\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
+$cmd->stdout_like(qr{\[$RE_TS_EPOCH\] 127\.0\.0\.1 : \[0\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
+\[$RE_TS_EPOCH\] 127\.0\.0\.1 : \[1\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
 });
 
 $cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = $RE_RTT/$RE_RTT/$RE_RTT
@@ -303,8 +307,8 @@ $cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = $RE_RT
 {
 my $cmd = Test::Command->new(cmd => "fping -D -c 2 -p 100 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr{\[[1-9]\d{9,}\.\d+\] 127\.0\.0\.1 : \[0\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
-\[[1-9]\d{9,}\.\d+\] 127\.0\.0\.1 : \[1\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
+$cmd->stdout_like(qr{\[$RE_TS_EPOCH\] 127\.0\.0\.1 : \[0\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
+\[$RE_TS_EPOCH\] 127\.0\.0\.1 : \[1\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
 });
 $cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = $RE_RTT/$RE_RTT/$RE_RTT
 });
@@ -314,8 +318,8 @@ $cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = $RE_RT
 {
 my $cmd = Test::Command->new(cmd => "fping -D --timestamp-format=ctime -c 2 -p 100 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr{\[\w+\s\w+\s+\d+\s[\d+:]+\s\d+\] 127\.0\.0\.1 : \[0\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
-\[\w+\s\w+\s+\d+\s[\d+:]+\s\d+\] 127\.0\.0\.1 : \[1\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
+$cmd->stdout_like(qr{\[$RE_TS_CTIME\] 127\.0\.0\.1 : \[0\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
+\[$RE_TS_CTIME\] 127\.0\.0\.1 : \[1\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
 });
 
 $cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = $RE_RTT/$RE_RTT/$RE_RTT
@@ -326,8 +330,8 @@ $cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = $RE_RT
 {
 my $cmd = Test::Command->new(cmd => "fping -D --timestamp-format=iso -c 2 -p 100 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr{\[[\d+-]+T[\d+:]+\+\d+\] 127\.0\.0\.1 : \[0\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
-\[[\d+-]+T[\d+:]+\+\d+\] 127\.0\.0\.1 : \[1\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
+$cmd->stdout_like(qr{\[$RE_TS_ISO\] 127\.0\.0\.1 : \[0\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
+\[$RE_TS_ISO\] 127\.0\.0\.1 : \[1\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
 });
 
 $cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = $RE_RTT/$RE_RTT/$RE_RTT
@@ -338,8 +342,8 @@ $cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = $RE_RT
 {
 my $cmd = Test::Command->new(cmd => "fping -D --timestamp-format=rfc3339 -c 2 -p 100 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr{\[[\d+-]+\s[\d+:]+\] 127\.0\.0\.1 : \[0\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
-\[[\d+-]+\s[\d+:]+\] 127\.0\.0\.1 : \[1\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
+$cmd->stdout_like(qr{\[$RE_TS_RFC3339\] 127\.0\.0\.1 : \[0\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
+\[$RE_TS_RFC3339\] 127\.0\.0\.1 : \[1\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
 });
 
 $cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 2/2/0%, min/avg/max = $RE_RTT/$RE_RTT/$RE_RTT
@@ -384,7 +388,7 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping --seqmap-timeout 0 -D -c 1 -t 50 127.0.0.1");
 $cmd->exit_is_num(1);
-$cmd->stdout_like(qr{^\[[1-9]\d{9,}\.\d+\] 127\.0\.0\.1 : \[0\], timed out \(NaN avg, 100% loss\)\n$});
+$cmd->stdout_like(qr{^\[$RE_TS_EPOCH\] 127\.0\.0\.1 : \[0\], timed out \(NaN avg, 100% loss\)\n$});
 $cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 1/0/100%\n});
 }
 

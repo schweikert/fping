@@ -14,6 +14,11 @@ compile
 config.guess
 config.h
 config.h.in
+src/config.h
+src/config.h.in
+src/config.h.in~
+src/stamp-h1
+src/.deps
 config.log
 config.status
 config.sub

@@ -136,7 +136,7 @@ void print_timestamp_format(int64_t timestamp_ns, int timestamp_format)
     current_time_s = wall_time_ns / 1000000000;
     local_time = localtime(&current_time_s);
     if (local_time == NULL) {
-        time_buffer[0] = '\0';
+        time_buffer[0] = '\0'; /* LCOV_EXCL_LINE */
     }
     else {
         size_t len = 0;
@@ -150,11 +150,11 @@ void print_timestamp_format(int64_t timestamp_ns, int timestamp_format)
             case TIMESTAMP_FORMAT_RFC3339:
                 len = strftime(time_buffer, sizeof(time_buffer), "%Y-%m-%d %H:%M:%S", local_time);
                 break;
-            default:
+            default: /* LCOV_EXCL_LINE */
                 crash_and_burn("invalid timestamp format"); /* LCOV_EXCL_LINE */
         }
         if (len == 0) {
-            time_buffer[0] = '\0';
+            time_buffer[0] = '\0'; /* LCOV_EXCL_LINE */
         }
     }
 

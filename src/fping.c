@@ -664,14 +664,14 @@ int fping_main(int argc, char **argv)
 #if defined(HAVE_IP_RECVTOS)
                 if (socket4 >= 0 && socket4_strips_ip_header) {
                     if (setsockopt(socket4, IPPROTO_IP, IP_RECVTOS, &sock_opt_on, sizeof(sock_opt_on))) {
-                        perror("setsockopt IP_RECVTOS");
+                        perror("setsockopt IP_RECVTOS"); /* LCOV_EXCL_LINE */
                     }
                 }
 #endif
 #if defined(IPV6) && defined(IPV6_RECVTCLASS)
                 if (socket6 >= 0) {
                     if (setsockopt(socket6, IPPROTO_IPV6, IPV6_RECVTCLASS, &sock_opt_on, sizeof(sock_opt_on))) {
-                        perror("setsockopt IPV6_RECVTCLASS");
+                        perror("setsockopt IPV6_RECVTCLASS"); /* LCOV_EXCL_LINE */
                     }
                 }
 #endif
@@ -680,14 +680,14 @@ int fping_main(int argc, char **argv)
 #ifdef IP_RECVTTL
                 if (socket4 >= 0 && socket4_strips_ip_header) {
                     if (setsockopt(socket4, IPPROTO_IP, IP_RECVTTL, &sock_opt_on, sizeof(sock_opt_on))) {
-                        perror("setsockopt IP_RECVTTL");
+                        perror("setsockopt IP_RECVTTL"); /* LCOV_EXCL_LINE */
                     }
                 }
 #endif
 #if defined(IPV6) && defined(IPV6_RECVHOPLIMIT)
                 if (socket6 >= 0) {
                     if (setsockopt(socket6, IPPROTO_IPV6, IPV6_RECVHOPLIMIT, &sock_opt_on, sizeof(sock_opt_on))) {
-                        perror("setsockopt IPV6_RECVHOPLIMIT");
+                        perror("setsockopt IPV6_RECVHOPLIMIT"); /* LCOV_EXCL_LINE */
                     }
                 }
 #endif
@@ -698,11 +698,11 @@ int fping_main(int argc, char **argv)
                 if (socket6 >= 0) {
 #if defined(IPV6_RECVPKTINFO)
                     if (setsockopt(socket6, IPPROTO_IPV6, IPV6_RECVPKTINFO, &sock_opt_on, sizeof(sock_opt_on))) {
-                        perror("setsockopt IPV6_RECVPKTINFO");
+                        perror("setsockopt IPV6_RECVPKTINFO"); /* LCOV_EXCL_LINE */
                     }
 #else
                     if (setsockopt(socket6, IPPROTO_IPV6, IPV6_PKTINFO, &sock_opt_on, sizeof(sock_opt_on))) {
-                        perror("setsockopt IPV6_PKTINFO");
+                        perror("setsockopt IPV6_PKTINFO"); /* LCOV_EXCL_LINE */
                     }
 #endif
                 }
@@ -996,13 +996,13 @@ int fping_main(int argc, char **argv)
             }
             if (socket4 >= 0) {
                 if (setsockopt(socket4, IPPROTO_IP, IP_TOS, &tos, sizeof(tos))) {
-                    perror("setting type of service octet IP_TOS");
+                    perror("setting type of service octet IP_TOS"); /* LCOV_EXCL_LINE */
                 }
             }
 #if defined(IPV6) && defined(IPV6_TCLASS)
             if (socket6 >= 0) {
                 if (setsockopt(socket6, IPPROTO_IPV6, IPV6_TCLASS, &tos, sizeof(tos))) {
-                    perror("setting type of service octet IPV6_TCLASS");
+                    perror("setting type of service octet IPV6_TCLASS"); /* LCOV_EXCL_LINE */
                 }
             }
 #endif
@@ -1240,13 +1240,13 @@ int fping_main(int argc, char **argv)
     if (opt.ttl > 0) {
         if (socket4 >= 0) {
             if (setsockopt(socket4, IPPROTO_IP, IP_TTL, &opt.ttl, sizeof(opt.ttl))) {
-                perror("setting time to live");
+                perror("setting time to live"); /* LCOV_EXCL_LINE */
             }
         }
 #ifdef IPV6
         if (socket6 >= 0) {
             if (setsockopt(socket6, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &opt.ttl, sizeof(opt.ttl))) {
-                perror("setting time to live");
+                perror("setting time to live"); /* LCOV_EXCL_LINE */
             }
         }
 #endif
@@ -1257,12 +1257,12 @@ int fping_main(int argc, char **argv)
 #if defined(IP_MTU_DISCOVER)
             int pmtu = opt.dontfrag_on ? IP_PMTUDISC_DO : IP_PMTUDISC_DONT;
             if (setsockopt(socket4, IPPROTO_IP, IP_MTU_DISCOVER, &pmtu, sizeof(pmtu))) {
-                perror("setsockopt IP_MTU_DISCOVER (pmtu)");
+                perror("setsockopt IP_MTU_DISCOVER (pmtu)"); /* LCOV_EXCL_LINE */
             }
 #elif defined(IP_DONTFRAG)
             int pmtu = opt.dontfrag_on ? 1 : 0;
             if (setsockopt(socket4, IPPROTO_IP, IP_DONTFRAG, &pmtu, sizeof(pmtu))) {
-                perror("setsockopt IP_DONTFRAG");
+                perror("setsockopt IP_DONTFRAG"); /* LCOV_EXCL_LINE */
             }
 #else
             fprintf(stderr, "%s: -M/--frag option not supported on this platform\n", prog);
@@ -1274,12 +1274,12 @@ int fping_main(int argc, char **argv)
 #if defined(IPV6_MTU_DISCOVER)
             int pmtu6 = opt.dontfrag_on ? IPV6_PMTUDISC_DO : IPV6_PMTUDISC_DONT;
             if (setsockopt(socket6, IPPROTO_IPV6, IPV6_MTU_DISCOVER, &pmtu6, sizeof(pmtu6))) {
-                perror("setsockopt IPV6_MTU_DISCOVER (pmtu)");
+                perror("setsockopt IPV6_MTU_DISCOVER (pmtu)"); /* LCOV_EXCL_LINE */
             }
 #elif defined(IPV6_DONTFRAG)
             int pmtu6 = opt.dontfrag_on ? 1 : 0;
             if (setsockopt(socket6, IPPROTO_IPV6, IPV6_DONTFRAG, &pmtu6, sizeof(pmtu6))) {
-                perror("setsockopt IPV6_DONTFRAG");
+                perror("setsockopt IPV6_DONTFRAG"); /* LCOV_EXCL_LINE */
             }
 #else
             fprintf(stderr, "%s: -M/--frag option not supported on this platform\n", prog);

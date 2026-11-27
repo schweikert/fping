@@ -4,6 +4,8 @@ dnl Minimum Autoconf version required.
 AC_PREREQ(2.59)
 
 AC_INIT([fping],[5.5])
+dnl Keep auxiliary scripts in top srcdir even when built inside nested worktrees.
+AC_CONFIG_AUX_DIR([.])
 
 m4_ifdef([AC_AUTOCONF_VERSION],[AC_USE_SYSTEM_EXTENSIONS], [AC_GNU_SOURCE])
 

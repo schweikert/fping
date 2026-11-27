@@ -109,12 +109,6 @@ extern "C" {
 #define RECV_BUFSIZE 4096
 #endif
 
-#ifdef IP_PKTINFO
-#define HAVE_OIFACE_IPV4 1
-#else
-#define HAVE_OIFACE_IPV4 0
-#endif
-
 #if defined(IPV6) && defined(IPV6_PKTINFO)
 #define HAVE_OIFACE_IPV6 1
 #else

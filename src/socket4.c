@@ -49,7 +49,7 @@
 char* ping_buffer_ipv4 = 0;
 size_t ping_pkt_size_ipv4;
 
-#ifdef IP_PKTINFO
+#if HAVE_OIFACE_IPV4
 /* Interface index for outgoing packets (0 = not set, use routing table) */
 static unsigned int outgoing_iface_idx_ipv4 = 0;
 
@@ -89,7 +89,7 @@ int open_ping_socket_ipv4(int *socktype)
 
 void socket_set_outgoing_iface_ipv4(unsigned int ifindex)
 {
-#ifdef IP_PKTINFO
+#if HAVE_OIFACE_IPV4
     outgoing_iface_idx_ipv4 = ifindex;
 #else
     (void)ifindex;
@@ -110,7 +110,7 @@ void socket_set_src_addr_ipv4(int s, struct in_addr* src_addr, int *ident)
     struct sockaddr_in sa;
     socklen_t len = sizeof(sa);
 
-#ifdef IP_PKTINFO
+#if HAVE_OIFACE_IPV4
     /* Remember source address so we can set ipi_spec_dst in sendmsg() */
     outgoing_src_addr_ipv4 = *src_addr;
     outgoing_src_addr_set_ipv4 = 1;
@@ -183,7 +183,7 @@ int socket_sendto_ping_ipv4(int s, struct sockaddr* saddr, socklen_t saddr_len, 
 
     icp->icmp_cksum = calcsum((unsigned short*)icp, opt.random_data_on ? ping_pkt_size_ipv4 : hdr_len);
 
-#ifdef IP_PKTINFO
+#if HAVE_OIFACE_IPV4
     if (outgoing_iface_idx_ipv4 != 0) {
         struct iovec iov = {
             .iov_base = icp,

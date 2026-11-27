@@ -196,7 +196,10 @@ sudo -u runner -- bash -euo pipefail -c '
     if [ -f Makefile ]; then
         make distclean >/dev/null 2>&1 || true
     fi
-    rm -f src/*.o src/fping src/fping6 src/*_test src/*.log src/*.trs src/*.gcda src/*.gcno
+    rm -f config.h config.h.in config.h.in~ stamp-h1 \
+        src/config.h src/config.h.in src/config.h.in~ src/stamp-h1 \
+        src/*.o src/fping src/fping6 src/*_test src/*.log src/*.trs src/*.gcda src/*.gcno
+    rm -rf src/.deps
     autoreconf -i
     ./configure --enable-ipv4 --enable-ipv6 --enable-safe-limits --prefix=/opt/fping >/dev/null
     make -j"$(nproc)" >/dev/null

@@ -8,6 +8,7 @@ rm -f compile
 rm -f config.guess
 rm -f config.h
 rm -f config.h.in
+rm -f config.h.in~
 rm -f config.log
 rm -f config.status
 rm -f config.sub
@@ -21,6 +22,11 @@ rm -f doc/Makefile
 rm -f doc/Makefile.in
 rm -f src/Makefile
 rm -f src/Makefile.in
+rm -f src/config.h
+rm -f src/config.h.in
+rm -f src/config.h.in~
+rm -f src/stamp-h1
+rm -rf src/.deps
 rm -f doc/fping.8
 rm -f src/*.gcda
 rm -f src/*.gcno

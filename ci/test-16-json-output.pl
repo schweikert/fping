@@ -5,6 +5,8 @@ use Test::More;
 use File::Temp;
 use JSON::PP qw(decode_json);
 
+my $RE_RTT = qr/\d+(?:\.\d+)?/;
+
 # Validate LF-framed JSONL where each line is a 1-key fping JSON object
 # envelope (e.g. {"resp": {...}}). Emits 1 assertion and returns decoded docs.
 sub jsonl_ok {
@@ -50,9 +52,9 @@ sub jsonl_ok {
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 2 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
-\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s1,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
-\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
+$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
+\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s1,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -63,8 +65,8 @@ if($^O eq 'darwin') {
 }
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 --icmp-timestamp 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"timestamps":\s\{"originate":\s\d+,\s"receive":\s\d+,\s"transmit":\s\d+,\s"localreceive":\s\d+\}\}\}
-\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
+$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT,\s"timestamps":\s\{"originate":\s\d+,\s"receive":\s\d+,\s"transmit":\s\d+,\s"localreceive":\s\d+\}\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -72,8 +74,8 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 --print-ttl 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"ttl":\s\d+\}\}
-\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
+$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT,\s"ttl":\s\d+\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -81,8 +83,8 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 --print-tos 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"tos":\s\d+\}\}
-\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
+$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT,\s"tos":\s\d+\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -90,8 +92,8 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 --print-ttl --print-tos 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"tos":\s\d+,\s"ttl":\s\d+\}\}
-\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
+$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT,\s"tos":\s\d+,\s"ttl":\s\d+\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -108,9 +110,9 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 2 -D 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"[1-9]\d{9,}\.\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
-\{"resp":\s\{"timestamp":\s"[1-9]\d{9,}\.\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s1,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
-\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
+$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"[1-9]\d{9,}\.\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
+\{"resp":\s\{"timestamp":\s"[1-9]\d{9,}\.\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s1,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -118,8 +120,8 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 -D --timestamp-format=ctime 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"\w+\s\w+\s+\d+\s[\d+:]+\s\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
-\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
+$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"\w+\s\w+\s+\d+\s[\d+:]+\s\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -127,8 +129,8 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 -D --timestamp-format=iso 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"[\d+-]+T[\d+:]+[+-]\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
-\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
+$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"[\d+-]+T[\d+:]+[+-]\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -136,8 +138,8 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 -D --timestamp-format=rfc3339 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"[\d+-]+\s[\d+:]+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
-\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
+$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"[\d+-]+\s[\d+:]+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -145,8 +147,8 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 --print-reply-dst 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"replyDst":\s"127\.0\.0\.1"\}\}
-\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
+$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT,\s"replyDst":\s"127\.0\.0\.1"\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -157,8 +159,8 @@ if ($ENV{SKIP_IPV6}) {
 }
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 --print-reply-dst ::1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"::1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+,\s"replyDst":\s"::1"\}\}
-\{"summary":\s\{"host":\s"::1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
+$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"::1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT,\s"replyDst":\s"::1"\}\}
+\{"summary":\s\{"host":\s"::1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -166,7 +168,7 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 -q 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n?$/);
+$cmd->stdout_like(qr/^\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -174,8 +176,8 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -C 1 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s\d+,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
-\{"vSum":\s\{"host":\s"127\.0\.0\.1",\s"values":\s\[\d+\.\d+\]\}\}\n$/);
+$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s\d+,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
+\{"vSum":\s\{"host":\s"127\.0\.0\.1",\s"values":\s\[$RE_RTT\]\}\}\n$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -192,7 +194,7 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -C 1 -q 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"vSum":\s\{"host":\s"\d+\.\d+\.\d+\.\d+",\s"values":\s\[\d+\.\d+\]\}\}\n?$/);
+$cmd->stdout_like(qr/^\{"vSum":\s\{"host":\s"\d+\.\d+\.\d+\.\d+",\s"values":\s\[$RE_RTT\]\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -200,8 +202,8 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -C 1 -q 127.0.0.1 127.0.0.2");
 $cmd->exit_is_num(0);  # Both hosts are reachable in this test
-$cmd->stdout_like(qr/^\{"vSum":\s\{"host":\s"\d+\.\d+\.\d+\.\d+",\s"values":\s\[\d+\.\d+\]\}\}
-\{"vSum":\s\{"host":\s"\d+\.\d+\.\d+\.\d+",\s"values":\s\[\d+\.\d+\]\}\}\n?$/);
+$cmd->stdout_like(qr/^\{"vSum":\s\{"host":\s"\d+\.\d+\.\d+\.\d+",\s"values":\s\[$RE_RTT\]\}\}
+\{"vSum":\s\{"host":\s"\d+\.\d+\.\d+\.\d+",\s"values":\s\[$RE_RTT\]\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -209,7 +211,7 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -C3 -p 100 -q 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"vSum":\s\{"host":\s"\d+\.\d+\.\d+\.\d+",\s"values":\s\[\d+\.\d+,\s\d+\.\d+,\s\d+\.\d+\]\}\}\n?$/);
+$cmd->stdout_like(qr/^\{"vSum":\s\{"host":\s"\d+\.\d+\.\d+\.\d+",\s"values":\s\[$RE_RTT,\s$RE_RTT,\s$RE_RTT\]\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -225,8 +227,8 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 -q -g 127.0.0.1/30");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}
-\{"summary":\s\{"host":\s"127\.0\.0\.2",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n$/);
+$cmd->stdout_like(qr/^\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.2",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -234,8 +236,8 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 2 -Q 1 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"intSum":\s\{"time":\s[1-9]\d{9,},"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}
-\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n$/);
+$cmd->stdout_like(qr/^\{"intSum":\s\{"time":\s[1-9]\d{9,},"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -243,8 +245,8 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -s -q -c 2 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}
-\{"stats":\s\{"targets":\s\d+,\s"alive":\s\d+,\s"unreachable":\s\d+,\s"unknownAddresses":\s\d+,\s"timeouts":\s\d+,\s"icmpEchosSent":\s\d+,\s"icmpEchoRepliesReceived":\s\d+,\s"otherIcmpReceived":\s0,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+,\s"elapsed":\s\d+\.\d+\}\}\n$/);
+$cmd->stdout_like(qr/^\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}
+\{"stats":\s\{"targets":\s\d+,\s"alive":\s\d+,\s"unreachable":\s\d+,\s"unknownAddresses":\s\d+,\s"timeouts":\s\d+,\s"icmpEchosSent":\s\d+,\s"icmpEchoRepliesReceived":\s\d+,\s"otherIcmpReceived":\s0,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT,\s"elapsed":\s\d+\.\d+\}\}\n$/);
 $cmd->stderr_is_eq("");
 }
 
@@ -317,8 +319,8 @@ jsonl_ok($cmd);
 # fping -J -p 100 -t 1000 -l 127.0.0.1 with SIGQUIT
 {
 my $cmd = Test::Command->new(cmd => '(sleep 1; pkill -QUIT fping; sleep 1; pkill -INT fping)& fping -J -p 100 -t 1000 -l 127.0.0.1');
-$cmd->stdout_like(qr/^(?:\{"(?:resp|timeout)":\s\{[^\n]+\}\}\n)*\{"intSum":\s\{"time":\s[1-9]\d{9,},"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+(?:,\s"rttMin":\s\d+(?:\.\d+)?,\s"rttAvg":\s\d+(?:\.\d+)?,\s"rttMax":\s\d+(?:\.\d+)?)?\}\}
-(?:\{"(?:resp|timeout)":\s\{[^\n]+\}\}\n)*\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+(?:,\s"rttMin":\s\d+(?:\.\d+)?,\s"rttAvg":\s\d+(?:\.\d+)?,\s"rttMax":\s\d+(?:\.\d+)?)?\}\}\n?$/);
+$cmd->stdout_like(qr/^(?:\{"(?:resp|timeout)":\s\{[^\n]+\}\}\n)*\{"intSum":\s\{"time":\s[1-9]\d{9,},"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+(?:,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT)?\}\}
+(?:\{"(?:resp|timeout)":\s\{[^\n]+\}\}\n)*\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+(?:,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT)?\}\}\n?$/);
 $cmd->stderr_is_eq("");
 jsonl_ok($cmd);
 }
@@ -341,8 +343,8 @@ my $cmd = Test::Command->new(cmd => ['fping', '-J', '-c', '1', 'bad"host.invalid
 $cmd->exit_is_num(2);
 $cmd->stderr_like(qr/^\Qbad"host.invalid\E: [^\n]+\n\z/);
 $cmd->stdout_like(qr/^\{"warning":\s\{"host":\s"bad\\"host\.invalid",\s"message":\s"[^"\n]+"\}\}
-\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
-\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s1,\s"rcv":\s1,\s"loss":\s0,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n\z/);
+\{"resp":\s\{"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s1,\s"rcv":\s1,\s"loss":\s0,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n\z/);
 jsonl_ok($cmd);
 }
 
@@ -358,7 +360,7 @@ my $cmd = Test::Command->new(cmd => "fping -J -c 1 -q -f - < '$q'");
 $cmd->exit_is_num(2);
 $cmd->stderr_is_eq("");
 $cmd->stdout_like(qr/^\{"warning":\s\{"host":\s"bad\\"\\\\slash\\u0001\\u001f\x7f\.invalid",\s"message":\s"[^"\n]+"\}\}
-\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s1,\s"rcv":\s1,\s"loss":\s0,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n\z/);
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s1,\s"rcv":\s1,\s"loss":\s0,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n\z/);
 my @docs = jsonl_ok($cmd);
 is($docs[0]{warning}{host}, $stdin_bad, 'JSON -f - stdin warning round-trips host');
 }
@@ -367,8 +369,8 @@ is($docs[0]{warning}{host}, $stdin_bad, 'JSON -f - stdin warning round-trips hos
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 -n 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"([^"\s]+)",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
-\{"summary":\s\{"host":\s"\1",\s"xmt":\s1,\s"rcv":\s1,\s"loss":\s0,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n\z/);
+$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"([^"\s]+)",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
+\{"summary":\s\{"host":\s"\1",\s"xmt":\s1,\s"rcv":\s1,\s"loss":\s0,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n\z/);
 $cmd->stderr_is_eq("");
 jsonl_ok($cmd);
 }
@@ -377,8 +379,8 @@ jsonl_ok($cmd);
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 -A -n 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"([^\s"]+ \(127\.0\.0\.1\))",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s\d+\.\d+\}\}
-\{"summary":\s\{"host":\s"\1",\s"xmt":\s1,\s"rcv":\s1,\s"loss":\s0,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}\n\z/);
+$cmd->stdout_like(qr/^\{"resp":\s\{"host":\s"([^\s"]+ \(127\.0\.0\.1\))",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
+\{"summary":\s\{"host":\s"\1",\s"xmt":\s1,\s"rcv":\s1,\s"loss":\s0,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n\z/);
 $cmd->stderr_is_eq("");
 jsonl_ok($cmd);
 }
@@ -388,8 +390,8 @@ jsonl_ok($cmd);
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 -q -s host.invalid 127.0.0.1");
 $cmd->exit_is_num(2);
 $cmd->stdout_like(qr/^\{"warning":\s\{"host":\s"host\.invalid",\s"message":\s"[^"\n]+"\}\}
-\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s1,\s"rcv":\s1,\s"loss":\s0,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+\}\}
-\{"stats":\s\{"targets":\s1,\s"alive":\s1,\s"unreachable":\s0,\s"unknownAddresses":\s1,\s"timeouts":\s0,\s"icmpEchosSent":\s1,\s"icmpEchoRepliesReceived":\s1,\s"otherIcmpReceived":\s0,\s"rttMin":\s\d+\.\d+,\s"rttAvg":\s\d+\.\d+,\s"rttMax":\s\d+\.\d+,\s"elapsed":\s\d+\.\d+\}\}\n\z/);
+\{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s1,\s"rcv":\s1,\s"loss":\s0,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}
+\{"stats":\s\{"targets":\s1,\s"alive":\s1,\s"unreachable":\s0,\s"unknownAddresses":\s1,\s"timeouts":\s0,\s"icmpEchosSent":\s1,\s"icmpEchoRepliesReceived":\s1,\s"otherIcmpReceived":\s0,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT,\s"elapsed":\s\d+\.\d+\}\}\n\z/);
 $cmd->stderr_is_eq("");
 jsonl_ok($cmd);
 }

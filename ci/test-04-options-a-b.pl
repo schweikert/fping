@@ -4,6 +4,8 @@ use Test::Command tests => 77;
 use Test::More;
 use Time::HiRes qw(gettimeofday tv_interval);
 
+my $RE_RTT = qr/\d+(?:\.\d+)?/;
+
 #  -4         only use IPv4 addresses
 #  -6         only use IPv6 addresses
 #  -a         show targets that are alive
@@ -122,7 +124,7 @@ if($^O eq 'darwin') {
 }
 my $cmd = Test::Command->new(cmd => "fping --icmp-timestamp --print-tos --print-ttl -e 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr{127\.0\.0\.1 is alive, timestamps: Originate=\d+ Receive=\d+ Transmit=\d+ Localreceive=\d+ \(TOS \d+\) \(TTL \d+\) \(\d+(\.\d*)? ms\)});
+$cmd->stdout_like(qr{127\.0\.0\.1 is alive, timestamps: Originate=\d+ Receive=\d+ Transmit=\d+ Localreceive=\d+ \(TOS \d+\) \(TTL \d+\) \($RE_RTT ms\)});
 $cmd->stderr_is_eq("");
 }
 
@@ -169,7 +171,7 @@ $cmd->stderr_is_eq("");
 my $cmd = Test::Command->new(cmd => "fping -b 1 -R -q -c 5 -p 20 -t 500 127.0.0.1");
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("");
-$cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 5/5/0%, min/avg/max = \d+(?:\.\d+)?/\d+(?:\.\d+)?/\d+(?:\.\d+)?\n});
+$cmd->stderr_like(qr{127\.0\.0\.1 : xmt/rcv/%loss = 5/5/0%, min/avg/max = $RE_RTT/$RE_RTT/$RE_RTT\n});
 }
 
 # fping --icmp-timestamp -b

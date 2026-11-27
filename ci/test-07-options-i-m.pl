@@ -4,6 +4,8 @@ use Test::Command tests => 60;
 use Test::More;
 use Time::HiRes qw(gettimeofday tv_interval);
 
+my $RE_RTT = qr/\d+(?:\.\d+)?/;
+
 #  -i n       interval between sending ping packets (in millisec) (default 25)
 #  -I IFACE   bind to a particular interface, not always available
 #  -l         loop sending pings forever
@@ -93,16 +95,16 @@ SKIP: {
 # fping -l
 {
 my $cmd = Test::Command->new(cmd => '(sleep 0.5; pkill -INT fping)& fping -p 100 -t 2000 -l 127.0.0.1');
-$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\)
-127\.0\.0\.1 : \[1\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\)
+$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
+127\.0\.0\.1 : \[1\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
 });
 }
 
 # fping -l --print-tos --print-ttl
 {
 my $cmd = Test::Command->new(cmd => '(sleep 0.5; pkill -INT fping)& fping -p 100 -t 2000 --print-ttl --print-tos -l 127.0.0.1');
-$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\) \(TOS \d+\) \(TTL \d+\)
-127\.0\.0\.1 : \[1\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\) \(TOS \d+\) \(TTL \d+\)
+$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\) \(TOS \d+\) \(TTL \d+\)
+127\.0\.0\.1 : \[1\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\) \(TOS \d+\) \(TTL \d+\)
 });
 }
 
@@ -120,14 +122,14 @@ $cmd->stderr_is_eq("");
 # fping -l with SIGQUIT
 {
 my $cmd = Test::Command->new(cmd => '(sleep 0.5; pkill -QUIT fping; sleep 0.5; pkill -INT fping)& fping -p 100 -t 2000 -l 127.0.0.1');
-$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\)
-127\.0\.0\.1 : \[1\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\)
-127\.0\.0\.1 : \[2\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\)
-127\.0\.0\.1 : \[3\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\)
-127\.0\.0\.1 : \[4\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\)
+$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
+127\.0\.0\.1 : \[1\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
+127\.0\.0\.1 : \[2\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
+127\.0\.0\.1 : \[3\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
+127\.0\.0\.1 : \[4\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
 });
 $cmd->stderr_like(qr{\[\d+:\d+:\d+\]
-127\.0\.0\.1 : xmt/rcv/%loss = \d+/\d+/\d+%, min/avg/max = \d+\.\d+/\d+\.\d+/\d+\.\d+
+127\.0\.0\.1 : xmt/rcv/%loss = \d+/\d+/\d+%, min/avg/max = $RE_RTT/$RE_RTT/$RE_RTT
 });
 }
 
@@ -139,17 +141,17 @@ if($^O eq 'darwin') {
 my $cmd = Test::Command->new(cmd => '(sleep 1.5; pkill -INT fping)& fping -p 100 -l -Q 0.5 127.0.0.1');
 $cmd->stdout_is_eq("");
 $cmd->stderr_like(qr{\[\d\d:\d\d:\d\d\]
-127\.0\.0\.1 : xmt/rcv/%loss = \d/\d/\d%, min/avg/max = \d+\.\d+/\d+\.\d+/\d+\.\d+
+127\.0\.0\.1 : xmt/rcv/%loss = \d/\d/\d%, min/avg/max = $RE_RTT/$RE_RTT/$RE_RTT
 \[\d\d:\d\d:\d\d\]
-127\.0\.0\.1 : xmt/rcv/%loss = \d/\d/\d%, min/avg/max = \d+\.\d+/\d+\.\d+/\d+\.\d+
+127\.0\.0\.1 : xmt/rcv/%loss = \d/\d/\d%, min/avg/max = $RE_RTT/$RE_RTT/$RE_RTT
 });
 }
 
 # fping -l -t
 {
 my $cmd = Test::Command->new(cmd => '(sleep 0.5; pkill -INT fping)& fping -p 100 -t 1500 -l 127.0.0.1');
-$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\)
-127\.0\.0\.1 : \[1\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\)
+$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
+127\.0\.0\.1 : \[1\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
 });
 }
 
@@ -207,7 +209,7 @@ $cmd->stderr_is_eq("");
 # fping -l with -p > -t
 {
 my $cmd = Test::Command->new(cmd => '(sleep 1; pkill -INT fping)& fping -p 500 -t 400 -l 127.0.0.1');
-$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d+(?:\.\d+)? ms \(\d+(?:\.\d+)? avg, 0% loss\)});
+$cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)});
 }
 
 # fping -m
@@ -225,7 +227,7 @@ my $cmd = Test::Command->new(cmd => '(sleep 0.5; pkill -QUIT fping; sleep 0.3; p
 $cmd->exit_is_num(0);
 my $elapsed = tv_interval($t0);
 cmp_ok($elapsed, '<', 4.0, 'SIGQUIT/SIGINT interrupts 10s select() wait promptly');
-$cmd->stdout_like(qr{^127\.0\.0\.1 : \[0\], 64 bytes, \d+(?:\.\d+)? ms \(\d+(?:\.\d+)? avg, 0% loss\)\n$});
+$cmd->stdout_like(qr{^127\.0\.0\.1 : \[0\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)\n$});
 $cmd->stderr_like(qr{\[\d\d:\d\d:\d\d\]\n127\.0\.0\.1 : xmt/rcv/%loss = 1/1/0%[^\n]*\n\n127\.0\.0\.1 : xmt/rcv/%loss = 1/1/0%});
 }
 

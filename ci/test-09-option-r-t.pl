@@ -3,6 +3,8 @@
 use Test::Command tests => 36;
 use Test::More;
 
+my $RE_RTT = qr/\d+(?:\.\d+)?/;
+
 #  -R         random bytes
 #  -r n       number of retries (default 3)
 #  -s         print final stats
@@ -46,9 +48,9 @@ $cmd->stderr_like(qr{\s*
 \s*1 ICMP Echo Replies received
 \s*0 other ICMP received
 
-\s*\d+\.\d+ ms \(min round trip time\)
-\s*\d+\.\d+ ms \(avg round trip time\)
-\s*\d+\.\d+ ms \(max round trip time\)
+\s*$RE_RTT ms \(min round trip time\)
+\s*$RE_RTT ms \(avg round trip time\)
+\s*$RE_RTT ms \(max round trip time\)
 \s*\d+\.\d+ sec \(elapsed real time\)
 });
 }
@@ -69,9 +71,9 @@ $cmd->stderr_like(qr{\s*
 \s*0 ICMP Echo Replies received
 \s*0 other ICMP received
 
-\s*\d+\.\d+ ms \(min round trip time\)
-\s*\d+\.\d+ ms \(avg round trip time\)
-\s*\d+\.\d+ ms \(max round trip time\)
+\s*0\.000 ms \(min round trip time\)
+\s*0\.000 ms \(avg round trip time\)
+\s*0\.000 ms \(max round trip time\)
 \s*\d+\.\d+ sec \(elapsed real time\)
 });
 }
@@ -93,9 +95,9 @@ $cmd->stderr_like(qr{host\.name\.invalid: .+
 \s*1 ICMP Echo Replies received
 \s*0 other ICMP received
 
-\s*\d+\.\d+ ms \(min round trip time\)
-\s*\d+\.\d+ ms \(avg round trip time\)
-\s*\d+\.\d+ ms \(max round trip time\)
+\s*$RE_RTT ms \(min round trip time\)
+\s*$RE_RTT ms \(avg round trip time\)
+\s*$RE_RTT ms \(max round trip time\)
 \s*\d+\.\d+ sec \(elapsed real time\)
 });
 }

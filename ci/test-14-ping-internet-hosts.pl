@@ -11,16 +11,16 @@ if(!gethostbyname("www.google.com")) {
 
 plan tests => 30;
 
-my $re_num = qr{\d+(?:\.\d+)?};
+my $RE_RTT = qr/\d+(?:\.\d+)?/;
 
 # fping
 {
 my $cmd = Test::Command->new(cmd => "fping -q -i 10 -p 20 -c 3 -t200  8.8.8.8 www.france-telecom.fr www.google.com");
 $cmd->exit_is_num(0);
 $cmd->stdout_is_eq("");
-$cmd->stderr_like(qr{8\.8\.8\.8\s*: xmt/rcv/%loss = [123]/[123]/\d+%, min/avg/max = $re_num/$re_num/$re_num
-www\.france-telecom\.fr\s*: xmt/rcv/%loss = [123]/[123]/\d+%, min/avg/max = $re_num/$re_num/$re_num
-www\.google\.com\s*: xmt/rcv/%loss = [123]/[123]/\d+%, min/avg/max = $re_num/$re_num/$re_num
+$cmd->stderr_like(qr{8\.8\.8\.8\s*: xmt/rcv/%loss = [123]/[123]/\d+%, min/avg/max = $RE_RTT/$RE_RTT/$RE_RTT
+www\.france-telecom\.fr\s*: xmt/rcv/%loss = [123]/[123]/\d+%, min/avg/max = $RE_RTT/$RE_RTT/$RE_RTT
+www\.google\.com\s*: xmt/rcv/%loss = [123]/[123]/\d+%, min/avg/max = $RE_RTT/$RE_RTT/$RE_RTT
 });
 }
 

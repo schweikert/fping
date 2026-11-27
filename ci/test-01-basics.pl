@@ -3,6 +3,8 @@
 use Test::Command tests => 21;
 use Test::More;
 
+my $RE_RTT = qr/\d+(?:\.\d+)?/;
+
 # ping 127.0.0.1
 {
     my $cmd = Test::Command->new(cmd => "fping 127.0.0.1");
@@ -39,11 +41,11 @@ SKIP: {
 {
     my $cmd = Test::Command->new(cmd => "fping -p 100 -C3 127.0.0.1");
     $cmd->exit_is_num(0);
-    $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\)
-127\.0\.0\.1 : \[1\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\)
-127\.0\.0\.1 : \[2\], 64 bytes, \d+\.\d+ ms \(\d+\.\d+ avg, 0% loss\)
+    $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
+127\.0\.0\.1 : \[1\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
+127\.0\.0\.1 : \[2\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0% loss\)
 });
-    $cmd->stderr_like(qr{127\.0\.0\.1 : \d+\.\d+ \d+\.\d+ \d+\.\d+\n});
+    $cmd->stderr_like(qr{127\.0\.0\.1 : $RE_RTT $RE_RTT $RE_RTT\n});
 }
 
 # invalid target name

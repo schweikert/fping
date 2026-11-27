@@ -5,7 +5,11 @@ use Test::More;
 use File::Temp;
 use JSON::PP qw(decode_json);
 
-my $RE_RTT = qr/\d+(?:\.\d+)?/;
+my $RE_RTT        = qr/\d+(?:\.\d+)?/;
+my $RE_TS_EPOCH   = qr/[1-9]\d{9,}\.\d{5}/;
+my $RE_TS_CTIME   = qr/\w+\s\w+\s+\d+\s\d{2}:\d{2}:\d{2}\s\d{4}/;
+my $RE_TS_ISO     = qr/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{4}/;
+my $RE_TS_RFC3339 = qr/\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}/;
 
 # Validate LF-framed JSONL where each line is a 1-key fping JSON object
 # envelope (e.g. {"resp": {...}}). Emits 1 assertion and returns decoded docs.
@@ -110,8 +114,8 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 2 -D 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"[1-9]\d{9,}\.\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
-\{"resp":\s\{"timestamp":\s"[1-9]\d{9,}\.\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s1,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
+$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"$RE_TS_EPOCH",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
+\{"resp":\s\{"timestamp":\s"$RE_TS_EPOCH",\s"host":\s"127\.0\.0\.1",\s"seq":\s1,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
@@ -120,7 +124,7 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 -D --timestamp-format=ctime 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"\w+\s\w+\s+\d+\s[\d+:]+\s\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
+$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"$RE_TS_CTIME",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
@@ -129,7 +133,7 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 -D --timestamp-format=iso 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"[\d+-]+T[\d+:]+[+-]\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
+$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"$RE_TS_ISO",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
@@ -138,7 +142,7 @@ $cmd->stderr_is_eq("");
 {
 my $cmd = Test::Command->new(cmd => "fping -J -c 1 -D --timestamp-format=rfc3339 127.0.0.1");
 $cmd->exit_is_num(0);
-$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"[\d+-]+\s[\d+:]+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
+$cmd->stdout_like(qr/^\{"resp":\s\{"timestamp":\s"$RE_TS_RFC3339",\s"host":\s"127\.0\.0\.1",\s"seq":\s0,\s"size":\s\d+,\s"rtt":\s$RE_RTT\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s\d+,\s"rcv":\s\d+,\s"loss":\s\d+,\s"rttMin":\s$RE_RTT,\s"rttAvg":\s$RE_RTT,\s"rttMax":\s$RE_RTT\}\}\n?$/);
 $cmd->stderr_is_eq("");
 }
@@ -297,7 +301,7 @@ $cmd->stderr_is_eq("fping: specify only one of -J, -N\n", '-J -N reports mutual 
 {
 my $cmd = Test::Command->new(cmd => "fping -J --seqmap-timeout 0 -D -o -s -c 1 -t 50 127.0.0.1");
 $cmd->exit_is_num(1);
-$cmd->stdout_like(qr/^\{"timeout":\s\{"timestamp":\s"[1-9]\d{9,}\.\d+",\s"host":\s"127\.0\.0\.1",\s"seq":\s0\}\}
+$cmd->stdout_like(qr/^\{"timeout":\s\{"timestamp":\s"$RE_TS_EPOCH",\s"host":\s"127\.0\.0\.1",\s"seq":\s0\}\}
 \{"summary":\s\{"host":\s"127\.0\.0\.1",\s"xmt":\s1,\s"rcv":\s0,\s"loss":\s100,\s"outage\(ms\)":\s1000\}\}
 \{"stats":\s\{"targets":\s1,\s"alive":\s0,\s"unreachable":\s1,\s"unknownAddresses":\s0,\s"timeouts":\s1,\s"icmpEchosSent":\s1,\s"icmpEchoRepliesReceived":\s0,\s"otherIcmpReceived":\s0,\s"rttMin":\s0\.000,\s"rttAvg":\s0\.000,\s"rttMax":\s0\.000,\s"elapsed":\s\d+\.\d+\}\}\n?$/);
 $cmd->stderr_is_eq("");

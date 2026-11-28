@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use Test::Command tests => 87;
+use Test::Command tests => 90;
 use Test::More;
 use Time::HiRes qw(gettimeofday tv_interval);
 
@@ -70,9 +70,10 @@ $cmd->stderr_like(qr{binding to specific interface \(SO_BINDTODEVICE\):.*\n});
 
 # fping --oiface=IFACE (IPv4)
 SKIP: {
-    my $lo_iface = $^O eq 'linux' ? 'lo' : $^O eq 'solaris' ? 'lo0' : '';
+    my $lo_iface = $^O eq 'linux' ? 'lo' :
+                   ($^O eq 'solaris' || $^O eq 'netbsd') ? 'lo0' : '';
     if (!$lo_iface) {
-        skip 'IPv4 --oiface test is only run on Linux and Solaris/illumos', 6;
+        skip 'IPv4 --oiface test is only run on Linux, Solaris/illumos, and NetBSD', 9;
     }
     my $cmd1 = Test::Command->new(cmd => "fping --oiface=$lo_iface 127.0.0.1");
     $cmd1->exit_is_num(0);
@@ -83,14 +84,19 @@ SKIP: {
     $cmd2->exit_is_num(0);
     $cmd2->stdout_is_eq("127.0.0.1 is alive\n");
     $cmd2->stderr_is_eq("");
+
+    my $cmd3 = Test::Command->new(cmd => "fping -4 -S 127.0.0.1 --oiface=$lo_iface 127.0.0.1");
+    $cmd3->exit_is_num(0);
+    $cmd3->stdout_is_eq("127.0.0.1 is alive\n");
+    $cmd3->stderr_is_eq("");
 }
 
 # fping --oiface=IFACE (IPv6)
 SKIP: {
     my $lo_iface = $^O eq 'linux' ? 'lo' :
-                   ($^O eq 'freebsd' || $^O eq 'openbsd' || $^O eq 'solaris' || $^O eq 'darwin') ? 'lo0' : '';
+                   ($^O eq 'freebsd' || $^O eq 'openbsd' || $^O eq 'netbsd' || $^O eq 'solaris' || $^O eq 'darwin') ? 'lo0' : '';
     if (!$lo_iface) {
-        skip 'IPv6 --oiface test is only run on Linux, macOS, FreeBSD, OpenBSD, and Solaris/illumos', 6;
+        skip 'IPv6 --oiface test is only run on Linux, macOS, FreeBSD, OpenBSD, NetBSD, and Solaris/illumos', 6;
     }
     if (!$has_ipv6 || $ENV{SKIP_IPV6}) {
         skip 'Skip IPv6 tests', 6;
@@ -221,8 +227,8 @@ $cmd->stdout_like(qr{127\.0\.0\.1 : \[0\], 64 bytes, $RE_RTT ms \($RE_RTT avg, 0
 
 # fping -M
 SKIP: {
-if($^O eq 'openbsd') {
-    skip '-M option not supported on OpenBSD', 3;
+if($^O eq 'openbsd' || $^O eq 'netbsd') {
+    skip '-M option not supported on OpenBSD and NetBSD', 3;
 }
 my $cmd = Test::Command->new(cmd => "fping -M 127.0.0.1");
 $cmd->exit_is_num(0);
@@ -232,8 +238,8 @@ $cmd->stderr_is_eq("");
 
 # fping --frag
 SKIP: {
-if($^O eq 'openbsd') {
-    skip '--frag option not supported on OpenBSD', 3;
+if($^O eq 'openbsd' || $^O eq 'netbsd') {
+    skip '--frag option not supported on OpenBSD and NetBSD', 3;
 }
 my $cmd = Test::Command->new(cmd => "fping --frag 127.0.0.1");
 $cmd->exit_is_num(0);
@@ -243,7 +249,7 @@ $cmd->stderr_is_eq("");
 
 # fping --oiface unknown interface error case
 SKIP: {
-if ($^O ne 'linux' && $^O ne 'solaris') {
+if ($^O ne 'linux' && $^O ne 'solaris' && $^O ne 'netbsd') {
     skip '--oiface unknown interface test is only run on IPv4 --oiface platforms', 3;
 }
 my $cmd1 = Test::Command->new(cmd => 'fping --oiface=NotAnInterface 127.0.0.1');

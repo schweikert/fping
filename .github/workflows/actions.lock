@@ -20,6 +20,7 @@ workflows:
     '.github/workflows/test-other-os.yml':
         - 'actions/checkout@v7.0.1'
         - 'vmactions/freebsd-vm@v1.5.9'
+        - 'vmactions/netbsd-vm@v1.5.3'
         - 'vmactions/omnios-vm@v1.3.8'
         - 'vmactions/openbsd-vm@v1.4.9'
     '.github/workflows/test-s390x.yml':
@@ -93,6 +94,11 @@ dependencies:
         commit: 'sha1-c46abacb49f09938ca4e1702d15d836285d694cc'
         owner_id: 71690866
         repo_id: 300290246
+    'vmactions/netbsd-vm@v1.5.3':
+        ref: 'v1.5.3'
+        commit: 'sha1-5957cf330aef2e6ddc63c604364c99ce2e02b91d'
+        owner_id: 71690866
+        repo_id: 324264532
     'vmactions/omnios-vm@v1.3.8':
         ref: 'v1.3.8'
         commit: 'sha1-aeee92416495d9685b2997d954f6b063ae5b832d'

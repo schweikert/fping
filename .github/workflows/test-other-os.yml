@@ -86,6 +86,37 @@ jobs:
             # Skip unscoped ff02::1 multicast tests; unicast IPv6 (::1) tests run
             su testuser -c "PATH=$(pwd)/src:/usr/local/bin:\$PATH SKIP_IPV6_MULTICAST=1 prove \$(ls ci/test-*.pl | grep -v internet-hosts)"
 
+  Test-NetBSD:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Enable unprivileged ping on host for QEMU SLiRP
+        run: sudo sysctl net.ipv4.ping_group_range='0 2147483647'
+
+      - name: Test on NetBSD
+        uses: vmactions/netbsd-vm@v1.5.3
+        with:
+          run: |
+            set -ex
+            pkg_add autoconf automake gmake perl p5-App-cpanminus
+            cpanm --notest Test::Command
+            # BSD lo0 only binds 127.0.0.1 by default; tests also ping .2-.5
+            for i in 2 3 4 5; do
+              ifconfig lo0 alias 127.0.0.$i/32
+            done
+            autoreconf -i
+            ./configure --enable-ipv4 --enable-ipv6 --enable-safe-limits --prefix=/opt/fping
+            gmake
+            useradd -m -s /bin/sh testuser
+            chown -R testuser .
+            su testuser -c "PATH=/usr/pkg/bin:/usr/bin:/bin gmake check VERBOSE=1"
+            chown root:wheel src/fping
+            chmod 4755 src/fping
+            # Skip unscoped ff02::1 multicast tests; unicast IPv6 (::1) tests run
+            su testuser -c "PATH=$(pwd)/src:/usr/pkg/bin:/usr/bin:/bin SKIP_IPV6_MULTICAST=1 prove \$(ls ci/test-*.pl | grep -v internet-hosts)"
+
   Test-OmniOS:
     runs-on: ubuntu-latest
     steps:

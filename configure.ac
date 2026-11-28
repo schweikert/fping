@@ -3,7 +3,7 @@ dnl Process this file with autoconf to produce a configure script.
 dnl Minimum Autoconf version required.
 AC_PREREQ(2.59)
 
-AC_INIT([fping],[5.5])
+AC_INIT([fping],[5.6-rc1])
 dnl Keep auxiliary scripts in top srcdir even when built inside nested worktrees.
 AC_CONFIG_AUX_DIR([.])
 
